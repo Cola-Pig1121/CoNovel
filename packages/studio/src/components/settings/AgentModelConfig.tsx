@@ -83,9 +83,15 @@ export function AgentModelConfig() {
   const selectedConfig = configs.find(c => c.role === selectedAgent);
 
   // Get models from providers for a specific provider id
-  const getModelsForProvider = (providerId: string): string[] => {
-    const provider = providers.find(p => p.id === providerId || p.name === providerId);
+  const getModelsForProvider = (providerName: string): string[] => {
+    const provider = providers.find(p => p.name === providerName);
     return provider?.models.map(m => m.id) || [];
+  };
+
+  // Check if provider has models
+  const providerHasModels = (providerName: string): boolean => {
+    const provider = providers.find(p => p.name === providerName);
+    return (provider?.models?.length || 0) > 0;
   };
 
   if (loading) return <div className="text-muted text-sm">加载配置中...</div>;
@@ -154,6 +160,7 @@ export function AgentModelConfig() {
               {/* Model Selection */}
               <div>
                 <label className="label-editorial block mb-2">模型选择</label>
+                {providerHasModels(selectedConfig.provider) ? (
                 <select
                   value={selectedConfig.modelId}
                   onChange={(e) => {
@@ -175,6 +182,11 @@ export function AgentModelConfig() {
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+                ) : (
+                <div className="p-3 border border-border text-sm text-muted">
+                  该供应商暂无模型。请先在「模型供应商」页面点击「扫描模型」获取模型列表。
+                </div>
+                )}
               </div>
 
               {/* Reasoning Effort */}
