@@ -10,6 +10,9 @@ import { BookTimeline } from '@/components/book/BookTimeline';
 import { BookChapters } from '@/components/book/BookChapters';
 import { BookStyle } from '@/components/book/BookStyle';
 import { BookWrite } from '@/components/book/BookWrite';
+import { BookReference } from '@/components/book/BookReference';
+import { BookNaming } from '@/components/book/BookNaming';
+import { BookTechniques } from '@/components/book/BookTechniques';
 
 const TABS = [
   { id: 'overview', label: '概览', labelEn: 'Overview' },
@@ -18,6 +21,9 @@ const TABS = [
   { id: 'foreshadowing', label: '伏笔', labelEn: 'Foreshadowing' },
   { id: 'timeline', label: '时间线', labelEn: 'Timeline' },
   { id: 'chapters', label: '章节', labelEn: 'Chapters' },
+  { id: 'reference', label: '参考', labelEn: 'Reference' },
+  { id: 'techniques', label: '技法', labelEn: 'Techniques' },
+  { id: 'naming', label: '取名', labelEn: 'Naming' },
   { id: 'style', label: '风格', labelEn: 'Style' },
   { id: 'write', label: '写作', labelEn: 'Write' },
 ];
@@ -54,12 +60,12 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-12 border-b border-border">
+      <div className="flex gap-1 px-12 border-b border-border overflow-x-auto">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-3 text-sm transition-colors ${activeTab === tab.id ? 'border-b-2 border-foreground' : 'text-muted hover:text-foreground'}`}
+            className={`px-4 py-3 text-sm transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-b-2 border-foreground' : 'text-muted hover:text-foreground'}`}
           >
             <span className="font-sans">{tab.label}</span>
           </button>
@@ -74,6 +80,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         {activeTab === 'foreshadowing' && <BookForeshadowing bookId={id} book={book} />}
         {activeTab === 'timeline' && <BookTimeline bookId={id} book={book} />}
         {activeTab === 'chapters' && <BookChapters bookId={id} book={book} />}
+        {activeTab === 'reference' && <BookReference bookId={id} book={book} />}
+        {activeTab === 'techniques' && <BookTechniques bookId={id} book={book} />}
+        {activeTab === 'naming' && <BookNaming bookId={id} book={book} />}
         {activeTab === 'style' && <BookStyle bookId={id} />}
         {activeTab === 'write' && <BookWrite bookId={id} book={book} />}
       </div>
