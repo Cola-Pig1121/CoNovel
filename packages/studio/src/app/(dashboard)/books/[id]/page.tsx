@@ -15,6 +15,7 @@ import { BookNaming } from '@/components/book/BookNaming';
 import { BookTechniques } from '@/components/book/BookTechniques';
 import { BookReadingPower } from '@/components/book/BookReadingPower';
 import { BookHooks } from '@/components/book/BookHooks';
+import { BookConstraints } from '@/components/book/BookConstraints';
 import { TokenStatusBar } from '@/components/TokenStatusBar';
 
 const TABS = [
@@ -29,6 +30,7 @@ const TABS = [
   { id: 'reference', label: '参考', labelEn: 'Reference' },
   { id: 'techniques', label: '技法', labelEn: 'Techniques' },
   { id: 'naming', label: '取名', labelEn: 'Naming' },
+  { id: 'constraints', label: '约束', labelEn: 'Constraints' },
   { id: 'style', label: '风格', labelEn: 'Style' },
   { id: 'write', label: '写作', labelEn: 'Write' },
 ];
@@ -91,6 +93,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         {activeTab === 'reference' && <BookReference bookId={id} book={book} />}
         {activeTab === 'techniques' && <BookTechniques bookId={id} book={book} />}
         {activeTab === 'naming' && <BookNaming bookId={id} book={book} />}
+        {activeTab === 'constraints' && <BookConstraints bookId={id} />}
         {activeTab === 'style' && <BookStyle bookId={id} />}
         {activeTab === 'write' && <BookWrite bookId={id} book={book} />}
       </div>
