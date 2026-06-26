@@ -15,6 +15,7 @@ import { BookNaming } from '@/components/book/BookNaming';
 import { BookTechniques } from '@/components/book/BookTechniques';
 import { BookReadingPower } from '@/components/book/BookReadingPower';
 import { BookHooks } from '@/components/book/BookHooks';
+import { TokenStatusBar } from '@/components/TokenStatusBar';
 
 const TABS = [
   { id: 'overview', label: '概览', labelEn: 'Overview' },
@@ -52,8 +53,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     <div>
       {/* Header */}
       <header className="border-b border-border px-12 py-4">
-        <div className="flex items-center gap-4 mb-3">
+        <div className="flex items-center justify-between mb-3">
           <Link href="/books" className="text-muted hover:text-foreground text-sm">← 返回列表</Link>
+          <TokenStatusBar bookId={id} />
         </div>
         <div className="flex items-center justify-between">
           <div>

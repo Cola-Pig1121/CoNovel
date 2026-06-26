@@ -4,88 +4,6 @@
 
 每本小说拥有独立的Agent文件夹：`agent/books/{book-id}/`
 
-```
-agent/
-├── instructions.md              # 本文件：全局协调Agent
-├── agent.ts                     # 全局Agent配置
-├── books/
-│   └── {book-id}/              # 每本书的独立Agent
-│       ├── instructions.md      # 本书的系统提示词
-│       ├── agent.ts             # 本书的模型配置
-│       ├── tools/               # 14个工具（与API通信）
-│       │   ├── read-chapter.ts
-│       │   ├── write-chapter.ts
-│       │   ├── get-characters.ts
-│       │   ├── update-character.ts
-│       │   ├── get-foreshadowing.ts
-│       │   ├── add-foreshadowing.ts
-│       │   ├── get-timeline.ts
-│       │   ├── add-event.ts
-│       │   ├── get-style.ts
-│       │   ├── get-reading-power.ts
-│       │   ├── get-hooks-status.ts
-│       │   ├── get-memory.ts
-│       │   ├── get-graph.ts
-│       │   └── naming.ts
-│       ├── skills/              # 7个按需加载技能
-│       │   ├── scene-writing.md
-│       │   ├── outline-builder.md
-│       │   ├── character-design.md
-│       │   ├── anti-ai-edit.md
-│       │   ├── style-calibration.md
-│       │   ├── naming.md
-│       │   └── webnovel-techniques.md
-│       └── subagents/           # 15个子Agent
-│           ├── architect/
-│           ├── writer/
-│           ├── character-intelligence/
-│           ├── reviewer/
-│           ├── editor/
-│           ├── de-ai-editor/
-│           ├── observer/
-│           ├── character-designer/
-│           ├── fact-checker/
-│           ├── continuity/
-│           ├── pacing-controller/
-│           ├── foreshadowing/
-│           ├── style-analyzer/
-│           ├── radar/
-│           └── reflector/
-```
-
-## 全局协调Agent
-
-当用户操作书籍时，路由到对应的书籍Agent。
-
-## 每本书的Agent
-
-每本书的Agent包含：
-- **instructions.md** — 本书的写作铁律、角色定义、工具清单
-- **agent.ts** — 本书的模型配置（可通过LiteLLM网关自定义）
-- **tools/** — 14个工具，通过HTTP调用后端API
-- **skills/** — 7个技能文档，按需加载
-- **subagents/** — 15个子Agent，各有专属工具和技能映射
-
-## 子Agent → 工具/技能映射
-
-| Agent | 工具 | 技能 |
-|-------|------|------|
-| architect | get-characters, get-foreshadowing, get-timeline, get-outline, get-style | outline-builder, character-design |
-| writer | read-chapter, write-chapter, get-characters, get-style, get-foreshadowing | scene-writing, webnovel-techniques, anti-ai-edit |
-| character-intelligence | get-characters, get-graph, get-timeline | character-design |
-| reviewer | read-chapter, get-characters, get-foreshadowing, get-reading-power | — |
-| editor | read-chapter, write-chapter, get-style | scene-writing, style-calibration |
-| de-ai-editor | read-chapter, write-chapter, get-style | anti-ai-edit |
-| observer | read-chapter, add-event, update-character, get-foreshadowing | — |
-| character-designer | get-characters, update-character, get-graph, naming | character-design |
-| fact-checker | read-chapter, get-characters, get-timeline, get-memory | — |
-| continuity | read-chapter, get-characters, get-timeline, get-foreshadowing | — |
-| pacing-controller | read-chapter, get-reading-power, get-foreshadowing | webnovel-techniques |
-| foreshadowing | get-foreshadowing, add-foreshadowing, get-hooks-status, read-chapter | — |
-| style-analyzer | read-chapter, get-style, get-memory | style-calibration |
-| radar | get-style, get-reading-power | — |
-| reflector | read-chapter, get-reading-power, get-hooks-status, get-memory | — |
-
 ## 写作铁律
 
 1. **剧情加速上限**：每章最多1个A/B/C级触发
@@ -93,6 +11,75 @@ agent/
 3. **角色一致性**：角色行为符合性格设定
 4. **伏笔有始有终**：伏笔必须在指定章节内回收
 5. **禁止加速结局**：核心冲突不能在最终章前解决
+
+## 权重与权限（防委员会效应）
+
+### 主从偏置
+- **Writer 和 Character Intelligence 拥有最高话语权**
+- 审阅类Agent（Reviewer/Pacing/Fact Checker）的输出是**建议（Suggestion）**
+- 除非P0硬性逻辑错误，否则审阅Agent不具有一票否决权
+- Writer可以拒绝P1/P2级别的修改建议
+
+### 权限分级
+| Agent | 话语权 | 修改权 |
+|-------|--------|--------|
+| Writer | 最高 | 完全控制正文 |
+| Character Intelligence | 最高 | 完全控制角色行为 |
+| Editor | 中等 | 润色修改 |
+| De-AI Editor | 中等 | 最小修补 |
+| Reviewer | 建议 | 只能建议，不能强制 |
+| Pacing Controller | 建议 | 只能建议 |
+| Fact Checker | 高（仅P0） | 仅P0逻辑错误可阻断 |
+
+## 断点协同机制（Breakpoint Pipeline）
+
+流水线不是全自动的，而是"半自动挡"，有两个关键断点：
+
+### 断点1：骨架确认
+Architect生成大纲 + Character Intelligence生成心理推理后，**流水线暂停**。
+人类在Studio仪表盘上：
+- 调整大纲细节
+- 注入个人感官记忆
+- 确认角色行为方向
+
+### 断点2：草稿润色
+Writer产出初稿后，**流水线暂停**。
+人类在Studio仪表盘上：
+- 第一轮个性化改写
+- 注入独特的文风细节
+- 确认情感表达
+
+### 其他断点
+- Reviewer发现P0问题时自动暂停
+- 3轮审阅后仍有P0时触发人工干预
+- De-AI编辑检测到公式感过载时触发人工确认
+
+## Token消耗追踪
+
+每个Agent执行时记录token消耗：
+- prompt tokens
+- completion tokens
+- 累计消耗
+
+在Studio仪表盘的流水线页面实时显示：
+- 当前章节token消耗
+- 各Agent的token占比
+- 累计token消耗趋势
+
+## 静态快照审阅（防状态锁死）
+
+审阅基于静态快照进行：
+1. 流水线进入审阅阶段时，取当前文本快照
+2. 所有审阅和修复基于这个快照
+3. 收敛循环中禁止引入新大纲变更
+4. 3轮后仍有P0 → 触发人工干预
+
+## CSV知识库使用规则
+
+- 动态注入：按题材和类别检索，只注入相关条目
+- 反向校验：De-AI Editor将CSV作为反向指标
+- 如果检测到文本过度贴合公式 → 触发"反公式化"噪声注入
+- 骨架保证不出错，血肉靠人填充
 
 ## 质量门禁（5层）
 
