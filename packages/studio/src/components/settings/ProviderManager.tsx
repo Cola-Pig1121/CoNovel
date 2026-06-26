@@ -43,6 +43,8 @@ export function ProviderManager() {
   const [newModelId, setNewModelId] = useState('');
   const [newModelContext, setNewModelContext] = useState(200000);
   const [scanning, setScanning] = useState(false);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
+  const [editingModelData, setEditingModelData] = useState<{ id: string; contextWindow: number }>({ id: '', contextWindow: 200000 });
 
   // Load from API on mount
   useEffect(() => {
@@ -158,6 +160,27 @@ export function ProviderManager() {
     setScanning(false);
   };
 
+  const handleSaveModelEdit = async () => {
+    if (!editingProvider || !editingModelId) return;
+    const updated = providers.map(p => {
+      if (p.id === editingProvider.id) {
+        return {
+          ...p,
+          models: p.models.map(m =>
+            m.id === editingModelId
+              ? { ...m, id: editingModelData.id, contextWindow: editingModelData.contextWindow }
+              : m
+          ),
+        };
+      }
+      return p;
+    });
+    await saveProviders(updated);
+    const fresh = updated.find(p => p.id === editingProvider.id);
+    if (fresh) setEditingProvider(fresh);
+    setEditingModelId(null);
+  };
+
   const handleDeleteModel = async (providerId: string, modelId: string) => {
     const updated = providers.map(p => {
       if (p.id === providerId) {
@@ -254,35 +277,77 @@ export function ProviderManager() {
                   <button
                     onClick={handleScanModels}
                     disabled={scanning}
-                    className="text-xs text-muted hover:text-foreground transition-colors"
+                    className="btn-editorial text-xs"
                   >
-                    {scanning ? '扫描中...' : '🔍 扫描模型'}
+                    {scanning ? '扫描中...' : '扫描模型'}
                   </button>
                 </div>
                 <div className="space-y-2 mb-3">
                   {editingProvider.models.map((model) => (
-                    <div key={model.id} className="flex items-center justify-between py-2 px-3 border border-border">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-mono text-sm">{model.id}</p>
-                          {model.supportsReasoning && (
-                            <span className="px-1.5 py-0.5 text-[10px] bg-foreground/10 text-foreground font-mono">
-                              thinking
-                            </span>
-                          )}
+                    <div key={model.id} className="border border-border">
+                      {editingModelId === model.id ? (
+                        /* Edit mode */
+                        <div className="p-3 space-y-2">
+                          <div>
+                            <label className="text-xs text-muted">模型 ID</label>
+                            <input
+                              type="text"
+                              value={editingModelData.id}
+                              onChange={(e) => setEditingModelData({ ...editingModelData, id: e.target.value })}
+                              className="input-editorial text-sm mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted">上下文窗口</label>
+                            <input
+                              type="number"
+                              value={editingModelData.contextWindow}
+                              onChange={(e) => setEditingModelData({ ...editingModelData, contextWindow: Number(e.target.value) })}
+                              className="input-editorial text-sm mt-1"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingModelId(null)} className="btn-editorial text-xs flex-1">取消</button>
+                            <button onClick={handleSaveModelEdit} className="btn-editorial-primary text-xs flex-1">保存</button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          {model.contextWindow > 0 && (
-                            <p className="text-xs text-muted">上下文: {(model.contextWindow / 1000).toFixed(0)}K</p>
-                          )}
-                          {model.reasoningLevels && model.reasoningLevels.length > 0 && (
-                            <p className="text-xs text-muted">
-                              思考强度: {model.reasoningLevels.join(' / ')}
-                            </p>
-                          )}
+                      ) : (
+                        /* Display mode */
+                        <div className="flex items-center justify-between py-2 px-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono text-sm">{model.id}</p>
+                              {model.supportsReasoning && (
+                                <span className="px-1.5 py-0.5 text-[10px] bg-foreground/10 text-foreground font-mono">
+                                  thinking
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              {model.contextWindow > 0 && (
+                                <p className="text-xs text-muted">上下文: {(model.contextWindow / 1000).toFixed(0)}K</p>
+                              )}
+                              {model.reasoningLevels && model.reasoningLevels.length > 0 && (
+                                <p className="text-xs text-muted">
+                                  思考强度: {model.reasoningLevels.join(' / ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 ml-2">
+                            <button
+                              onClick={() => {
+                                setEditingModelId(model.id);
+                                setEditingModelData({ id: model.id, contextWindow: model.contextWindow });
+                              }}
+                              className="text-muted hover:text-foreground text-xs"
+                            >
+                              编辑
+                            </button>
+                            <button onClick={() => handleDeleteModel(editingProvider.id, model.id)} className="text-muted hover:text-red-600 text-xs">删除</button>
+                          </div>
                         </div>
-                      </div>
-                      <button onClick={() => handleDeleteModel(editingProvider.id, model.id)} className="text-muted hover:text-foreground text-xs ml-2">删除</button>
+                      )}
                     </div>
                   ))}
                   {editingProvider.models.length === 0 && (
