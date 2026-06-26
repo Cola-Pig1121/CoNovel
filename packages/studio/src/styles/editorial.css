@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Editorial Style Base ===== */
+
+:root {
+  --color-bg: #F9F8F6;
+  --color-fg: #1C1C1C;
+  --color-muted: #6b7280;
+  --color-border: #1C1C1C;
+  --color-accent: #816d70;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+}
+
+/* ===== Hover Underline Animation ===== */
+
+.hover-underline {
+  background-image: linear-gradient(var(--color-fg), var(--color-fg));
+  background-size: 0% 1px;
+  background-position: left bottom;
+  background-repeat: no-repeat;
+  transition: background-size 0.3s ease;
+}
+
+.hover-underline:hover {
+  background-size: 100% 1px;
+}
+
+/* ===== Editorial Button ===== */
+
+.btn-editorial {
+  @apply px-6 py-3 text-sm tracking-wide transition-all;
+  @apply border border-border text-foreground bg-transparent;
+  @apply hover:bg-foreground hover:text-background;
+  @apply active:scale-95;
+}
+
+.btn-editorial-primary {
+  @apply px-6 py-3 text-sm tracking-wide transition-all;
+  @apply bg-foreground text-background border border-foreground;
+  @apply hover:bg-transparent hover:text-foreground;
+  @apply active:scale-95;
+}
+
+/* ===== Editorial Card ===== */
+
+.card-editorial {
+  @apply border border-border p-6 transition-colors;
+  @apply hover:border-foreground;
+}
+
+/* ===== Editorial Input ===== */
+
+.input-editorial {
+  @apply border border-border text-sm px-4 py-3 w-full;
+  @apply focus:outline-none focus:border-foreground;
+  @apply transition-colors;
+  @apply placeholder:text-muted;
+  background-color: var(--color-bg);
+}
+
+/* ===== Editorial Label ===== */
+
+.label-editorial {
+  @apply font-sans text-xs tracking-[0.2em] uppercase text-muted;
+}
+
+/* ===== Editorial Section ===== */
+
+.section-editorial {
+  @apply py-16 md:py-24 lg:py-32;
+  @apply px-6 md:px-12;
+}
+
+/* ===== Editorial Divider ===== */
+
+.divider-editorial {
+  @apply border-t border-border;
+}
+
+/* ===== Scrollbar ===== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg);
+}
+
+/* ===== Selection ===== */
+
+::selection {
+  background-color: var(--color-fg);
+  color: var(--color-bg);
+}
+
+/* ===== Reduced Motion ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-underline {
+    transition: none;
+  }
+
+  .btn-editorial,
+  .btn-editorial-primary {
+    transition: none;
+  }
+}
