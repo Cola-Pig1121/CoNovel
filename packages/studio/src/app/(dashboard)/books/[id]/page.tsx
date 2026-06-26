@@ -13,12 +13,16 @@ import { BookWrite } from '@/components/book/BookWrite';
 import { BookReference } from '@/components/book/BookReference';
 import { BookNaming } from '@/components/book/BookNaming';
 import { BookTechniques } from '@/components/book/BookTechniques';
+import { BookReadingPower } from '@/components/book/BookReadingPower';
+import { BookHooks } from '@/components/book/BookHooks';
 
 const TABS = [
   { id: 'overview', label: '概览', labelEn: 'Overview' },
   { id: 'outline', label: '大纲', labelEn: 'Outline' },
   { id: 'characters', label: '角色', labelEn: 'Characters' },
   { id: 'foreshadowing', label: '伏笔', labelEn: 'Foreshadowing' },
+  { id: 'hooks', label: 'Hook治理', labelEn: 'Hooks' },
+  { id: 'reading-power', label: '追读力', labelEn: 'Reading Power' },
   { id: 'timeline', label: '时间线', labelEn: 'Timeline' },
   { id: 'chapters', label: '章节', labelEn: 'Chapters' },
   { id: 'reference', label: '参考', labelEn: 'Reference' },
@@ -78,6 +82,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         {activeTab === 'outline' && <BookOutline bookId={id} book={book} />}
         {activeTab === 'characters' && <BookCharacters bookId={id} book={book} />}
         {activeTab === 'foreshadowing' && <BookForeshadowing bookId={id} book={book} />}
+        {activeTab === 'hooks' && <BookHooks bookId={id} />}
+        {activeTab === 'reading-power' && <BookReadingPower bookId={id} />}
         {activeTab === 'timeline' && <BookTimeline bookId={id} book={book} />}
         {activeTab === 'chapters' && <BookChapters bookId={id} book={book} />}
         {activeTab === 'reference' && <BookReference bookId={id} book={book} />}

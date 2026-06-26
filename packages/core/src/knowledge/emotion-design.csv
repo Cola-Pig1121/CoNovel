@@ -1,0 +1,16 @@
+id,category,name,description,formula,applicable_genres
+ED001,arc,逆袭弧,"从低谷到巅峰的情感旅程","压抑→积蓄→爆发→爽快",xianxia|xuanhuan|urban|infinite
+ED002,arc,成长弧,"从无知到成熟的心智成长","迷茫→学习→实践→领悟",all
+ED003,arc,复仇弧,"从被害到复仇的情感驱动","仇恨→隐忍→计划→复仇→释然",xianxia|xuanhuan|urban|historical
+ED004,arc,救赎弧,"从堕落到救赎的灵魂之旅","堕落→挣扎→觉醒→救赎",xianxia|xuanhuan|urban|mystery
+ED005,arc,爱情弧,"从相识到相爱的感情发展","相遇→了解→心动→考验→确认",urban|historical|romance
+ED006,arc,失落弧,"从拥有到失去的悲剧旅程","拥有→危机→失去→痛苦→成长",all
+ED007,technique,先抑后扬,"先压低情绪再拉高，制造爽感","被看不起→暗中准备→实力展现→震惊",xianxia|xuanhuan|urban|infinite
+ED008,technique,意外反转,"在意料之外情理之中制造冲击","铺垫→误导→反转→震撼",mystery|xianxia|xuanhuan|infinite
+ED009,technique,情感共鸣,"通过具体细节引发读者情感共鸣","具体场景+感官细节+内心独白",all
+ED010,technique,紧张递进,"逐步增加紧张感直到爆发","小紧张→中紧张→大紧张→爆发",xianxia|xuanhuan|mystery|infinite
+ED011,rhythm,张弛交替,"紧张与舒缓交替，避免疲劳","紧张场景→舒缓场景→紧张场景",all
+ED012,rhythm,情感高峰控制,"不要连续高潮，要有缓冲","高潮→缓冲→高潮→大高潮",all
+ED013,delivery,行动表达情感,"用行动而非叙述表达情感","不说"他很愤怒"，写"他握紧拳头，指节发白"",all
+ED014,delivery,环境映射情感,"用环境描写映射角色情感","心情低落时下雨，心情好时阳光",all
+ED015,delivery,细节传递情感,"用小细节传递大情感","她把他的杯子洗干净放回原位",all

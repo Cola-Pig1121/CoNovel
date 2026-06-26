@@ -1,0 +1,31 @@
+id,category,name,description,formula,applicable_genres,source
+PT001,plot,双套大纲法,"宏观大纲用固定句式概括主角旅程；微观大纲列出元素按重要性排序","宏观: 他是…；他遇到… | 微观: 列元素→排序→先写前两个",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,zhihu
+PT002,plot,点线面体扩展法,"从核心创意（点）发展成故事线（线），扩展为完整情节（面），最后用细节充实（体）","点(创意) → 线(故事线) → 面(完整情节) → 体(细节充实)",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,zhihu
+PT003,plot,5W1H场景扩展,"通过Why/What/Who/Where/When/How六个维度扩展每个场景","Why(动机)+What(事件)+Who(人物)+Where(地点)+When(时间)+How(方式)",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,zhihu
+PT004,plot,黄金三章,"前三章决定留存。第1章建立主角和冲突，第2章展示金手指，第3章制造第一个爽点","第1章: 主角+困境+悬念 | 第2章: 金手指展示 | 第3章: 爽点+钩子",xianxia|xuanhuan|urban|scifi|infinite,zhihu
+PT005,plot,角色目标交织,"给主角和配角各自设定目标，行动相互交织推动剧情","主角目标A + 配角目标B → 行动交叉 → 剧情推进",xianxia|xuanhuan|urban|historical|mystery,zhihu
+PT006,plot,伏笔转场法,"用当前情节的解决自然引出下一个情节，实现无缝转场","解决A → 露出B的线索 → 自然过渡到B",xianxia|xuanhuan|urban|historical|mystery|infinite,zhihu
+PT007,character,身份反差法,"制造表面身份与隐藏能力的强烈反差，第一章就暗示特殊能力","普通身份 + 隐藏能力 → 第一章暗示 → 逐步揭露",xianxia|xuanhuan|urban|scifi|infinite,wangwen666
+PT008,character,行动证明性格,"不用形容词堆砌，通过具体行动展示性格","性格标签 → 设计3-5个标志性行为 → 在关键场景中展示",xianxia|xuanhuan|urban|historical|mystery|infinite,wangwen666
+PT009,character,生存规则集,"给主角设计行为规则：核心标签→10条规则→测试→打破规则的事件→成长","核心标签 → 10条规则 → 测试 → 打破规则的事件 → 角色弧光",xianxia|xuanhuan|urban|historical|mystery|infinite,wangwen666
+PT010,character,成长弧光,"五阶段：隐藏生存→试探锋芒→底线被触→主动出击→终极蜕变","隐藏生存 → 试探锋芒 → 底线被触 → 主动出击 → 终极蜕变",xianxia|xuanhuan|urban|historical|scifi|infinite,wangwen666
+PT011,character,反派三层金字塔,"底层(认知型练手)→中层(势力型强敌)→顶层(终极boss)","底层练手 → 中层强敌 → 顶层终极阴谋",xianxia|xuanhuan|urban|historical|scifi|infinite,wangwen666
+PT012,character,细节记忆点,"口头禅+随身物品+矛盾习惯→符合背景→适当频率","口头禅 + 随身物品 + 矛盾习惯 → 符合背景 → 适当频率",xianxia|xuanhuan|urban|historical|mystery|infinite,wangwen666
+PT013,scene,双机位视角,"大场景用全景航拍(环境)+第一人称肩拍(主角视角)交替","全景航拍(环境) ↔ 第一人称肩拍(主角视角)",xianxia|xuanhuan|urban|historical|scifi|infinite,zhihu
+PT014,emotion,刺激-反应法,"情感描写：刺激(具体事件)+反应(身体动作+内心想法)","刺激(具体事件) + 反应(身体动作 + 内心独白)",xianxia|xuanhuan|urban|historical|mystery|infinite,zhihu
+PT015,emotion,三维编织法,"发生(1-2句)+感知(感官细节)+反应(身体动作) 交织成场景","发生(具体事件) + 感知(五感) + 反应(动作/表情/内心)",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,oh-story
+PT016,technique,爽点设计,"先抑后扬：压制→积蓄→反转→爽","压制(被看不起) → 积蓄(暗中准备) → 反转(实力展现) → 爽",xianxia|xuanhuan|urban|scifi|infinite,zhihu
+PT017,technique,章末钩子,"每章结尾留悬念，制造翻页冲动","章末200字: 新信息/危机/转折 → 读者翻页",xianxia|xuanhuan|urban|historical|mystery|scifi|infinite,zhihu
+PT018,technique,信息喂投法,"一次只喂一条信息，用场景/对话/行动承载","每次只传递1条关键信息 → 用场景承载",xianxia|xuanhuan|urban|historical|mystery|scifi|infinite,zhihu
+PT019,technique,压缩描写法,"环境描写≤3句，服务于气氛，与剧情相关","环境描写 ≤3句 → 服务于气氛/情感",xianxia|xuanhuan|urban|historical|mystery|scifi|infinite,zhihu
+PT020,technique,视线引导法,"通过角色动作引导读者视线：局部→全景→局部","角色动作/视线 → 引导读者关注点移动",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,zhihu
+PT021,pacing,三幕结构,"第一幕(25%)建立常态引入冲突，第二幕(50%)冲突升级挣扎，第三幕(25%)高潮决战","第一幕→第二幕→第三幕",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,general
+PT022,pacing,张弛交替,"高潮后安排缓冲，连续高潮不超过3章，缓冲章也要有小钩子","高潮 → 缓冲 → 高潮",xianxia|xuanhuan|urban|historical|scifi|mystery|infinite,general
+PT023,character,反差人设,"表面vs实际的反差层：看起来…实际上…","表面人设 + 隐藏特质 → 逐步揭露",xianxia|xuanhuan|urban|historical|mystery|infinite,general
+PT024,emotion,情感弧线设计,"设计情感变化轨迹：紧张→释放→期待","目标情感 → 情感触发 → 情感反应 → 情感转变",xianxia|xuanhuan|urban|historical|mystery|infinite,general
+PT025,plot,冲突升级矩阵,"冲突从小到大：个人→家庭→组织→城市→世界","个人冲突 → 家庭冲突 → 组织冲突 → 更大冲突",xianxia|xuanhuan|urban|historical|scifi|infinite,general
+PT026,character,配角功能化,"每个配角有独立功能：导师/对手/盟友/信息源","配角 = 功能 + 性格 + 说话方式",xianxia|xuanhuan|urban|historical|mystery|infinite,general
+PT027,pacing,信息密度控制,"每章传递1-3条关键信息，不要信息倾泻","关键信息 → 场景承载 → 自然传递",xianxia|xuanhuan|urban|historical|mystery|scifi|infinite,general
+PT028,technique,真实场景模拟,"基于真实生活构建场景，想象角色版本有何不同","观察真实 → 想象角色版本 → 填充细节 → 写出差异化",urban|mystery|historical,general
+PT029,plot,世界观自然融入,"避免在对话中dump世界观，融入剧情中自然展现","世界观元素 → 融入剧情/对话/行动 → 自然展现",xianxia|xuanhuan|urban|historical|scifi,general
+PT030,character,角色成长检查,"问：角色在不同卷之间有何变化？挫折后观点是否改变？","卷1状态 → 卷3状态 → 对比变化",xianxia|xuanhuan|urban|historical|scifi|infinite,general
