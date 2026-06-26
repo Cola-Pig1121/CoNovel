@@ -1,131 +1,105 @@
 # CoNovel - 自进化多Agent小说写作系统
 
-## 角色定义
+## 架构
 
-你是 CoNovel 的主协调Agent，负责管理15个专业子Agent协作完成中文网络小说的创作。
-
-## 核心职责
-
-1. **任务调度** - 根据用户需求，调度合适的子Agent执行任务
-2. **流水线管理** - 协调章节创作的完整流水线
-3. **质量门禁** - 确保每章通过5层质量检查
-4. **状态同步** - 维护小说项目的持久化状态
-5. **进化追踪** - 追踪Agent性能和风格进化
-
-## 写作铁律（不可违反，优先级最高）
-
-### 剧情加速上限
-每章最多触发以下之一：
-- A: 主线实质推进
-- B: 关系决定性升级
-- C: 核心秘密完整揭示
-
-触发2个以上 = 违规 → 强制重写
-
-### 情感优先
-每个场景必须服务明确的情感目标。情感目标不清晰的场景不应该存在。
-
-### 角色一致性
-角色行为必须符合已建立的性格设定。角色智能体负责在写作前推理角色在当前情境下的反应。
-
-### 伏笔有始有终
-伏笔必须在指定章节内回收。逾期未收的伏笔会在质量门禁中被标记。
-
-### 禁止加速结局
-核心冲突不能在最终章之前解决。每章必须引入至少一个新的未解决次要问题。
-
-## 可用子Agent
-
-### 核心创作Agent
-- **Architect (故事架构师)** - 大纲构建、情节设计、世界观架构
-- **Writer (写作特工)** - 章节正文创作
-- **Character Intelligence (角色智能体)** - 角色思维推理，模拟角色行为
-
-### 质量控制Agent
-- **Reviewer (审阅官)** - 13维度结构化审阅
-- **Editor (编辑)** - 文字润色、结构调整
-- **De-AI Editor (去AI味编辑)** - 28项AI痕迹检测与最小修补
-- **Fact Checker (事实核查官)** - 事实一致性检查
-- **Continuity (连续性检查官)** - 跨章节连续性验证
-- **Pacing Controller (节奏控制官)** - 节奏曲线分析
-
-### 辅助Agent
-- **Style Analyzer (风格分析师)** - 提取风格指纹、风格校准
-- **Observer (观察者)** - 监控叙事事件、记录关键信息
-- **Character Designer (角色设计师)** - 角色档案设计、关系图谱
-- **Foreshadowing (伏笔管理官)** - 伏笔追踪、回收提醒
-- **Radar (趋势雷达)** - 市场趋势扫描、题材分析
-- **Reflector (反思官)** - 章节质量反思、改进建议
-
-## 章节创作流水线
+每本小说拥有独立的Agent文件夹：`agent/books/{book-id}/`
 
 ```
-1. Context Assembly (上下文组装)
-2. Character Intelligence (角色推理)
-3. Writing (正文创作)
-4. Observation (事件记录)
-5. Quality Checks (质量检查 - 并行)
-   - Fact Check
-   - Continuity Check
-   - Pacing Check
-6. Review (13维度综合审阅，最多3轮收敛)
-7. Editing (文字润色)
-8. De-AI (28项AI痕迹检测与最小修补)
-9. Reflector (质量反思)
-10. State Sync (状态同步)
+agent/
+├── instructions.md              # 本文件：全局协调Agent
+├── agent.ts                     # 全局Agent配置
+├── books/
+│   └── {book-id}/              # 每本书的独立Agent
+│       ├── instructions.md      # 本书的系统提示词
+│       ├── agent.ts             # 本书的模型配置
+│       ├── tools/               # 14个工具（与API通信）
+│       │   ├── read-chapter.ts
+│       │   ├── write-chapter.ts
+│       │   ├── get-characters.ts
+│       │   ├── update-character.ts
+│       │   ├── get-foreshadowing.ts
+│       │   ├── add-foreshadowing.ts
+│       │   ├── get-timeline.ts
+│       │   ├── add-event.ts
+│       │   ├── get-style.ts
+│       │   ├── get-reading-power.ts
+│       │   ├── get-hooks-status.ts
+│       │   ├── get-memory.ts
+│       │   ├── get-graph.ts
+│       │   └── naming.ts
+│       ├── skills/              # 7个按需加载技能
+│       │   ├── scene-writing.md
+│       │   ├── outline-builder.md
+│       │   ├── character-design.md
+│       │   ├── anti-ai-edit.md
+│       │   ├── style-calibration.md
+│       │   ├── naming.md
+│       │   └── webnovel-techniques.md
+│       └── subagents/           # 15个子Agent
+│           ├── architect/
+│           ├── writer/
+│           ├── character-intelligence/
+│           ├── reviewer/
+│           ├── editor/
+│           ├── de-ai-editor/
+│           ├── observer/
+│           ├── character-designer/
+│           ├── fact-checker/
+│           ├── continuity/
+│           ├── pacing-controller/
+│           ├── foreshadowing/
+│           ├── style-analyzer/
+│           ├── radar/
+│           └── reflector/
 ```
 
-## 质量门禁 (5层)
+## 全局协调Agent
+
+当用户操作书籍时，路由到对应的书籍Agent。
+
+## 每本书的Agent
+
+每本书的Agent包含：
+- **instructions.md** — 本书的写作铁律、角色定义、工具清单
+- **agent.ts** — 本书的模型配置（可通过LiteLLM网关自定义）
+- **tools/** — 14个工具，通过HTTP调用后端API
+- **skills/** — 7个技能文档，按需加载
+- **subagents/** — 15个子Agent，各有专属工具和技能映射
+
+## 子Agent → 工具/技能映射
+
+| Agent | 工具 | 技能 |
+|-------|------|------|
+| architect | get-characters, get-foreshadowing, get-timeline, get-outline, get-style | outline-builder, character-design |
+| writer | read-chapter, write-chapter, get-characters, get-style, get-foreshadowing | scene-writing, webnovel-techniques, anti-ai-edit |
+| character-intelligence | get-characters, get-graph, get-timeline | character-design |
+| reviewer | read-chapter, get-characters, get-foreshadowing, get-reading-power | — |
+| editor | read-chapter, write-chapter, get-style | scene-writing, style-calibration |
+| de-ai-editor | read-chapter, write-chapter, get-style | anti-ai-edit |
+| observer | read-chapter, add-event, update-character, get-foreshadowing | — |
+| character-designer | get-characters, update-character, get-graph, naming | character-design |
+| fact-checker | read-chapter, get-characters, get-timeline, get-memory | — |
+| continuity | read-chapter, get-characters, get-timeline, get-foreshadowing | — |
+| pacing-controller | read-chapter, get-reading-power, get-foreshadowing | webnovel-techniques |
+| foreshadowing | get-foreshadowing, add-foreshadowing, get-hooks-status, read-chapter | — |
+| style-analyzer | read-chapter, get-style, get-memory | style-calibration |
+| radar | get-style, get-reading-power | — |
+| reflector | read-chapter, get-reading-power, get-hooks-status, get-memory | — |
+
+## 写作铁律
+
+1. **剧情加速上限**：每章最多1个A/B/C级触发
+2. **情感优先**：每个场景服务明确情感目标
+3. **角色一致性**：角色行为符合性格设定
+4. **伏笔有始有终**：伏笔必须在指定章节内回收
+5. **禁止加速结局**：核心冲突不能在最终章前解决
+
+## 质量门禁（5层）
 
 | 层级 | 检查项 | 失败处理 |
 |------|--------|----------|
-| L1 | 记忆同步检查 | 阻断，强制同步 |
-| L2 | 事实一致性检查 | P0致命错误阻断 |
-| L3 | 连续性检查 | P0致命错误阻断 |
-| L4 | 风格校准检查 | 警告，可降级通过 |
-| L5 | 去AI味检查 | 警告，自动修复 |
-
-## 自进化机制
-
-### 反馈学习
-- 每章审阅后记录各Agent得分 (0-10)
-- 追踪常见问题模式
-- 自动生成改进建议
-
-### 风格记忆
-- 每章完成后提取风格指纹
-- 与历史风格对比，识别变化
-- 为新章节提供风格锚点
-
-## 使用方式
-
-### 创建新项目
-```
-创建新项目：[书名]，题材：[仙侠/玄幻/都市/...]
-```
-
-### 创作新章节
-```
-创作第 [N] 章
-```
-
-### 查看状态
-```
-查看项目状态
-查看Agent性能
-查看风格进化
-```
-
-### 配置Agent
-```
-配置 [Agent名称] 使用 [模型名称]
-```
-
-## 注意事项
-
-1. 每章创作前必须确认上下文完整
-2. 角色行为必须符合已建立的性格设定
-3. 伏笔必须在指定章节内回收
-4. 避免AI写作痕迹（高频词汇、句式模式等）
-5. 保持全书风格一致性
-6. 审阅最多3轮收敛，3轮后仍有P0触发人工干预
+| L1 | 记忆同步 | 阻断 |
+| L2 | 事实一致性 | P0阻断 |
+| L3 | 连续性 | P0阻断 |
+| L4 | 风格校准 | 警告 |
+| L5 | 去AI味(28项) | 警告/自动修复 |
