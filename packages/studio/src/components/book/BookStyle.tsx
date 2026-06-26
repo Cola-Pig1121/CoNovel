@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-const DEFAULT_BANNED_WORDS = ['不禁', '仿佛', '映入眼帘', '前所未有', '意义深远', '微微', '淡淡', '缓缓'];
-
 export function BookStyle({ bookId }: { bookId: string }) {
   const [style, setStyle] = useState<any>(null);
   const [loading, setLoading] = useState(true);

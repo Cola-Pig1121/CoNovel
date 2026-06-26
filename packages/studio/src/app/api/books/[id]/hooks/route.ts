@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const state: Record<string, any> = readJson(filePath, {});
   const foreshadowing = state.foreshadowing || [];
-  const currentChapter = state.book?.currentChapter || 0;
+  const currentChapter = state.currentChapter || 0;
 
   // Analyze hook health
   const hooks = {

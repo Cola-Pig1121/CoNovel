@@ -24,6 +24,7 @@ export default function ChapterEditorPage({ params }: { params: Promise<{ id: st
   // Word count (Chinese chars + English words)
   const wordCount = (content.match(/[\u4e00-\u9fff]/g) || []).length +
     (content.match(/[a-zA-Z]+/g) || []).length;
+  const targetWords = chapter?.wordTarget || 3000;
 
   const handleSave = async () => {
     setSaving(true);
@@ -100,11 +101,11 @@ export default function ChapterEditorPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">目标字数</span>
-                <span className="font-mono">3,000</span>
+                <span className="font-mono">{targetWords.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">完成度</span>
-                <span className="font-mono">{Math.min(100, Math.round((wordCount / 3000) * 100))}%</span>
+                <span className="font-mono">{Math.min(100, Math.round((wordCount / targetWords) * 100))}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">状态</span>

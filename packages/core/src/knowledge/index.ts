@@ -105,11 +105,15 @@ export class KnowledgeBase {
    */
   search(query: string): KnowledgeEntry[] {
     const lower = query.toLowerCase();
-    return this.allEntries.filter(e =>
-      e.name.toLowerCase().includes(lower) ||
-      e.description.toLowerCase().includes(lower) ||
-      (e.formula || '').toLowerCase().includes(lower)
-    );
+    return this.allEntries.filter(e => {
+      // Search across all string fields
+      for (const [key, value] of Object.entries(e)) {
+        if (typeof value === 'string' && value.toLowerCase().includes(lower)) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   /**
