@@ -332,5 +332,117 @@ export class GenreRegistry {
 - 系统/幕后黑手
 `,
     });
+
+    // ===== 末日 =====
+    this.registerGenre({
+      id: 'apocalypse',
+      name: 'Apocalypse',
+      nameZh: '末日',
+      description: '末日生存题材，包含丧尸、病毒、变异生物等元素',
+      targetPlatforms: ['起点', '番茄'],
+      typicalLength: { min: 1000000, max: 3000000 },
+      pacingProfile: 'fast',
+      tropes: ['丧尸围城', '资源争夺', '据点建设', '人性考验', '变异进化', '科技攀树', '势力争霸', '末日法则'],
+      bannedPatterns: ['主角无理由开挂', '丧尸设定前后矛盾', '物资管理不合理', '人性描写过于简单'],
+      writingGuidelines: '末日写作要点：生存压力真实；资源管理合理；人性在极端环境下的展现；团队协作与背叛；科技与原始的对比',
+      emotionArcs: ['恐惧→适应→掌控', '绝望→希望→重建', '孤独→结盟→牺牲', '混乱→秩序→文明'],
+      worldBuilding: '末日世界观要素：灾难类型、变异规则、资源分布、势力格局、安全区设定',
+    });
+
+    // ===== 系统流 =====
+    this.registerGenre({
+      id: 'system',
+      name: 'System',
+      nameZh: '系统流',
+      description: '系统流题材，主角获得系统辅助成长',
+      targetPlatforms: ['起点', '番茄', '七猫'],
+      typicalLength: { min: 1000000, max: 3000000 },
+      pacingProfile: 'fast',
+      tropes: ['签到系统', '任务系统', '抽奖系统', '商城系统', '打卡系统', '面板系统', '模拟器', '词条系统'],
+      bannedPatterns: ['系统设定前后矛盾', '奖励过于离谱', '任务设计无逻辑', '系统人格化过度'],
+      writingGuidelines: '系统流写作要点：系统规则要自洽；任务设计有挑战性；奖励与付出匹配；系统不是万能的；保留主角主动性',
+      emotionArcs: ['获得→适应→精通', '任务→奖励→成长', '危机→系统辅助→逆转', '限制→突破→升级'],
+      worldBuilding: '系统流世界观要素：系统类型、任务体系、奖励机制、升级路线、系统来源',
+    });
+
+    // ===== 重生 =====
+    this.registerGenre({
+      id: 'rebirth',
+      name: 'Rebirth',
+      nameZh: '重生',
+      description: '重生题材，主角回到过去改变命运',
+      targetPlatforms: ['起点', '番茄', '晋江'],
+      typicalLength: { min: 1000000, max: 3000000 },
+      pacingProfile: 'balanced',
+      tropes: ['重生复仇', '重生逆袭', '重生经商', '重生娱乐圈', '重生校园', '重生官场', '重生投资', '重生医术'],
+      bannedPatterns: ['蝴蝶效应不合理', '前世记忆选择性使用', '改变历史过于随意', '感情线混乱'],
+      writingGuidelines: '重生写作要点：前世记忆的利用要合理；蝴蝶效应要有逻辑；改变命运要有代价；保留重生的局限性',
+      emotionArcs: ['悔恨→重生→复仇', '遗憾→弥补→圆满', '绝望→希望→新生', '孤独→珍惜→守护'],
+      worldBuilding: '重生世界观要素：重生原因、时间点设定、可改变与不可改变的事件、前世记忆的边界',
+    });
+
+    // ===== 诡异 =====
+    this.registerGenre({
+      id: 'weird',
+      name: 'Weird Fiction',
+      nameZh: '诡异',
+      description: '诡异题材，包含规则怪谈、民俗恐怖等元素',
+      targetPlatforms: ['起点', '番茄', '知乎'],
+      typicalLength: { min: 500000, max: 2000000 },
+      pacingProfile: 'fast',
+      tropes: ['规则怪谈', '民俗恐怖', '诡异事件', '禁忌探索', '神秘组织', '超自然现象', '心理恐怖', '解谜逃脱'],
+      bannedPatterns: ['恐怖描写过于直白', '规则设计无逻辑', '主角无理由存活', '恐怖氛围不足'],
+      writingGuidelines: '诡异写作要点：氛围营造重于血腥描写；规则设计要自洽；恐怖来自未知和细节；心理描写细腻',
+      emotionArcs: ['好奇→探索→恐惧', '安全→异常→崩溃', '怀疑→验证→真相', '绝望→突破→解脱'],
+      worldBuilding: '诡异世界观要素：诡异规则体系、禁忌清单、安全区域、诡异来源、对抗手段',
+    });
+
+    // ===== 游戏 =====
+    this.registerGenre({
+      id: 'gaming',
+      name: 'Gaming',
+      nameZh: '游戏',
+      description: '游戏题材，包含全息游戏、电竞、游戏穿越等',
+      targetPlatforms: ['起点', '番茄'],
+      typicalLength: { min: 1000000, max: 3000000 },
+      pacingProfile: 'fast',
+      tropes: ['全息游戏', '电竞竞技', '游戏穿越', '游戏副本', '游戏经济', '公会争霸', '竞技场', '排行榜'],
+      bannedPatterns: ['游戏设定前后矛盾', '战斗描写流水账', '数值体系崩坏', '配角工具人化'],
+      writingGuidelines: '游戏写作要点：游戏规则要完整自洽；战斗描写要有策略性；游戏经济合理；保留游戏的趣味性',
+      emotionArcs: ['新手→成长→大佬', '失败→学习→胜利', '单人→组队→公会', '挑战→突破→登顶'],
+      worldBuilding: '游戏世界观要素：游戏类型、等级体系、职业系统、地图设定、经济系统',
+    });
+
+    // ===== 西幻 =====
+    this.registerGenre({
+      id: 'western-fantasy',
+      name: 'Western Fantasy',
+      nameZh: '西幻',
+      description: '西方奇幻题材，包含魔法、骑士、龙族等元素',
+      targetPlatforms: ['起点', '番茄'],
+      typicalLength: { min: 1000000, max: 3000000 },
+      pacingProfile: 'balanced',
+      tropes: ['魔法学院', '骑士冒险', '龙族传说', '王国争霸', '地下城', '炼金术', '召唤兽', '神器争夺'],
+      bannedPatterns: ['魔法体系不自洽', '世界观照搬西方', '角色名不中不西', '文化冲突处理不当'],
+      writingGuidelines: '西幻写作要点：魔法体系要完整；世界观要有特色；角色名要统一风格；文化融合要自然',
+      emotionArcs: ['冒险→发现→成长', '危机→团结→胜利', '背叛→复仇→救赎', '平凡→觉醒→传奇'],
+      worldBuilding: '西幻世界观要素：魔法体系、种族设定、王国格局、宗教信仰、神器传说',
+    });
+
+    // ===== 综艺 =====
+    this.registerGenre({
+      id: 'variety',
+      name: 'Variety Show',
+      nameZh: '综艺',
+      description: '综艺题材，主角参加各种综艺节目',
+      targetPlatforms: ['番茄', '晋江'],
+      typicalLength: { min: 500000, max: 1500000 },
+      pacingProfile: 'fast',
+      tropes: ['选秀节目', '恋爱综艺', '竞技综艺', '真人秀', '演技派', '音乐节目', '美食节目', '旅行节目'],
+      bannedPatterns: ['节目设定不合理', '比赛结果无逻辑', '感情线强行', '娱乐圈描写失真'],
+      writingGuidelines: '综艺写作要点：节目规则要真实；比赛过程有张力；人物关系自然发展；娱乐圈生态合理',
+      emotionArcs: ['紧张→表演→认可', '竞争→合作→友谊', '质疑→证明→成功', '压力→突破→成长'],
+      worldBuilding: '综艺世界观要素：节目类型、比赛规则、评委设定、娱乐圈生态、粉丝文化',
+    });
   }
 }
