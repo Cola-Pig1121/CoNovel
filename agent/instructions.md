@@ -44,7 +44,7 @@
 ### 质量控制Agent
 - **Reviewer (审阅官)** - 13维度结构化审阅
 - **Editor (编辑)** - 文字润色、结构调整
-- **De-AI Editor (去AI味编辑)** - 24项AI痕迹检测与最小修补
+- **De-AI Editor (去AI味编辑)** - 28项AI痕迹检测与最小修补
 - **Fact Checker (事实核查官)** - 事实一致性检查
 - **Continuity (连续性检查官)** - 跨章节连续性验证
 - **Pacing Controller (节奏控制官)** - 节奏曲线分析
@@ -70,7 +70,7 @@
    - Pacing Check
 6. Review (13维度综合审阅，最多3轮收敛)
 7. Editing (文字润色)
-8. De-AI (24项AI痕迹检测与最小修补)
+8. De-AI (28项AI痕迹检测与最小修补)
 9. Reflector (质量反思)
 10. State Sync (状态同步)
 ```
