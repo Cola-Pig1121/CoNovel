@@ -19,6 +19,8 @@ interface Provider {
 interface ModelEntry {
   id: string;
   contextWindow: number;
+  supportsReasoning?: boolean;
+  reasoningLevels?: string[];
 }
 
 const EMPTY_PROVIDER: Provider = {
@@ -40,6 +42,7 @@ export function ProviderManager() {
   const [showAddModelModal, setShowAddModelModal] = useState(false);
   const [newModelId, setNewModelId] = useState('');
   const [newModelContext, setNewModelContext] = useState(200000);
+  const [scanning, setScanning] = useState(false);
 
   // Load from API on mount
   useEffect(() => {
@@ -116,6 +119,43 @@ export function ProviderManager() {
     setShowAddModelModal(false);
     setNewModelId('');
     setNewModelContext(200000);
+  };
+
+  const handleScanModels = async () => {
+    if (!editingProvider) return;
+    setScanning(true);
+    try {
+      const res = await fetch('/api/models/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baseUrl: editingProvider.baseUrl,
+          apiKey: editingProvider.apiKey,
+          apiFormat: editingProvider.apiFormat,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.models?.length > 0) {
+        // Merge discovered models with existing, preserving manual additions
+        const existingIds = new Set(editingProvider.models.map(m => m.id));
+        const newModels = data.models
+          .filter((m: any) => !existingIds.has(m.id))
+          .map((m: any) => ({
+            id: m.id,
+            contextWindow: m.contextWindow || 200000,
+            supportsReasoning: m.supportsReasoning || false,
+            reasoningLevels: m.reasoningLevels || [],
+          }));
+        const merged = [...editingProvider.models, ...newModels];
+        const updatedProvider = { ...editingProvider, models: merged };
+        const updated = providers.map(p => p.id === editingProvider.id ? updatedProvider : p);
+        await saveProviders(updated);
+        setEditingProvider(updatedProvider);
+      }
+    } catch (e) {
+      console.error('Scan failed:', e);
+    }
+    setScanning(false);
   };
 
   const handleDeleteModel = async (providerId: string, modelId: string) => {
@@ -209,22 +249,47 @@ export function ProviderManager() {
 
               {/* Model List */}
               <div>
-                <label className="label-editorial block mb-2">模型列表</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label-editorial">模型列表</label>
+                  <button
+                    onClick={handleScanModels}
+                    disabled={scanning}
+                    className="text-xs text-muted hover:text-foreground transition-colors"
+                  >
+                    {scanning ? '扫描中...' : '🔍 扫描模型'}
+                  </button>
+                </div>
                 <div className="space-y-2 mb-3">
                   {editingProvider.models.map((model) => (
                     <div key={model.id} className="flex items-center justify-between py-2 px-3 border border-border">
-                      <div>
-                        <p className="font-mono text-sm">{model.id}</p>
-                        <p className="text-xs text-muted mt-0.5">上下文窗口: {model.contextWindow.toLocaleString()}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-mono text-sm">{model.id}</p>
+                          {model.supportsReasoning && (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-foreground/10 text-foreground font-mono">
+                              thinking
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          {model.contextWindow > 0 && (
+                            <p className="text-xs text-muted">上下文: {(model.contextWindow / 1000).toFixed(0)}K</p>
+                          )}
+                          {model.reasoningLevels && model.reasoningLevels.length > 0 && (
+                            <p className="text-xs text-muted">
+                              思考强度: {model.reasoningLevels.join(' / ')}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <button onClick={() => handleDeleteModel(editingProvider.id, model.id)} className="text-muted hover:text-foreground text-xs">删除</button>
+                      <button onClick={() => handleDeleteModel(editingProvider.id, model.id)} className="text-muted hover:text-foreground text-xs ml-2">删除</button>
                     </div>
                   ))}
                   {editingProvider.models.length === 0 && (
-                    <p className="text-sm text-muted py-2">暂无模型</p>
+                    <p className="text-sm text-muted py-2">暂无模型。点击"扫描模型"自动获取，或手动添加。</p>
                   )}
                 </div>
-                <button onClick={() => setShowAddModelModal(true)} className="btn-editorial text-xs">+ 添加模型</button>
+                <button onClick={() => setShowAddModelModal(true)} className="btn-editorial text-xs">+ 手动添加</button>
               </div>
 
               {/* Actions */}

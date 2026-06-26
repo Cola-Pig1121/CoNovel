@@ -23,7 +23,7 @@ interface Provider {
   baseUrl: string;
   apiFormat: 'openai' | 'anthropic' | 'responses';
   apiKey: string;
-  models: { id: string; contextWindow: number }[];
+  models: { id: string; contextWindow: number; supportsReasoning?: boolean; reasoningLevels?: string[] }[];
   status: 'connected' | 'disconnected' | 'error';
   enabled: boolean;
 }
@@ -37,6 +37,7 @@ interface AgentConfig {
   temperature: number;
   maxTokens: number;
   contextWindow: number;
+  reasoningEffort?: string;
 }
 
 // 默认无预置供应商，用户通过 LiteLLM 或自定义端点配置

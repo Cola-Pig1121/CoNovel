@@ -14,12 +14,13 @@ interface AgentConfig {
   temperature: number;
   maxTokens: number;
   contextWindow: number;
+  reasoningEffort?: string;
 }
 
 interface Provider {
   id: string;
   name: string;
-  models: { id: string }[];
+  models: { id: string; supportsReasoning?: boolean; reasoningLevels?: string[] }[];
   enabled: boolean;
 }
 
@@ -155,7 +156,19 @@ export function AgentModelConfig() {
                 <label className="label-editorial block mb-2">模型选择</label>
                 <select
                   value={selectedConfig.modelId}
-                  onChange={(e) => saveAgentConfig(selectedConfig.role, { modelId: e.target.value })}
+                  onChange={(e) => {
+                    const modelId = e.target.value;
+                    // Check if selected model supports reasoning
+                    const provider = providers.find(p => p.name === selectedConfig.provider);
+                    const model = provider?.models.find(m => m.id === modelId);
+                    const updates: Record<string, any> = { modelId };
+                    if (model?.supportsReasoning && !selectedConfig.reasoningEffort) {
+                      updates.reasoningEffort = 'medium'; // Default to medium
+                    } else if (!model?.supportsReasoning) {
+                      updates.reasoningEffort = '';
+                    }
+                    saveAgentConfig(selectedConfig.role, updates);
+                  }}
                   className="input-editorial"
                 >
                   {getModelsForProvider(selectedConfig.provider).map(m => (
@@ -163,6 +176,30 @@ export function AgentModelConfig() {
                   ))}
                 </select>
               </div>
+
+              {/* Reasoning Effort */}
+              {(() => {
+                const provider = providers.find(p => p.name === selectedConfig.provider);
+                const model = provider?.models.find(m => m.id === selectedConfig.modelId);
+                if (!model?.supportsReasoning) return null;
+                const levels = model.reasoningLevels || ['low', 'medium', 'high'];
+                return (
+                  <div>
+                    <label className="label-editorial block mb-2">思考强度 (Reasoning Effort)</label>
+                    <select
+                      value={selectedConfig.reasoningEffort || ''}
+                      onChange={(e) => saveAgentConfig(selectedConfig.role, { reasoningEffort: e.target.value })}
+                      className="input-editorial"
+                    >
+                      <option value="">不设置</option>
+                      {levels.map(l => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted mt-1">控制模型的思考深度。low=快速, medium=平衡, high=深度推理</p>
+                  </div>
+                );
+              })()}
 
               {/* Parameters */}
               <div className="grid grid-cols-2 gap-4">
