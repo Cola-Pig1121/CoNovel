@@ -116,6 +116,34 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Try Python bridge first (uses litellm's model database)
+    const { scanModels } = await import('@conovel/core');
+    const providerName = baseUrl.includes('anthropic') ? 'anthropic'
+      : baseUrl.includes('openai') ? 'openai'
+      : baseUrl.includes('deepseek') ? 'deepseek'
+      : 'custom';
+
+    try {
+      const litellmModels = await scanModels(providerName, apiKey, baseUrl);
+      if (litellmModels.length > 0) {
+        return NextResponse.json({
+          success: true,
+          models: litellmModels.map(m => ({
+            id: m.id,
+            supportsReasoning: m.supportsReasoning,
+            reasoningLevels: m.reasoningLevels,
+            contextWindow: m.contextWindow,
+          })),
+          count: litellmModels.length,
+          reasoningCount: litellmModels.filter(m => m.supportsReasoning).length,
+          source: 'litellm',
+        });
+      }
+    } catch {
+      // Python bridge not available, fall back to HTTP
+    }
+
+    // Fallback: direct HTTP scan
     const models = await fetchModelsFromProvider(baseUrl, apiKey, apiFormat);
 
     return NextResponse.json({
@@ -123,6 +151,7 @@ export async function POST(request: NextRequest) {
       models,
       count: models.length,
       reasoningCount: models.filter(m => m.supportsReasoning).length,
+      source: 'http',
     });
   } catch (error) {
     return NextResponse.json({

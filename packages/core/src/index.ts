@@ -66,6 +66,6 @@ export { KnowledgeBase } from './knowledge/index.js';
 export type { KnowledgeEntry } from './knowledge/index.js';
 
 // LLM Client
-export { callLLM, streamLLM, getAgentLLMConfig } from './llm/client.js';
+export { callLLM, scanModels, checkReasoning, getAgentLLMConfig } from './llm/client.js';
 export type { LLMConfig, LLMResponse } from './llm/client.js';
 export { loadAgentSystemPrompt } from './llm/instructions.js';
