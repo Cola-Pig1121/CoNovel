@@ -35,11 +35,19 @@ const TABS = [
   { id: 'write', label: '写作', labelEn: 'Write' },
 ];
 
-export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function BookDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = use(params);
-  const [activeTab, setActiveTab] = useState('overview');
+  const sp = use(searchParams);
+  const [activeTab, setActiveTab] = useState(sp.tab || 'overview');
   const [book, setBook] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Sync tab from URL
+  useEffect(() => {
+    if (sp.tab && TABS.some(t => t.id === sp.tab)) {
+      setActiveTab(sp.tab);
+    }
+  }, [sp.tab]);
 
   useEffect(() => {
     fetch(`/api/books/${id}`).then(r => r.json()).then(data => {
@@ -72,7 +80,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); window.history.replaceState(null, '', `?tab=${tab.id}`); }}
             className={`px-4 py-3 text-sm transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-b-2 border-foreground' : 'text-muted hover:text-foreground'}`}
           >
             <span className="font-sans">{tab.label}</span>
