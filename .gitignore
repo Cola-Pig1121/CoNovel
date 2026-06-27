@@ -8,6 +8,10 @@ dist/
 out/
 .turbo/
 
+# Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+
 # Environment
 .env
 .env.local

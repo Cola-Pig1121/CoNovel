@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicegram/nicegram-tauri/main/tauri.conf.schema.json",
+  "productName": "CoNovel",
+  "identifier": "com.conovel.app",
+  "version": "0.1.0",
+  "build": {
+    "frontendDist": "../packages/studio/.next",
+    "devUrl": "http://localhost:3002",
+    "beforeDevCommand": "cd ../packages/studio && pnpm dev",
+    "beforeBuildCommand": "cd ../packages/studio && pnpm build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "CoNovel - 自进化多Agent小说写作系统",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 600,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true,
+      "scope": [
+        {
+          "name": "python",
+          "cmd": "python3",
+          "args": ["scripts/llm_bridge.py", "--action", "{.*}", "--input", "{.*}"],
+          "sidecar": false
+        }
+      ]
+    }
+  }
+}
