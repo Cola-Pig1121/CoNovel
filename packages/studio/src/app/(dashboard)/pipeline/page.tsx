@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -37,7 +39,7 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/pipeline').then(r => r.json()).then(data => {
+    api.get('/api/pipeline').then(data => {
       setPipelines(data.activeBooks || []);
       setLoading(false);
     }).catch(() => setLoading(false));

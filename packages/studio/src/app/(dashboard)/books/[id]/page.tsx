@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { BookOverview } from '@/components/book/BookOverview';
@@ -50,7 +52,7 @@ export default function BookDetailPage({ params, searchParams }: { params: Promi
   }, [sp.tab]);
 
   useEffect(() => {
-    fetch(`/api/books/${id}`).then(r => r.json()).then(data => {
+    api.get(`/api/books/${id}`).then(data => {
       setBook(data);
       setLoading(false);
     }).catch(() => setLoading(false));

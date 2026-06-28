@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
@@ -14,7 +16,7 @@ export default function ChapterEditorPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/books/${id}/chapters/${chapterNum}`).then(r => r.json()).then(data => {
+    api.get(`/api/books/${id}/chapters/${chapterNum}`).then(data => {
       setChapter(data);
       setContent(data.content || '');
       setLoading(false);
@@ -28,11 +30,7 @@ export default function ChapterEditorPage({ params }: { params: Promise<{ id: st
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch(`/api/books/${id}/chapters/${chapterNum}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
+    await api.put(`/api/books/${id}/chapters/${chapterNum}`, { content });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -42,11 +40,7 @@ export default function ChapterEditorPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     if (!content) return;
     const timer = setInterval(() => {
-      fetch(`/api/books/${id}/chapters/${chapterNum}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
+      api.put(`/api/books/${id}/chapters/${chapterNum}`, { content }).catch(() => {});
     }, 30000);
     return () => clearInterval(timer);
   }, [content, id, chapterNum]);

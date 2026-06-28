@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect, useCallback } from 'react';
 
 // Agent Model Config - Per-Agent模型配置组件
@@ -51,8 +53,8 @@ export function AgentModelConfig() {
   // Load from API on mount
   useEffect(() => {
     Promise.all([
-      fetch('/api/config?type=agents').then(r => r.json()),
-      fetch('/api/config?type=providers').then(r => r.json()),
+      api.get('/api/config?type=agents'),
+      api.get('/api/config?type=providers'),
     ]).then(([agentsData, providersData]) => {
       setConfigs(agentsData.agents || []);
       setProviders(providersData.providers || []);
@@ -63,21 +65,13 @@ export function AgentModelConfig() {
   // Save single agent config
   const saveAgentConfig = useCallback(async (role: string, updates: Partial<AgentConfig>) => {
     setConfigs(prev => prev.map(c => c.role === role ? { ...c, ...updates } : c));
-    await fetch('/api/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'single-agent', role, updates }),
-    });
+    await api.put('/api/config', { type: 'single-agent', role, updates });
   }, []);
 
   // Batch save all agents
   const saveAllConfigs = useCallback(async (newConfigs: AgentConfig[]) => {
     setConfigs(newConfigs);
-    await fetch('/api/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'agents', agents: newConfigs }),
-    });
+    await api.put('/api/config', { type: 'agents', agents: newConfigs });
   }, []);
 
   const selectedConfig = configs.find(c => c.role === selectedAgent);

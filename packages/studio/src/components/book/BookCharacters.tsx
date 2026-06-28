@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface Character {
@@ -23,26 +25,21 @@ export function BookCharacters({ bookId, book }: { bookId: string; book: any }) 
   const roleLabels: Record<string, string> = { protagonist: '主角', antagonist: '反派', supporting: '配角', minor: '路人' };
 
   const handleAdd = async () => {
-    const res = await fetch(`/api/books/${bookId}/characters`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const char = await api.post(`/api/books/${bookId}/characters`, {
         ...newChar,
         personality: newChar.personality.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
         goals: newChar.goals.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
         relationships: {},
-      }),
-    });
-    if (res.ok) {
-      const char = await res.json();
+      });
       setCharacters([...characters, char]);
       setShowAdd(false);
       setNewChar({ name: '', role: 'supporting', personality: '', background: '', goals: '' });
-    }
+    } catch {}
   };
 
   const handleDelete = async (cid: string) => {
-    await fetch(`/api/books/${bookId}/characters/${cid}`, { method: 'DELETE' });
+    await api.del(`/api/books/${bookId}/characters/${cid}`);
     setCharacters(characters.filter(c => c.id !== cid));
   };
 

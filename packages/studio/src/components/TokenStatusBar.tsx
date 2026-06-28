@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface TokenUsage {
@@ -16,8 +18,7 @@ export function TokenStatusBar({ bookId }: { bookId: string }) {
 
   useEffect(() => {
     const poll = () => {
-      fetch(`/api/books/${bookId}/pipeline-control`)
-        .then(r => r.json())
+      api.get(`/api/books/${bookId}/pipeline-control`)
         .then(data => {
           setTokens(data.tokenUsage || null);
           setStatus(data.status || 'idle');

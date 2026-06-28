@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState } from 'react';
 
 interface NameResult {
@@ -21,17 +23,13 @@ export function BookNaming({ bookId, book }: { bookId: string; book: any }) {
 
   const handleGenerate = async () => {
     setLoading(true);
-    const res = await fetch('/api/naming', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await api.post('/api/naming', {
         type,
         genre: book.genre || 'xianxia',
         gender: type === 'character' ? gender : undefined,
         count,
         avoidNames: avoidList,
-      }),
-    });
+      });
     const data = await res.json();
     setResults(data.names || []);
     setLoading(false);

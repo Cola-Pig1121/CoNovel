@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState } from 'react';
 
 export function BookForeshadowing({ bookId, book }: { bookId: string; book: any }) {
@@ -17,17 +19,12 @@ export function BookForeshadowing({ bookId, book }: { bookId: string; book: any 
   const urgencyLabels: Record<string, string> = { low: '低', medium: '中', high: '高', critical: '紧急' };
 
   const handleAdd = async () => {
-    const res = await fetch(`/api/books/${bookId}/foreshadowing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newFs),
-    });
-    if (res.ok) {
-      const item = await res.json();
+    try {
+      const item = await api.post(`/api/books/${bookId}/foreshadowing`, newFs);
       setItems([...items, item]);
       setShowAdd(false);
       setNewFs({ description: '', type: 'plot', urgency: 'medium', plantedIn: book.currentChapter || 1, maxDelay: 20 });
-    }
+    } catch {}
   };
 
   return (

@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState } from 'react';
 
 export function BookTimeline({ bookId, book }: { bookId: string; book: any }) {
@@ -11,20 +13,15 @@ export function BookTimeline({ bookId, book }: { bookId: string; book: any }) {
   const sigLabels: Record<string, string> = { minor: '次要', moderate: '一般', major: '重要', critical: '关键' };
 
   const handleAdd = async () => {
-    const res = await fetch(`/api/books/${bookId}/timeline`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const event = await api.post(`/api/books/${bookId}/timeline`, {
         ...newEvent,
         characters: newEvent.characters.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
-      }),
-    });
-    if (res.ok) {
-      const event = await res.json();
+      });
       setEvents([...events, event].sort((a: any, b: any) => a.chapterNumber - b.chapterNumber));
       setShowAdd(false);
       setNewEvent({ description: '', chapterNumber: book.currentChapter || 1, location: '', significance: 'moderate', characters: '' });
-    }
+    } catch {}
   };
 
   return (

@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface HooksData {
@@ -25,7 +27,7 @@ export function BookHooks({ bookId }: { bookId: string }) {
   const [activeTab, setActiveTab] = useState<'overview' | 'planted' | 'hinted' | 'overdue' | 'resolved'>('overview');
 
   useEffect(() => {
-    fetch(`/api/books/${bookId}/hooks`).then(r => r.json()).then(d => {
+    api.get(`/api/books/${bookId}/hooks`).then(d => {
       setData(d);
       setLoading(false);
     }).catch(() => setLoading(false));

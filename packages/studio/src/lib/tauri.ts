@@ -1,8 +1,8 @@
 /**
  * Tauri Environment Detection and Invoke Wrapper
  *
- * Detects if running in Tauri desktop or browser,
- * and provides unified invoke interface.
+ * Uses window.__TAURI__ directly at runtime.
+ * No @tauri-apps/api import needed at build time.
  */
 
 export function isTauri(): boolean {
@@ -13,6 +13,7 @@ export async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>
   if (!isTauri()) {
     throw new Error('Not running in Tauri');
   }
-  const { invoke } = await import('@tauri-apps/api/core');
-  return invoke<T>(cmd, args);
+  // Access Tauri invoke directly from the global object
+  const tauri = (window as any).__TAURI__;
+  return tauri.core.invoke(cmd, args) as Promise<T>;
 }

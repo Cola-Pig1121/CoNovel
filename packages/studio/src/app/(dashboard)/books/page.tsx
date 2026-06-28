@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -40,33 +42,26 @@ export default function BooksPage() {
   const [newBook, setNewBook] = useState({ title: '', premise: '', genres: [] as string[], targetWordCount: 1000000 });
 
   useEffect(() => {
-    fetch('/api/books').then(r => r.json()).then(data => { setBooks(data.books || []); setLoading(false); }).catch(() => setLoading(false));
+    api.get('/api/books').then(data => { setBooks(data.books || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   const handleCreateBook = async () => {
     if (!newBook.title) return;
-    const res = await fetch('/api/books', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newBook.title, genre: newBook.genres[0] || 'custom', genres: newBook.genres, premise: newBook.premise, targetWordCount: newBook.targetWordCount }),
-    });
-    if (res.ok) {
-      const book = await res.json();
+    try {
+      const book = await api.post('/api/books', { title: newBook.title, genre: newBook.genres[0] || 'custom', genres: newBook.genres, premise: newBook.premise, targetWordCount: newBook.targetWordCount });
       // Save premise to writing guide
       if (newBook.premise) {
-        await fetch(`/api/books/${book.id}/constraints`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'writing-guide.md', content: `# 写作指南\n\n## 核心设定\n${newBook.premise}\n\n## 题材\n${newBook.genres.map(g => GENRE_OPTIONS.find(o => o.id === g)?.name || g).join('、')}\n\n## 自由编写区域\n在这里编写更多的创作约束和灵感笔记。\n` }),
+        const genreNames = newBook.genres.map(g => GENRE_OPTIONS.find(o => o.id === g)?.name || g).join('、');
+        await api.put(`/api/books/${book.id}/constraints`, {
+          name: 'writing-guide.md',
+          content: `# 写作指南\n\n## 核心设定\n${newBook.premise}\n\n## 题材\n${genreNames}\n\n## 自由编写区域\n在这里编写更多的创作约束和灵感笔记。\n`,
         });
       }
-      await fetch(`/api/books/${book.id}/style`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ genre: newBook.genres.join(',') }),
-      });
+      await api.put(`/api/books/${book.id}/style`, { genre: newBook.genres.join(',') });
       setBooks([...books, book]);
       setShowWizard(false);
       window.location.href = `/books/${book.id}`;
-    }
+    } catch {}
   };
 
   const toggleGenre = (id: string) => {
@@ -120,7 +115,7 @@ export default function BooksPage() {
                 </div>
                 <div className="flex gap-2 pt-4 border-t border-border">
                   <Link href={`/books/${book.id}`} className="btn-editorial text-xs flex-1 text-center">进入项目</Link>
-                  <button onClick={async () => { if (confirm('确定删除？')) { await fetch(`/api/books/${book.id}`, { method: 'DELETE' }); setBooks(books.filter(b => b.id !== book.id)); } }} className="btn-editorial text-xs text-red-600">删除</button>
+                  <button onClick={async () => { if (confirm('确定删除？')) { await api.del(`/api/books/${book.id}`); setBooks(books.filter(b => b.id !== book.id)); } }} className="btn-editorial text-xs text-red-600">删除</button>
                 </div>
               </div>
             ))}

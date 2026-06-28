@@ -1,3 +1,4 @@
+import { api } from '@/lib/api';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Model Discovery API

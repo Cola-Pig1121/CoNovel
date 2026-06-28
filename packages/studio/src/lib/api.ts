@@ -12,9 +12,10 @@ import { isTauri, tauriInvoke } from './tauri';
 // Maps REST-style API routes to Tauri command names and arguments
 
 function urlToCommand(url: string, method: string, body?: unknown): { name: string; args: Record<string, unknown> } {
+  const emptyArgs: Record<string, unknown> = {};
   // Books
-  if (url === '/api/books' && method === 'GET') return { name: 'list_books', args: {} };
-  if (url === '/api/books' && method === 'POST') return { name: 'create_book', args: body || {} };
+  if (url === '/api/books' && method === 'GET') return { name: 'list_books', args: emptyArgs };
+  if (url === '/api/books' && method === 'POST') return { name: 'create_book', args: (body || emptyArgs) as Record<string, unknown> };
 
   const bookMatch = url.match(/^\/api\/books\/([^/]+)$/);
   if (bookMatch) {
@@ -51,10 +52,10 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
   if (url.startsWith('/api/knowledge')) return { name: 'search_knowledge', args: {} };
 
   // Naming
-  if (url === '/api/naming' && method === 'POST') return { name: 'generate_names', args: body || {} };
+  if (url === '/api/naming' && method === 'POST') return { name: 'generate_names', args: (body || emptyArgs) as Record<string, unknown> };
 
   // For unknown routes, return the URL as-is for Web mode fallback
-  return { name: '', args: {} };
+  return { name: '', args: emptyArgs };
 }
 
 // ===== Unified API Interface =====

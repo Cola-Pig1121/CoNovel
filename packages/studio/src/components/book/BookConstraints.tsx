@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface ConstraintFile {
@@ -18,7 +20,7 @@ export function BookConstraints({ bookId }: { bookId: string }) {
 
   // Load file list
   useEffect(() => {
-    fetch(`/api/books/${bookId}/constraints`).then(r => r.json()).then(data => {
+    api.get(`/api/books/${bookId}/constraints`).then(data => {
       setFiles(data.files || []);
       if (data.files?.length > 0 && !selectedFile) {
         setSelectedFile(data.files[0].name);
@@ -30,8 +32,7 @@ export function BookConstraints({ bookId }: { bookId: string }) {
   // Load file content when selected
   useEffect(() => {
     if (!selectedFile) return;
-    fetch(`/api/books/${bookId}/constraints?file=${selectedFile}`)
-      .then(r => r.json())
+    api.get(`/api/books/${bookId}/constraints?file=${selectedFile}`)
       .then(data => {
         setContent(data.content || '');
         setSaved(false);
@@ -43,11 +44,7 @@ export function BookConstraints({ bookId }: { bookId: string }) {
     const saveContent = data !== undefined ? data : content;
     if (!saveFile) return;
     setSaving(true);
-    await fetch(`/api/books/${bookId}/constraints`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: saveFile, content: saveContent }),
-    });
+    await api.put(`/api/books/${bookId}/constraints`, { name: saveFile, content: saveContent });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -65,26 +62,16 @@ export function BookConstraints({ bookId }: { bookId: string }) {
   const handleCreateFile = async () => {
     const name = prompt('约束文件名称（英文，如 character-rules）');
     if (!name) return;
-    await fetch(`/api/books/${bookId}/constraints`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, content: '' }),
-    });
-    const res = await fetch(`/api/books/${bookId}/constraints`);
-    const data = await res.json();
+    await api.post(`/api/books/${bookId}/constraints`, { name, content: '' });
+    const data = await api.get(`/api/books/${bookId}/constraints`);
     setFiles(data.files || []);
     setSelectedFile(name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.md');
   };
 
   const handleDeleteFile = async (fileName: string) => {
     if (!confirm(`确定删除 ${fileName}？`)) return;
-    await fetch(`/api/books/${bookId}/constraints`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: fileName }),
-    });
-    const res = await fetch(`/api/books/${bookId}/constraints`);
-    const data = await res.json();
+    await api.del(`/api/books/${bookId}/constraints`, { name: fileName });
+    const data = await api.get(`/api/books/${bookId}/constraints`);
     setFiles(data.files || []);
     if (selectedFile === fileName) {
       setSelectedFile(data.files?.[0]?.name || null);

@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect, useCallback } from 'react';
 
 // Provider Manager - 模型供应商管理组件
@@ -48,8 +50,7 @@ export function ProviderManager() {
 
   // Load from API on mount
   useEffect(() => {
-    fetch('/api/config?type=providers')
-      .then(r => r.json())
+    api.get('/api/config?type=providers')
       .then(data => {
         setProviders(data.providers || []);
         setLoading(false);
@@ -60,11 +61,7 @@ export function ProviderManager() {
   // Save to API
   const saveProviders = useCallback(async (updated: Provider[]) => {
     setProviders(updated);
-    await fetch('/api/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'providers', providers: updated }),
-    });
+    await api.put('/api/config', { type: 'providers', providers: updated });
   }, []);
 
   // When editing provider changes, keep editing reference in sync
@@ -127,15 +124,11 @@ export function ProviderManager() {
     if (!editingProvider) return;
     setScanning(true);
     try {
-      const res = await fetch('/api/models/discover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const res = await api.post('/api/models/discover', {
           baseUrl: editingProvider.baseUrl,
           apiKey: editingProvider.apiKey,
           apiFormat: editingProvider.apiFormat,
-        }),
-      });
+        });
       const data = await res.json();
       if (data.success && data.models?.length > 0) {
         // Merge discovered models with existing, preserving manual additions

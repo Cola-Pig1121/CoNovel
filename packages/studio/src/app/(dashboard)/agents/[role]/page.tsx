@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect, useRef, use } from 'react';
 
 const AGENT_INFO: Record<string, { name: string; nameZh: string; description: string; tasks: string[] }> = {
@@ -39,7 +41,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ role: st
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(`/api/agents/${role}/conversations`).then(r => r.json()).then(data => {
+    api.get(`/api/agents/${role}/conversations`).then(data => {
       setMessages(data.messages || []);
     });
   }, [role]);
@@ -59,12 +61,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ role: st
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      const res = await fetch(`/api/agents/${role}/conversations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
-      const data = await res.json();
+      const data = await api.post(`/api/agents/${role}/conversations`, { content });
       setMessages(prev => [...prev.filter(m => m.id !== userMsg.id), data.userMessage, data.assistantMessage]);
     } catch {
       setMessages(prev => prev.filter(m => m.id !== userMsg.id));

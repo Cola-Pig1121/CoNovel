@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface ProjectStats {
@@ -22,8 +24,7 @@ export function DashboardOverview() {
 
   useEffect(() => {
     // Fetch real data from books API
-    fetch('/api/books')
-      .then(r => r.json())
+    api.get('/api/books')
       .then(data => {
         const books = data.books || [];
         let totalChapters = 0;

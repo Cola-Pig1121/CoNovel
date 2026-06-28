@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -15,7 +17,7 @@ export function BookChapters({ bookId, book }: { bookId: string; book: any }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/books/${bookId}/chapters`).then(r => r.json()).then(data => {
+    api.get(`/api/books/${bookId}/chapters`).then(data => {
       setChapters(data.chapters || []);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -23,15 +25,10 @@ export function BookChapters({ bookId, book }: { bookId: string; book: any }) {
 
   const handleAddChapter = async () => {
     const num = chapters.length + 1;
-    const res = await fetch(`/api/books/${bookId}/chapters`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chapterNumber: num, title: `第${num}章`, content: '' }),
-    });
-    if (res.ok) {
-      const ch = await res.json();
+    try {
+      const ch = await api.post(`/api/books/${bookId}/chapters`, { chapterNumber: num, title: `第${num}章`, content: '' });
       setChapters([...chapters, { chapterNumber: ch.chapterNumber, title: ch.title, wordCount: 0, status: 'draft' }]);
-    }
+    } catch {}
   };
 
   const statusColors: Record<string, string> = {

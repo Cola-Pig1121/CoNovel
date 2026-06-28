@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 export function BookStyle({ bookId }: { bookId: string }) {
@@ -8,7 +10,7 @@ export function BookStyle({ bookId }: { bookId: string }) {
   const [newWord, setNewWord] = useState('');
 
   useEffect(() => {
-    fetch(`/api/books/${bookId}/style`).then(r => r.json()).then(data => {
+    api.get(`/api/books/${bookId}/style`).then(data => {
       setStyle(data);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -17,11 +19,7 @@ export function BookStyle({ bookId }: { bookId: string }) {
   const saveStyle = async (updates: any) => {
     const updated = { ...style, ...updates };
     setStyle(updated);
-    await fetch(`/api/books/${bookId}/style`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated),
-    });
+    await api.put(`/api/books/${bookId}/style`, updated);
   };
 
   const addBannedWord = () => {

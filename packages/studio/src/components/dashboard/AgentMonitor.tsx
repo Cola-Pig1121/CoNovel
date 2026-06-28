@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface AgentStatus {
@@ -39,8 +41,7 @@ export function AgentMonitor() {
 
   useEffect(() => {
     // Fetch agent configs from API
-    fetch('/api/config?type=agents')
-      .then(r => r.json())
+    api.get('/api/config?type=agents')
       .then(data => {
         const configs = data.agents || [];
         const agentList: AgentStatus[] = configs.map((c: any) => {

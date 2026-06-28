@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface RefMeta {
@@ -23,7 +25,7 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
   const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/books/${bookId}/reference`).then(r => r.json()).then(data => {
+    api.get(`/api/books/${bookId}/reference`).then(data => {
       setMeta(data.meta || { books: [], techniques: [], customNotes: '' });
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -31,11 +33,7 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
 
   const handleAddBook = async () => {
     if (!newBook.title) return;
-    await fetch(`/api/books/${bookId}/reference`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'add_book', ...newBook }),
-    });
+    await api.post(`/api/books/${bookId}/reference`, { action: 'add_book', ...newBook });
     setMeta({ ...meta, books: [...meta.books, { id: crypto.randomUUID(), ...newBook, addedAt: new Date().toISOString(), styleExtracted: false }] });
     setShowAddBook(false);
     setNewBook({ title: '', author: '' });
@@ -43,22 +41,13 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
-    const res = await fetch(`/api/books/${bookId}/reference`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'analyze_references' }),
-    });
-    const data = await res.json();
+    const data = await api.post(`/api/books/${bookId}/reference`, { action: 'analyze_references' });
     setMeta(data.meta || meta);
     setAnalyzing(false);
   };
 
   const handleDeleteBook = async (bookId: string) => {
-    await fetch(`/api/books/${bookId}/reference`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookId }),
-    });
+    await api.del(`/api/books/${bookId}/reference`, { bookId });
     setMeta({ ...meta, books: meta.books.filter(b => b.id !== bookId) });
   };
 
@@ -128,11 +117,7 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
         />
         <button
           onClick={async () => {
-            await fetch(`/api/books/${bookId}/reference`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'update_notes', notes: meta.customNotes }),
-            });
+            await api.post(`/api/books/${bookId}/reference`, { action: 'update_notes', notes: meta.customNotes });
           }}
           className="btn-editorial text-xs mt-3"
         >

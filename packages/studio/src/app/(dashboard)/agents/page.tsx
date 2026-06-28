@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -35,8 +37,7 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/config?type=agents')
-      .then(r => r.json())
+    api.get('/api/config?type=agents')
       .then(data => {
         const configs = data.agents || [];
         const agentList: AgentStatus[] = configs.map((c: any) => {

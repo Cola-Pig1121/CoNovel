@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -16,8 +18,7 @@ export function WritingPipeline() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/pipeline')
-      .then(r => r.json())
+    api.get('/api/pipeline')
       .then(data => {
         setPipelines(data.activeBooks || []);
         setLoading(false);

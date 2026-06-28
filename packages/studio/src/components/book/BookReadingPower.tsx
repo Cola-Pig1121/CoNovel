@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@/lib/api';
+
 import { useState, useEffect } from 'react';
 
 interface ReadingPowerData {
@@ -28,7 +30,7 @@ export function BookReadingPower({ bookId }: { bookId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/books/${bookId}/reading-power`).then(r => r.json()).then(d => {
+    api.get(`/api/books/${bookId}/reading-power`).then(d => {
       setData(d);
       setLoading(false);
     }).catch(() => setLoading(false));
