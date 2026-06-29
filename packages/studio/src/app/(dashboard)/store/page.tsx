@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { isTauri, tauriInvoke } from '@/lib/tauri';
+import { isTauri, tauriInvoke, waitForTauri } from '@/lib/tauri';
 
 interface Template {
   name: string;
@@ -29,11 +29,11 @@ export default function StorePage() {
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      if (isTauri()) {
+      const ready = await waitForTauri(3000);
+      if (ready) {
         const result = await tauriInvoke<Template[]>('list_templates');
         setTemplates(result);
       } else {
-        // Fallback: read from config dir via API (not available in web mode)
         setTemplates([]);
       }
     } catch { setTemplates([]); }
@@ -47,7 +47,7 @@ export default function StorePage() {
     } catch { /* ignore */ }
   };
 
-  const checkTauri = () => { if (!isTauri()) { setStatus('此功能仅在 Tauri 桌面端可用'); return false; } return true; };
+  const checkTauri = async () => { if (!(await waitForTauri(3000))) { setStatus('此功能仅在 Tauri 桌面端可用'); return false; } return true; };
 
   const handleExport = async () => {
     if (!checkTauri() || !exportForm.bookId || !exportForm.templateName) return;

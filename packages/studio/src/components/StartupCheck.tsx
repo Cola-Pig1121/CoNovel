@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { isTauri, tauriInvoke } from '@/lib/tauri';
+import { isTauri, tauriInvoke, waitForTauri } from '@/lib/tauri';
 
 interface ToolStatus {
   installed: boolean;
@@ -28,11 +28,13 @@ export function StartupCheck({ onDismiss }: { onDismiss: () => void }) {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (isTauri()) {
-      tauriInvoke<EnvStatus>('check_environment').then(setEnv).catch(() => setEnv(null)).finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    waitForTauri(3000).then(ready => {
+      if (ready) {
+        tauriInvoke<EnvStatus>('check_environment').then(setEnv).catch(() => setEnv(null)).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
   }, []);
 
   const handleInstallLitellm = async () => {
