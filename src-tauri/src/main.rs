@@ -67,6 +67,10 @@ fn main() {
             commands::store::clone_template,
             commands::store::delete_template,
             commands::store::push_template,
+            // Environment Check
+            commands::env_check::check_environment,
+            commands::env_check::install_python_dep,
+            commands::env_check::open_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CoNovel");
