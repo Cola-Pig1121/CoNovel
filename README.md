@@ -1,244 +1,114 @@
 # CoNovel
 
-多Agent协作的中文小说写作系统。15个专业Agent各司其职，从大纲构思到成稿润色，走完一章的全部流程。配置通过 LiteLLM 网关统一管理模型调用，前端仪表盘以编辑杂志风呈现。
+Tauri 桌面端小说写作系统。15 个 Agent 各自负责一件事，通过 Python litellm 调用 AI 模型，完成从大纲到成稿的全部流程。
 
 ---
 
-## 它做什么
+## 这是什么
 
-一本长篇小说动辄百万字，单人写作最难的不是文笔，而是**一致性**——角色不能前后矛盾，伏笔不能有始无终，节奏不能一泻千里。CoNovel 把这些需要人脑反复校验的工作拆成15个专职Agent，每个Agent只管一件事，做完交给下一个。
-
-章节创作的完整流水线：
+长篇小说写到后面最容易崩的不是文笔，是一致性——角色前后矛盾、伏笔有始无终、节奏失控。CoNovel 把这些容易出错的环节拆成 15 个专职 Agent，每个只做一件事。
 
 ```
-趋势分析 → 大纲构建 → 角色设计 → 上下文组装
-    → 角色智能推理 → 正文创作 → 事件记录
-    → 事实核查 + 连续性检查 + 节奏检查（并行）
-    → 综合审阅 → 文字润色 → 去AI味 → 质量反思
-    → 状态同步
+角色推理 → 正文创作 → 事件记录
+  → 事实核查 + 连续性检查 + 节奏检查（并行）
+  → 综合审阅（13维度，最多3轮收敛）
+  → 文字润色 → 28项去AI味 → 质量反思 → 状态同步
 ```
 
-每章经过5层质量门禁：记忆同步、事实一致性、连续性、风格校准、去AI味。未通过的章节打回重写，不让问题流入下一章。
+5 层质量门禁：记忆同步、事实一致性、连续性、风格校准、去AI味。
 
 ---
 
-## Agent 一览
-
-| Agent | 做什么 | 模型等级 |
-|-------|--------|----------|
-| 故事架构师 | 大纲构建、情节设计、世界观架构 | 强模型 |
-| 写作特工 | 章节正文创作，8种叙事入口模式轮转 | 中等模型 |
-| 角色智能体 | 完全沉浸在角色中推理其心理和行为 | 强模型 |
-| 审阅官 | 多维度质量审阅，P0/P1/P2分级 | 中等模型 |
-| 编辑 | 文字润色、结构调整 | 中等模型 |
-| 去AI味编辑 | 检测并消除AI写作痕迹 | 中等模型 |
-| 事实核查官 | 事实一致性检查 | 轻量模型 |
-| 连续性检查官 | 跨章节连续性验证 | 轻量模型 |
-| 节奏控制官 | 节奏曲线分析 | 中等模型 |
-| 风格分析师 | 提取风格指纹、风格校准 | 中等模型 |
-| 观察者 | 监控叙事事件、记录关键信息 | 轻量模型 |
-| 角色设计师 | 角色档案设计、关系图谱 | 中等模型 |
-| 伏笔管理官 | 伏笔追踪、回收提醒 | 轻量模型 |
-| 趋势雷达 | 市场趋势扫描、题材分析 | 轻量模型 |
-| 反思官 | 章节质量反思、改进建议 | 中等模型 |
-
-三个模型等级（强/中/轻）由用户在设置页面自行指定，不绑定具体模型名。
-
----
-
-## 自进化机制
-
-两套并行的学习系统：
-
-**反馈学习**——每章审阅后记录各Agent得分，追踪常见问题模式，计算改进趋势。连续表现下滑的Agent会自动生成针对性的提示词调整建议。
-
-**风格记忆**——每章完成后提取风格指纹（句长分布、对话比例、词汇偏好、AI痕迹分数等），与历史风格对比。成功的实验被标记，逐步形成稳定的写作风格，为后续章节提供锚点。
-
----
-
-## 项目结构
+## 技术架构
 
 ```
-CoNovel/
-├── agent/                          # Vercel Eve Agent定义
-│   ├── instructions.md             # 主Agent系统提示词
-│   ├── agent.ts                    # 模型配置
-│   ├── tools/                      # 工具函数（5个）
-│   ├── skills/                     # 技能文档（5个）
-│   └── subagents/                  # 15个子Agent指令
-│       ├── architect/
-│       ├── writer/
-│       ├── character-intelligence/  # 角色智能体 ★
-│       ├── reviewer/
-│       ├── editor/
-│       ├── de-ai-editor/
-│       ├── observer/
-│       ├── character-designer/
-│       ├── style-analyzer/
-│       ├── fact-checker/
-│       ├── continuity/
-│       ├── pacing-controller/
-│       ├── foreshadowing/
-│       ├── radar/
-│       └── reflector/
-├── packages/
-│   ├── core/                       # 核心引擎
-│   │   └── src/
-│   │       ├── agents/             # Agent类型、注册表、基类
-│   │       ├── state/              # 状态管理（SSOT）
-│   │       ├── memory/             # 三层记忆（工作/故事/风格）
-│   │       ├── pipeline/           # 章节创作流水线
-│   │       ├── genres/             # 7种题材模板
-│   │       └── evolution/          # 自进化引擎
-│   ├── studio/                     # Next.js前端仪表盘
-│   │   └── src/
-│   │       ├── app/                # 页面路由
-│   │       │   ├── (dashboard)/    # 共享侧边栏布局
-│   │       │   │   ├── page.tsx    # Dashboard
-│   │       │   │   ├── books/      # 小说列表 + 详情(8个Tab)
-│   │       │   │   ├── agents/     # Agent监控 + 详情(对话)
-│   │       │   │   ├── pipeline/   # 流水线监控
-│   │       │   │   ├── evolution/  # 进化追踪
-│   │       │   │   └── settings/   # 模型配置
-│   │       │   └── api/            # REST API（14个路由）
-│   │       ├── components/         # UI组件
-│   │       │   ├── book/           # 书籍详情页组件（8个）
-│   │       │   ├── dashboard/      # 仪表盘组件
-│   │       │   ├── layout/         # 侧边栏
-│   │       │   └── settings/       # 供应商+Agent模型配置
-│   │       ├── lib/                # 工具函数
-│   │       └── styles/             # Editorial Style样式
-│   └── cli/                        # 命令行工具
-├── fonts/                          # 霞鹜文楷字体
-├── docker-compose.yml
-└── package.json
+src-tauri/              Rust 后端（文件操作、LLM调用）
+packages/studio/        React 前端（Tauri Webview）
+agent/                  15 个 Agent 指令 + 技能 + 工具
+scripts/                Python litellm 桥接 + 安装脚本
 ```
 
 ---
 
-## 快速开始
+## Agent
 
-### 环境要求
+**核心创作**：故事架构师（大纲）、写作特工（正文）、角色智能体（角色思维推理）
 
-- Node.js ≥ 20
-- pnpm ≥ 9
+**质量控制**：审阅官（13维度）、编辑、去AI味编辑（28项检测）、事实核查官、连续性检查官、节奏控制官
 
-### 安装
+**辅助**：观察者、角色设计师、伏笔管理官、风格分析师、趋势雷达、反思官
+
+三个等级（强/中/轻模型）在设置页面自行选择。
+
+---
+
+## 安装
+
+**一键安装（Windows）**：
+
+```powershell
+irm https://raw.githubusercontent.com/Cola-Pig1121/CoNovel/main/scripts/install.ps1 | iex
+```
+
+**手动安装**：
 
 ```bash
-git clone https://github.com/your-username/conovel.git
-cd conovel
-pnpm install
+git clone https://github.com/Cola-Pig1121/CoNovel.git
+cd CoNovel && pnpm install
+bash scripts/setup.sh
 ```
 
-### 启动
+**从 Release 下载**：[Releases](https://github.com/Cola-Pig1121/CoNovel/releases)
+
+---
+
+## 运行
 
 ```bash
-pnpm dev
+# 终端 1
+cd packages/studio && pnpm dev
+
+# 终端 2
+cd src-tauri && cargo tauri dev
 ```
 
-访问 http://localhost:3002
+1. 设置 → 添加 LiteLLM 网关或直连 API → 扫描模型 → 配置 Agent 模型
+2. 新建项目 → 输入书名和核心设定 → 选择题材
+3. 项目详情页 14 个 Tab：约束 / 参考 / 风格 / 角色 / 大纲 / 章节 / 写作 ...
 
-### 首次使用
+---
 
-1. 进入「设置 → 模型供应商」，添加你的 LiteLLM 网关（默认地址 `http://localhost:4000`）
-2. 在「Agent 模型配置」中，选择供应商后指定三个等级的模型，点击「应用分配」
-3. 回到「小说管理」，创建第一个项目
-4. 进入项目，在各Tab中配置角色、大纲、风格
-5. 在「章节」Tab创建章节，点击进入纯文本编辑器
-6. 在「写作」Tab发起创作流水线
+## 模型接入
+
+通过 Python litellm 调用，自动处理厂商参数差异。
+
+- **LiteLLM Proxy**：`http://localhost:4000`
+- **直连 API**：OpenAI / Anthropic / DeepSeek / Ollama 等
+- **自定义端点**：任何 OpenAI 兼容接口
 
 ---
 
 ## 数据存储
 
-所有配置和数据存储在本地：
+无云依赖，全部本地：
 
 ```
 ~/.config/conovel/
-├── providers.json      # 模型供应商配置
-├── agents.json         # Agent模型映射
-├── books/              # 小说项目
-│   └── {book-id}/
-│       ├── state.json  # 完整书籍状态
-│       ├── style.json  # 风格配置
-│       └── chapters/   # 章节内容（纯文本）
-│           ├── 0001.json
-│           └── ...
-└── conversations/      # Agent对话历史
-    ├── architect.json
-    ├── writer.json
-    └── ...
+├── providers.json       模型供应商
+├── agents.json          Agent 模型映射
+├── books/{id}/          书籍状态、章节、约束、参考
+└── conversations/       Agent 对话历史
 ```
 
 ---
 
-## 前端界面
-
-编辑杂志风（Editorial Style）：暖米色背景、衬线标题、无圆角、无阴影、精细的透明度层次。字体使用霞鹜文楷。
-
-### 主要页面
-
-| 页面 | 路径 | 功能 |
-|------|------|------|
-| Dashboard | `/` | 项目总览、Agent状态、流水线进度、风格进化 |
-| 小说管理 | `/books` | 项目列表、创建项目 |
-| 书籍详情 | `/books/[id]` | 8个Tab：概览、大纲、角色、伏笔、时间线、章节、风格、写作 |
-| 章节编辑 | `/books/[id]/chapters/[num]` | 纯文本编辑器 + 信息面板 |
-| Agent监控 | `/agents` | 15个Agent状态卡片 |
-| Agent详情 | `/agents/[role]` | 任务面板 + 对话窗口 |
-| 流水线 | `/pipeline` | 12阶段进度 + 5层质量门禁 |
-| 进化追踪 | `/evolution` | 性能趋势、风格进化、学习记录 |
-| 系统设置 | `/settings` | 供应商管理 + Per-Agent模型配置 |
-
----
-
-## 部署
-
-### Docker
+## CI / Release
 
 ```bash
-docker-compose build
-docker-compose up -d
+git tag v0.1.0 && git push origin v0.1.0
 ```
 
-### 自托管
-
-```bash
-pnpm build
-cd packages/studio
-pnpm start
-```
-
----
-
-## 题材模板
-
-内置7种中文网络小说题材，每种包含写作指南、禁忌模式、情感弧线、世界观要素：
-
-仙侠 · 玄幻 · 都市 · 科幻 · 悬疑 · 历史 · 无限流
-
-支持自定义题材。
-
----
-
-## 技术栈
-
-- **Agent框架**：Vercel Eve
-- **前端**：Next.js 15 + React 19 + Tailwind CSS
-- **模型网关**：LiteLLM（OpenAI兼容格式）
-- **状态管理**：文件系统持久化（JSON）
-- **字体**：霞鹜文楷（LXGW WenKai）
-- **部署**：Vercel / Docker
-
----
-
-## 参考项目
-
-- [inkOS](https://github.com/Narcooo/inkOS) — 完整的小说写作系统
-- [webnovel-writer](https://github.com/lingfengQAQ/webnovel-writer) — 网络小说写作工具
-- [novel-creator-skill](https://github.com/leenbj/novel-creator-skill) — 小说创作技能
-- [oh-story-claudecode](https://github.com/worldwonderer/oh-story-claudecode) — 故事创作工具集
+GitHub Actions 自动构建 Windows 安装包（.msi / .exe），上传到 Release。应用启动时自动检查更新。
 
 ---
 
