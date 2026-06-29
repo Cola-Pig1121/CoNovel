@@ -14,11 +14,11 @@ export default {
         accent: '#816d70',
       },
       fontFamily: {
-        wenkai: ['var(--font-wenkai)', 'serif'],
-        'wenkai-mono': ['var(--font-wenkai-mono)', 'monospace'],
-        serif: ['var(--font-wenkai)', 'Georgia', 'serif'],
-        sans: ['var(--font-wenkai)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-wenkai-mono)', 'monospace'],
+        wenkai: ['"LXGW WenKai"', 'serif'],
+        'wenkai-mono': ['"LXGW WenKai Mono"', 'monospace'],
+        serif: ['"LXGW WenKai"', 'Georgia', 'serif'],
+        sans: ['"LXGW WenKai"', 'system-ui', 'sans-serif'],
+        mono: ['"LXGW WenKai Mono"', 'monospace'],
       },
       fontSize: {
         'hero': ['4rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],

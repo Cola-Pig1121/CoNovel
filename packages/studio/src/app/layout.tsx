@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { lxgwWenKai, lxgwWenKaiMono } from '@/lib/fonts';
 import '@/styles/editorial.css';
 
 export const metadata: Metadata = {
@@ -13,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" className={`${lxgwWenKai.variable} ${lxgwWenKaiMono.variable}`}>
+    <html lang="zh-CN">
       <body className="bg-background text-foreground min-h-screen font-wenkai">
         {children}
       </body>

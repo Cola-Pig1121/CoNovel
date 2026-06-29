@@ -1,47 +1,14 @@
-import localFont from 'next/font/local';
+/**
+ * Font configuration
+ *
+ * Uses CSS @font-face instead of next/font/local
+ * to avoid webpack module loading issues in Next.js 15.5.x
+ *
+ * Font variables are defined in editorial.css via @font-face declarations.
+ * This file exports the CSS class names for use in layout.
+ */
 
-// 霞鹜文楷 - 正文
-export const lxgwWenKai = localFont({
-  src: [
-    {
-      path: '../../fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../../fonts/lxgw-wenkai/LXGWWenKai-Light.ttf',
-      weight: '300',
-      style: 'normal',
-    },
-    {
-      path: '../../fonts/lxgw-wenkai/LXGWWenKai-Medium.ttf',
-      weight: '500',
-      style: 'normal',
-    },
-  ],
-  variable: '--font-wenkai',
-  display: 'swap',
-});
-
-// 霞鹜文楷等宽 - 代码/标签
-export const lxgwWenKaiMono = localFont({
-  src: [
-    {
-      path: '../../fonts/lxgw-wenkai/LXGWWenKaiMono-Regular.ttf',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../../fonts/lxgw-wenkai/LXGWWenKaiMono-Light.ttf',
-      weight: '300',
-      style: 'normal',
-    },
-    {
-      path: '../../fonts/lxgw-wenkai/LXGWWenKaiMono-Medium.ttf',
-      weight: '500',
-      style: 'normal',
-    },
-  ],
-  variable: '--font-wenkai-mono',
-  display: 'swap',
-});
+export const fontClasses = {
+  body: 'font-wenkai',
+  mono: 'font-wenkai-mono',
+};
