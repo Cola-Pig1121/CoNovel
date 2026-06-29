@@ -1,10 +1,10 @@
-import { readFileSync, writeFileSync, existsSync, rmSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 
 function getBooksDir() { return join(process.env.HOME || process.env.USERPROFILE || '', '.config', 'conovel', 'books'); }
 function readJson<T>(f: string, d: T): T { try { if (existsSync(f)) return JSON.parse(readFileSync(f, 'utf-8')); } catch {} return d; }
-function writeJson(f: string, v: unknown) { const dir = join(f, '..'); if (!existsSync(dir)) { const { mkdirSync } = require('fs'); mkdirSync(dir, { recursive: true }); } writeFileSync(f, JSON.stringify(v, null, 2), 'utf-8'); }
+function writeJson(f: string, v: unknown) { const dir = join(f, '..'); if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); writeFileSync(f, JSON.stringify(v, null, 2), 'utf-8'); }
 function now() { return new Date().toISOString(); }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
