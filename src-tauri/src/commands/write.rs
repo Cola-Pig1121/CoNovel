@@ -1,10 +1,4 @@
 use std::process::Command;
-use std::fs;
-use std::path::PathBuf;
-
-fn config_dir() -> PathBuf {
-    dirs::home_dir().unwrap().join(".config").join("conovel")
-}
 
 #[tauri::command]
 pub fn start_pipeline(book_id: String, chapter_number: u32) -> Result<serde_json::Value, String> {
