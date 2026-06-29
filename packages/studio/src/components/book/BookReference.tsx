@@ -1,8 +1,13 @@
 'use client';
 
 import { api } from '@/lib/api';
+import { isTauri, tauriInvoke } from '@/lib/tauri';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-import { useState, useEffect } from 'react';
+interface RefFile {
+  name: string;
+  size: number;
+}
 
 interface RefMeta {
   books: Array<{
@@ -18,18 +23,84 @@ interface RefMeta {
 }
 
 export function BookReference({ bookId, book }: { bookId: string; book: any }) {
+  const [files, setFiles] = useState<RefFile[]>([]);
   const [meta, setMeta] = useState<RefMeta>({ books: [], techniques: [], customNotes: '' });
   const [loading, setLoading] = useState(true);
   const [showAddBook, setShowAddBook] = useState(false);
   const [newBook, setNewBook] = useState({ title: '', author: '' });
   const [analyzing, setAnalyzing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.get(`/api/books/${bookId}/reference`).then(data => {
+    api.get(`/api/books/${bookId}/reference`).then((data: any) => {
+      setFiles(data.files || []);
       setMeta(data.meta || { books: [], techniques: [], customNotes: '' });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [bookId]);
+
+  // File upload handler
+  const uploadFile = useCallback(async (file: File) => {
+    setUploading(true);
+    try {
+      if (isTauri()) {
+        // Tauri: read file as bytes and send to Rust command
+        const buffer = await file.arrayBuffer();
+        const bytes = Array.from(new Uint8Array(buffer));
+        await tauriInvoke('upload_reference_file', {
+          book_id: bookId,
+          file_name: file.name,
+          file_content: bytes,
+        });
+      } else {
+        // Web: upload via FormData
+        const formData = new FormData();
+        formData.append('file', file);
+        await fetch(`/api/books/${bookId}/reference/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+      }
+      // Reload file list
+      const data: any = await api.get(`/api/books/${bookId}/reference`);
+      setFiles(data.files || []);
+    } catch (e) {
+      console.error('Upload failed:', e);
+      alert(`上传失败: ${e}`);
+    }
+    setUploading(false);
+  }, [bookId]);
+
+  // Handle file input change
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles) return;
+    for (let i = 0; i < selectedFiles.length; i++) {
+      uploadFile(selectedFiles[i]);
+    }
+    e.target.value = '';
+  }, [uploadFile]);
+
+  // Handle drag and drop
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const droppedFiles = e.dataTransfer.files;
+    for (let i = 0; i < droppedFiles.length; i++) {
+      uploadFile(droppedFiles[i]);
+    }
+  }, [uploadFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false);
+  }, []);
 
   const handleAddBook = async () => {
     if (!newBook.title) return;
@@ -46,9 +117,27 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
     setAnalyzing(false);
   };
 
-  const handleDeleteBook = async (bookId: string) => {
-    await api.del(`/api/books/${bookId}/reference`, { bookId });
-    setMeta({ ...meta, books: meta.books.filter(b => b.id !== bookId) });
+  const handleDeleteFile = async (fileName: string) => {
+    if (!confirm(`确定删除 ${fileName}？`)) return;
+    try {
+      if (isTauri()) {
+        await tauriInvoke('delete_reference_file', { book_id: bookId, file_name: fileName });
+      } else {
+        await api.del(`/api/books/${bookId}/reference`, { fileName });
+      }
+      setFiles(files.filter(f => f.name !== fileName));
+    } catch {}
+  };
+
+  const handleDeleteBook = async (bid: string) => {
+    await api.del(`/api/books/${bookId}/reference`, { bookId: bid });
+    setMeta({ ...meta, books: meta.books.filter(b => b.id !== bid) });
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes > 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    if (bytes > 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
   };
 
   if (loading) return <div className="text-muted text-sm">加载中...</div>;
@@ -59,30 +148,81 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-serif text-lg">参考小说</h3>
-          <p className="text-xs text-muted mt-1">将参考小说的txt文件放入 <code className="font-mono bg-muted/20 px-1">~/.config/conovel/books/{bookId}/reference/</code> 目录，系统会自动分析其文风并调整设定。</p>
+          <p className="text-xs text-muted mt-1">上传参考小说文件，系统会自动分析其文风并调整写作设定</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleAnalyze} disabled={analyzing || meta.books.length === 0} className="btn-editorial text-xs">
+          <button onClick={handleAnalyze} disabled={analyzing || files.length === 0} className="btn-editorial text-xs">
             {analyzing ? '分析中...' : '分析文风'}
           </button>
-          <button onClick={() => setShowAddBook(true)} className="btn-editorial-primary text-xs">添加参考</button>
+          <button onClick={() => fileInputRef.current?.click()} className="btn-editorial-primary text-xs" disabled={uploading}>
+            {uploading ? '上传中...' : '上传文件'}
+          </button>
         </div>
       </div>
 
-      {/* Reference Books */}
-      {meta.books.length === 0 ? (
-        <div className="card-editorial text-center py-12">
-          <p className="text-muted mb-3">暂无参考小说</p>
-          <p className="text-xs text-muted">添加参考小说后，系统会分析其文风特征并融入写作设定</p>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".txt,.md,.epub"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Drag and Drop Zone */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
+          dragOver ? 'border-foreground bg-foreground/5' : 'border-border hover:border-foreground/50'
+        }`}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <div className="text-muted">
+          {uploading ? (
+            <p>正在上传...</p>
+          ) : (
+            <>
+              <p className="font-sans text-sm mb-1">拖拽文件到此处，或点击选择</p>
+              <p className="text-xs">支持 .txt .md .epub 格式，最大 50MB</p>
+            </>
+          )}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {meta.books.map((ref) => (
-            <div key={ref.id} className="card-editorial">
-              <div className="flex items-center justify-between">
+      </div>
+
+      {/* Uploaded Files */}
+      {files.length > 0 && (
+        <div className="card-editorial">
+          <p className="label-editorial text-muted mb-3">已上传文件 ({files.length})</p>
+          <div className="space-y-2">
+            {files.map(f => (
+              <div key={f.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <div>
-                  <p className="font-sans text-sm font-medium">{ref.title}</p>
-                  <p className="text-xs text-muted mt-1">{ref.author} · 添加于 {ref.addedAt.split('T')[0]}</p>
+                  <p className="font-mono text-sm">{f.name}</p>
+                  <p className="text-xs text-muted">{formatSize(f.size)}</p>
+                </div>
+                <button onClick={() => handleDeleteFile(f.name)} className="text-xs text-muted hover:text-red-600">删除</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reference Books */}
+      {meta.books.length > 0 && (
+        <div className="card-editorial">
+          <div className="flex items-center justify-between mb-3">
+            <p className="label-editorial text-muted">参考书籍元数据</p>
+            <button onClick={() => setShowAddBook(true)} className="btn-editorial text-xs">+ 添加</button>
+          </div>
+          <div className="space-y-2">
+            {meta.books.map((ref) => (
+              <div key={ref.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div>
+                  <p className="text-sm">{ref.title} <span className="text-muted">· {ref.author}</span></p>
+                  <p className="text-xs text-muted">{ref.addedAt.split('T')[0]}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {ref.styleExtracted ? (
@@ -93,15 +233,15 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
                   <button onClick={() => handleDeleteBook(ref.id)} className="text-xs text-muted hover:text-red-600">删除</button>
                 </div>
               </div>
-              {ref.styleProfile && (
-                <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-4 text-xs">
-                  <div><span className="text-muted">句长:</span> <span className="font-mono">{ref.styleProfile.avgSentenceLength}字</span></div>
-                  <div><span className="text-muted">对话比:</span> <span className="font-mono">{(ref.styleProfile.dialogueRatio * 100).toFixed(0)}%</span></div>
-                  <div><span className="text-muted">视角:</span> <span className="font-mono">{ref.styleProfile.narrativePerspective}</span></div>
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+      )}
+
+      {meta.books.length === 0 && files.length === 0 && (
+        <div className="card-editorial text-center py-12">
+          <p className="text-muted mb-3">暂无参考材料</p>
+          <p className="text-xs text-muted">上传参考小说文件后，系统会分析其文风特征并融入写作设定</p>
         </div>
       )}
 
@@ -125,12 +265,12 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
         </button>
       </div>
 
-      {/* Add Book Modal */}
+      {/* Add Book Metadata Modal */}
       {showAddBook && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-background border border-border w-96 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-serif text-lg">添加参考小说</h3>
+              <h3 className="font-serif text-lg">添加参考书籍信息</h3>
               <button onClick={() => setShowAddBook(false)} className="text-muted hover:text-foreground">✕</button>
             </div>
             <div className="space-y-4">
@@ -142,7 +282,7 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
                 <label className="label-editorial block mb-2">作者</label>
                 <input type="text" value={newBook.author} onChange={e => setNewBook({ ...newBook, author: e.target.value })} className="input-editorial" placeholder="作者名" />
               </div>
-              <p className="text-xs text-muted">添加后，请将小说txt文件放入参考目录，然后点击"分析文风"。</p>
+              <p className="text-xs text-muted">此信息用于记录，实际文件通过上方上传。</p>
             </div>
             <div className="flex gap-4 mt-6 pt-4 border-t border-border">
               <button onClick={() => setShowAddBook(false)} className="btn-editorial flex-1">取消</button>

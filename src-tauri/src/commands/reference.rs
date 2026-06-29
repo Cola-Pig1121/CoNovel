@@ -56,3 +56,26 @@ pub fn save_reference_meta(book_id: String, meta: serde_json::Value) -> Result<(
     let data = serde_json::to_string_pretty(&meta).unwrap();
     fs::write(dir.join("_meta.json"), data).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn upload_reference_file(book_id: String, file_name: String, file_content: Vec<u8>) -> Result<serde_json::Value, String> {
+    let dir = ref_dir(&book_id);
+    // Sanitize filename
+    let safe_name: String = file_name.chars().filter(|c| !matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*')).collect();
+    if safe_name.is_empty() {
+        return Err("Invalid filename".to_string());
+    }
+    let size = file_content.len() as u64;
+    fs::write(dir.join(&safe_name), file_content).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true, "name": safe_name, "size": size }))
+}
+
+#[tauri::command]
+pub fn delete_reference_file(book_id: String, file_name: String) -> Result<(), String> {
+    let dir = ref_dir(&book_id);
+    let f = dir.join(&file_name);
+    if f.exists() {
+        fs::remove_file(&f).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}

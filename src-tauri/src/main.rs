@@ -33,6 +33,8 @@ fn main() {
             commands::reference::list_references,
             commands::reference::get_reference_meta,
             commands::reference::save_reference_meta,
+            commands::reference::upload_reference_file,
+            commands::reference::delete_reference_file,
             // Pipeline
             commands::pipeline::get_pipeline_state,
             commands::pipeline::control_pipeline,
