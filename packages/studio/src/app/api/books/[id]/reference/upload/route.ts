@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { getBooksDir } from '@/lib/config-path';
 
@@ -8,8 +8,6 @@ function getRefDir(bookId: string): string {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   return dir;
 }
-
-import { existsSync } from 'fs';
 
 /** POST /api/books/[id]/reference/upload — upload a reference file */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

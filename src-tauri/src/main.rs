@@ -47,6 +47,9 @@ fn main() {
             commands::naming::generate_names,
             // Knowledge
             commands::knowledge::search_knowledge,
+            // Write
+            commands::write::start_pipeline,
+            commands::write::get_write_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CoNovel");

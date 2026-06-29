@@ -59,8 +59,9 @@ function callPythonBridge(action: string, inputData: Record<string, unknown>): R
   const inputJson = JSON.stringify(inputData).replace(/"/g, '\\"');
 
   try {
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
     const output = execSync(
-      `python3 "${scriptPath}" --action ${action} --input "${inputJson}"`,
+      `${pythonCmd} "${scriptPath}" --action ${action} --input "${inputJson}"`,
       {
         encoding: 'utf-8',
         timeout: 300000, // 5 minutes

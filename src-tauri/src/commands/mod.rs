@@ -7,3 +7,4 @@ pub mod pipeline;
 pub mod llm;
 pub mod naming;
 pub mod knowledge;
+pub mod write;
