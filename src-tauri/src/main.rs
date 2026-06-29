@@ -2,10 +2,17 @@
 
 mod commands;
 
+use std::process::Command;
+
 fn main() {
+    // ===== Pre-launch environment check =====
+    // Check critical dependencies before opening the window
+    let env_status = check_environment_before_launch();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(env_status) // Pass env status to frontend
         .invoke_handler(tauri::generate_handler![
             // Books
             commands::books::list_books,
@@ -74,4 +81,69 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running CoNovel");
+}
+
+/// Check environment before launching the window.
+/// Returns a JSON status that the frontend can read via Tauri state.
+fn check_environment_before_launch() -> serde_json::Value {
+    let python = check_tool("python", &["--version"]);
+    let node = check_tool("node", &["--version"]);
+    let pnpm = check_tool("pnpm", &["--version"]);
+    let git = check_tool("git", &["--version"]);
+    let litellm = check_litellm();
+
+    let all_ready = python.0 && node.0 && pnpm.0 && litellm.0 && git.0;
+
+    if !all_ready {
+        // Print missing tools to console so user sees it before window opens
+        eprintln!("=== CoNovel Environment Check ===");
+        if !python.0 { eprintln!("  [X] Python  - NOT FOUND"); }
+        else { eprintln!("  [v] Python  - {}", python.1); }
+        if !node.0 { eprintln!("  [X] Node.js - NOT FOUND"); }
+        else { eprintln!("  [v] Node.js - {}", node.1); }
+        if !pnpm.0 { eprintln!("  [X] pnpm    - NOT FOUND"); }
+        else { eprintln!("  [v] pnpm    - {}", pnpm.1); }
+        if !litellm.0 { eprintln!("  [X] litellm - NOT FOUND (pip install litellm)"); }
+        else { eprintln!("  [v] litellm - {}", litellm.1); }
+        if !git.0 { eprintln!("  [X] Git     - NOT FOUND"); }
+        else { eprintln!("  [v] Git     - {}", git.1); }
+        eprintln!("================================");
+        eprintln!("Some tools are missing. LLM features may not work.");
+        eprintln!("Run: python -m pip install litellm");
+        eprintln!("================================");
+    }
+
+    serde_json::json!({
+        "allReady": all_ready,
+        "python": { "installed": python.0, "version": python.1 },
+        "node": { "installed": node.0, "version": node.1 },
+        "pnpm": { "installed": pnpm.0, "version": pnpm.1 },
+        "litellm": { "installed": litellm.0, "version": litellm.1 },
+        "git": { "installed": git.0, "version": git.1 },
+    })
+}
+
+fn check_tool(name: &str, args: &[&str]) -> (bool, String) {
+    let output = Command::new(name).args(args).output();
+    match output {
+        Ok(o) if o.status.success() => {
+            let ver = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            (true, ver)
+        }
+        _ => (false, String::new()),
+    }
+}
+
+fn check_litellm() -> (bool, String) {
+    let python_cmd = if cfg!(target_os = "windows") { "python" } else { "python3" };
+    let output = Command::new(python_cmd)
+        .args(["-c", "import litellm; print(litellm.__version__)"])
+        .output();
+    match output {
+        Ok(o) if o.status.success() => {
+            let ver = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            (true, ver)
+        }
+        _ => (false, String::new()),
+    }
 }

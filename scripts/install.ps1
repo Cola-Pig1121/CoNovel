@@ -121,16 +121,33 @@ Write-Host "Creating desktop shortcut..." -ForegroundColor Yellow
 
 $desktop = [System.Environment]::GetFolderPath("Desktop")
 $shortcutPath = Join-Path $desktop "CoNovel.lnk"
+
+# Check if built exe exists
+$exePath = Join-Path $installDir "src-tauri\target\release\conovel.exe"
+$hasExe = Test-Path $exePath
+
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = "cmd.exe"
-$shortcut.Arguments = "/c cd /d `"$installDir\packages\studio`" && pnpm dev"
-$shortcut.WorkingDirectory = "$installDir\packages\studio"
+
+if ($hasExe) {
+    # Use built exe
+    $shortcut.TargetPath = $exePath
+    $shortcut.WorkingDirectory = $installDir
+} else {
+    # Fallback: start dev server
+    $shortcut.TargetPath = "cmd.exe"
+    $shortcut.Arguments = "/c cd /d `"$installDir\packages\studio`" && pnpm dev"
+    $shortcut.WorkingDirectory = "$installDir\packages\studio"
+    $shortcut.WindowStyle = 7
+}
 $shortcut.Description = "CoNovel - AI Novel Writing System"
-$shortcut.WindowStyle = 7
 $shortcut.Save()
 
 Write-Host "  Shortcut created: $shortcutPath" -ForegroundColor Green
+if (-not $hasExe) {
+    Write-Host "  NOTE: exe not built yet. Shortcut starts dev server." -ForegroundColor Yellow
+    Write-Host "  To build exe: cd src-tauri && cargo tauri build" -ForegroundColor Yellow
+}
 
 # --- Done ---
 Write-Host ""
