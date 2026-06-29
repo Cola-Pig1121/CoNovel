@@ -27,6 +27,12 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/Cola-Pig1121/CoNovel/releases/latest/download/latest.json"
+      ]
     }
   }
 }
