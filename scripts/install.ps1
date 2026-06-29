@@ -29,7 +29,9 @@ if (-not $pythonCmd) {
         # Try winget first
         try {
             winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements
-            $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+            $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+            $userPath = [System.Environment]::GetEnvironmentVariable("PATH", "User")
+            $env:PATH = "$machinePath;$userPath"
             $pythonCmd = (Get-Command python -ErrorAction SilentlyContinue).Source
         } catch {
             Write-Host "  自动安装失败，请手动安装 Python 3.8+: https://www.python.org/downloads/" -ForegroundColor Red
@@ -62,7 +64,9 @@ if (-not $nodeVersion) {
         Write-Host "  正在安装 Node.js..." -ForegroundColor Yellow
         try {
             winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
-            $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+            $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+            $userPath = [System.Environment]::GetEnvironmentVariable("PATH", "User")
+            $env:PATH = "$machinePath;$userPath"
         } catch {
             Write-Host "  自动安装失败，请手动安装 Node.js 20+: https://nodejs.org/" -ForegroundColor Red
             Read-Host "  安装完成后按回车继续"

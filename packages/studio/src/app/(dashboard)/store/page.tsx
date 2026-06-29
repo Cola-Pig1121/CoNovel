@@ -47,51 +47,30 @@ export default function StorePage() {
     } catch { /* ignore */ }
   };
 
+  const checkTauri = () => { if (!isTauri()) { setStatus('此功能仅在 Tauri 桌面端可用'); return false; } return true; };
+
   const handleExport = async () => {
-    if (!exportForm.bookId || !exportForm.templateName) return;
-    try {
-      await tauriInvoke('export_template', {
-        book_id: exportForm.bookId,
-        template_name: exportForm.templateName,
-        description: exportForm.description,
-      });
-      setStatus('模板已导出');
-      setShowExportModal(false);
-      loadTemplates();
-    } catch (e: any) { setStatus(`导出失败: ${e}`); }
+    if (!checkTauri() || !exportForm.bookId || !exportForm.templateName) return;
+    try { await tauriInvoke('export_template', { book_id: exportForm.bookId, template_name: exportForm.templateName, description: exportForm.description }); setStatus('模板已导出'); setShowExportModal(false); loadTemplates(); } catch (e: any) { setStatus(`导出失败: ${e}`); }
   };
 
   const handleImport = async (templateName: string) => {
+    if (!checkTauri()) return;
     const title = prompt('新项目名称：');
     if (!title) return;
-    try {
-      const res = await tauriInvoke<any>('import_template', {
-        template_name: templateName,
-        new_book_id: crypto.randomUUID(),
-        new_book_title: title,
-      });
-      setStatus(`模板已导入到 ${res.bookId}`);
-      window.location.href = `/books/${res.bookId}`;
-    } catch (e: any) { setStatus(`导入失败: ${e}`); }
+    try { const res = await tauriInvoke<any>('import_template', { template_name: templateName, new_book_id: crypto.randomUUID(), new_book_title: title }); setStatus(`模板已导入到 ${res.bookId}`); window.location.href = `/books/${res.bookId}`; } catch (e: any) { setStatus(`导入失败: ${e}`); }
   };
 
   const handleClone = async () => {
-    if (!cloneUrl) return;
-    try {
-      await tauriInvoke('clone_template', { repo_url: cloneUrl });
-      setStatus('模板仓库已拉取');
-      setShowCloneModal(false);
-      loadTemplates();
-    } catch (e: any) { setStatus(`拉取失败: ${e}`); }
+    if (!checkTauri() || !cloneUrl) return;
+    try { await tauriInvoke('clone_template', { repo_url: cloneUrl }); setStatus('模板仓库已拉取'); setShowCloneModal(false); loadTemplates(); } catch (e: any) { setStatus(`拉取失败: ${e}`); }
   };
 
   const handlePush = async (templateName: string) => {
+    if (!checkTauri()) return;
     const url = prompt('GitHub 仓库地址：');
     if (!url) return;
-    try {
-      await tauriInvoke('push_template', { template_name: templateName, repo_url: url });
-      setStatus('已推送到 GitHub');
-    } catch (e: any) { setStatus(`推送失败: ${e}`); }
+    try { await tauriInvoke('push_template', { template_name: templateName, repo_url: url }); setStatus('已推送到 GitHub'); } catch (e: any) { setStatus(`推送失败: ${e}`); }
   };
 
   // Official templates
@@ -160,6 +139,7 @@ export default function StorePage() {
                 <p className="text-xs text-muted mb-3">{t.description}</p>
                 <div className="flex gap-2 pt-3 border-t border-border">
                   <button onClick={async () => {
+                    if (!checkTauri()) return;
                     try {
                       await tauriInvoke('clone_template', { repo_url: t.repo, template_name: t.name });
                       setStatus(`已拉取: ${t.name}`);

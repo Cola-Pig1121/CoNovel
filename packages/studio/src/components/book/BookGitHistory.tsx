@@ -50,6 +50,7 @@ export function BookGitHistory({ bookId }: { bookId: string }) {
   };
 
   const handleCommit = async () => {
+    if (!gitAvailable) return;
     const message = commitMessage || `自动保存 ${new Date().toLocaleString()}`;
     try {
       await tauriInvoke('git_commit', { book_id: bookId, message });
