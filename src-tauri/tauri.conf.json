@@ -6,7 +6,7 @@
   "build": {
     "frontendDist": "../packages/studio/.next",
     "devUrl": "http://localhost:3002",
-    "beforeDevCommand": "",
+    "beforeDevCommand": "pnpm --filter @conovel/studio dev",
     "beforeBuildCommand": "pnpm --filter @conovel/studio build"
   },
   "app": {
