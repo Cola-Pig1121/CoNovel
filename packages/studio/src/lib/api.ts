@@ -54,7 +54,7 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
   // Naming
   if (url === '/api/naming' && method === 'POST') return { name: 'generate_names', args: (body || emptyArgs) as Record<string, unknown> };
 
-  // For unknown routes, return the URL as-is for Web mode fallback
+  // For unknown routes, return empty so api methods fall through to fetch
   return { name: '', args: emptyArgs };
 }
 

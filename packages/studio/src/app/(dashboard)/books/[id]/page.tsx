@@ -18,6 +18,7 @@ import { BookTechniques } from '@/components/book/BookTechniques';
 import { BookReadingPower } from '@/components/book/BookReadingPower';
 import { BookHooks } from '@/components/book/BookHooks';
 import { BookConstraints } from '@/components/book/BookConstraints';
+import { BookGitHistory } from '@/components/book/BookGitHistory';
 import { TokenStatusBar } from '@/components/TokenStatusBar';
 
 const TABS = [
@@ -35,6 +36,7 @@ const TABS = [
   { id: 'constraints', label: '约束', labelEn: 'Constraints' },
   { id: 'style', label: '风格', labelEn: 'Style' },
   { id: 'write', label: '写作', labelEn: 'Write' },
+  { id: 'git', label: '版本', labelEn: 'Git' },
 ];
 
 export default function BookDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
@@ -106,6 +108,7 @@ export default function BookDetailPage({ params, searchParams }: { params: Promi
         {activeTab === 'constraints' && <BookConstraints bookId={id} />}
         {activeTab === 'style' && <BookStyle bookId={id} />}
         {activeTab === 'write' && <BookWrite bookId={id} book={book} />}
+        {activeTab === 'git' && <BookGitHistory bookId={id} />}
       </div>
     </div>
   );

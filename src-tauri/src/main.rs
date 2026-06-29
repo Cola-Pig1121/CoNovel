@@ -51,6 +51,22 @@ fn main() {
             // Write
             commands::write::start_pipeline,
             commands::write::get_write_status,
+            // Git
+            commands::git::git_init,
+            commands::git::git_commit,
+            commands::git::git_log,
+            commands::git::git_restore,
+            commands::git::git_tag,
+            commands::git::git_tags,
+            commands::git::git_diff,
+            commands::git::git_status,
+            // Store
+            commands::store::export_template,
+            commands::store::import_template,
+            commands::store::list_templates,
+            commands::store::clone_template,
+            commands::store::delete_template,
+            commands::store::push_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CoNovel");

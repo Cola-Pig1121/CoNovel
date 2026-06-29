@@ -8,3 +8,5 @@ pub mod llm;
 pub mod naming;
 pub mod knowledge;
 pub mod write;
+pub mod git;
+pub mod store;

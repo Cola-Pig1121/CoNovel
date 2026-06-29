@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/lib/api';
-
+import { isTauri, tauriInvoke } from '@/lib/tauri';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -58,6 +58,8 @@ export default function BooksPage() {
         });
       }
       await api.put(`/api/books/${book.id}/style`, { genre: newBook.genres.join(',') });
+      // Init git for version control
+      try { await tauriInvoke('git_init', { book_id: book.id }); } catch {}
       setBooks([...books, book]);
       setShowWizard(false);
       window.location.href = `/books/${book.id}`;
