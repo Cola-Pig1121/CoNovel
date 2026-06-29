@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../packages/studio/.next",
     "devUrl": "http://localhost:3002",
-    "beforeDevCommand": "cd ../packages/studio && pnpm dev",
-    "beforeBuildCommand": "cd ../packages/studio && pnpm build"
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "pnpm --filter @conovel/studio build"
   },
   "app": {
     "windows": [
