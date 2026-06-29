@@ -26,15 +26,7 @@
   },
   "plugins": {
     "shell": {
-      "open": true,
-      "scope": [
-        {
-          "name": "python",
-          "cmd": "python3",
-          "args": ["scripts/llm_bridge.py", "--action", "{.*}", "--input", "{.*}"],
-          "sidecar": false
-        }
-      ]
+      "open": true
     }
   }
 }

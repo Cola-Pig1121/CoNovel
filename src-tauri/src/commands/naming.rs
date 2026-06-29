@@ -15,7 +15,7 @@ pub struct NameResult {
 
 #[tauri::command]
 pub fn generate_names(
-    type_name: String,
+    _type_name: String,
     genre: String,
     gender: Option<String>,
     count: Option<u32>,

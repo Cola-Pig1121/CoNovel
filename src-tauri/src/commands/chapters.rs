@@ -72,7 +72,7 @@ fn strip_markdown(text: &str) -> String {
     result
 }
 
-fn regex_replace(pattern: &str, text: &str, replacement: &str) -> String {
+fn regex_replace(_pattern: &str, text: &str, _replacement: &str) -> String {
     // Simple regex replacement without regex crate
     // For now, just return the original text
     // TODO: Add regex crate for proper markdown stripping

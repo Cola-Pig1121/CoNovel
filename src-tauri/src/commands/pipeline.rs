@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
@@ -8,59 +7,6 @@ fn config_dir() -> PathBuf {
 
 fn pipeline_file(book_id: &str) -> PathBuf {
     config_dir().join("books").join(book_id).join("pipeline.json")
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct PipelineState {
-    pub book_id: String,
-    pub chapter_number: u32,
-    #[serde(default = "default_idle")]
-    pub status: String,
-    #[serde(default)]
-    pub current_stage: String,
-    #[serde(default)]
-    pub breakpoint_at: String,
-    #[serde(default)]
-    pub breakpoint_reason: String,
-    #[serde(default)]
-    pub token_usage: TokenUsage,
-    #[serde(default)]
-    pub history: Vec<PipelineEvent>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-fn default_idle() -> String { "idle".to_string() }
-
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct TokenUsage {
-    #[serde(default)]
-    pub total_prompt: u64,
-    #[serde(default)]
-    pub total_completion: u64,
-    #[serde(default)]
-    pub total_tokens: u64,
-    #[serde(default)]
-    pub per_agent: std::collections::HashMap<String, AgentTokens>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct AgentTokens {
-    #[serde(default)]
-    pub prompt: u64,
-    #[serde(default)]
-    pub completion: u64,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct PipelineEvent {
-    pub stage: String,
-    #[serde(default)]
-    pub agent: String,
-    pub action: String,
-    pub timestamp: String,
-    #[serde(default)]
-    pub duration: Option<u64>,
 }
 
 fn chrono_now() -> String {
