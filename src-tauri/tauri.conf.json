@@ -4,10 +4,10 @@
   "identifier": "com.conovel.app",
   "version": "0.1.0",
   "build": {
-    "frontendDist": null,
+    "frontendDist": "../packages/studio/out",
     "devUrl": "http://localhost:3002",
-    "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "beforeDevCommand": "pnpm --filter @conovel/studio dev",
+    "beforeBuildCommand": "pnpm --filter @conovel/studio build"
   },
   "app": {
     "windows": [

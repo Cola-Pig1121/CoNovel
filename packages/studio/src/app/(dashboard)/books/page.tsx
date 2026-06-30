@@ -62,7 +62,7 @@ export default function BooksPage() {
       try { await tauriInvoke('git_init', { book_id: book.id }); } catch {}
       setBooks([...books, book]);
       setShowWizard(false);
-      window.location.href = `/books/${book.id}`;
+      window.location.href = `/book?id=${book.id}`;
     } catch {}
   };
 
@@ -98,7 +98,7 @@ export default function BooksPage() {
               <div key={book.id} className="card-editorial">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <Link href={`/books/${book.id}`} className="font-serif text-lg hover:underline">{book.title}</Link>
+                    <Link href={`/book?id=${book.id}`} className="font-serif text-lg hover:underline">{book.title}</Link>
                     <p className="text-muted text-sm mt-1">{getGenreNames(book).join('、') || '未选择题材'}</p>
                   </div>
                   <span className={`px-2 py-1 text-xs ${book.status === 'writing' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{statusLabels[book.status] || book.status}</span>
@@ -116,7 +116,7 @@ export default function BooksPage() {
                   <div className="flex justify-between text-sm"><span className="text-muted">字数</span><span className="font-mono">{(book.currentWordCount || 0).toLocaleString()} 字</span></div>
                 </div>
                 <div className="flex gap-2 pt-4 border-t border-border">
-                  <Link href={`/books/${book.id}`} className="btn-editorial text-xs flex-1 text-center">进入项目</Link>
+                  <Link href={`/book?id=${book.id}`} className="btn-editorial text-xs flex-1 text-center">进入项目</Link>
                   <button onClick={async () => { if (confirm('确定删除？')) { await api.del(`/api/books/${book.id}`); setBooks(books.filter(b => b.id !== book.id)); } }} className="btn-editorial text-xs text-red-600">删除</button>
                 </div>
               </div>

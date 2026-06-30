@@ -58,7 +58,7 @@ export function BookChapters({ bookId, book }: { bookId: string; book: any }) {
           {chapters.map(ch => (
             <Link
               key={ch.chapterNumber}
-              href={`/books/${bookId}/chapters/${ch.chapterNumber}`}
+              href={`/editor?bookId=${bookId}&num=${ch.chapterNumber}`}
               className="card-editorial flex items-center gap-4 hover:border-foreground block"
             >
               <span className="font-mono text-xs text-muted w-12">第{ch.chapterNumber}章</span>
