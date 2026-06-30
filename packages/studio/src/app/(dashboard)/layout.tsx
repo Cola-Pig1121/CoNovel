@@ -28,11 +28,9 @@ export default function DashboardLayout({
     setSetupDone(true);
   };
 
-  if (checking) return null;
-
   return (
     <div className="flex min-h-screen">
-      {!setupDone && <SetupScreen onComplete={handleSetupComplete} />}
+      {!checking && !setupDone && <SetupScreen onComplete={handleSetupComplete} />}
       <Sidebar />
       <main className="flex-1 ml-64">
         {children}
