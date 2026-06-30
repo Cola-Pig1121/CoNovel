@@ -37,6 +37,14 @@ export function StartupCheck({ onDismiss }: { onDismiss: () => void }) {
     });
   }, []);
 
+  // If all ready, auto-dismiss
+  useEffect(() => {
+    if (env?.allReady) {
+      const timer = setTimeout(onDismiss, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [env, onDismiss]);
+
   const handleInstallLitellm = async () => {
     setInstalling(true);
     setMessage('Installing litellm...');
@@ -54,15 +62,6 @@ export function StartupCheck({ onDismiss }: { onDismiss: () => void }) {
 
   if (loading) return null;
   if (!isTauri()) return null;
-
-  // If all ready, auto-dismiss
-  useEffect(() => {
-    if (env?.allReady) {
-      const timer = setTimeout(onDismiss, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [env, onDismiss]);
-
   if (!env) return null;
 
   const tools = [
