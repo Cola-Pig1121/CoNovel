@@ -32,29 +32,19 @@ pub fn check_environment() -> Result<serde_json::Value, String> {
 #[tauri::command]
 pub fn install_python_dep(dep: String) -> Result<serde_json::Value, String> {
     let python = find_python();
-    let output = Command::new(&python)
+
+    // Spawn pip install in background (non-blocking)
+    // Using spawn() instead of output() so the UI doesn't freeze
+    let _child = Command::new(&python)
         .args(["-m", "pip", "install", &dep])
-        .output()
-        .map_err(|e| format!("Failed to run pip: {}", e))?;
+        .spawn()
+        .map_err(|e| format!("Failed to start pip: {}", e))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-
-    // Verify installation using the SAME python
-    let version = verify_litellm(&python);
-    if !version.is_empty() {
-        Ok(serde_json::json!({
-            "success": true,
-            "message": format!("{} installed ({})", dep, version),
-        }))
-    } else if output.status.success() || stdout.contains("Successfully") || stdout.contains("already satisfied") {
-        Ok(serde_json::json!({
-            "success": true,
-            "message": format!("{} installed (restart may be needed)", dep),
-        }))
-    } else {
-        Err(format!("pip install failed:\n{}", stderr))
-    }
+    // Return immediately - user should re-check status after install completes
+    Ok(serde_json::json!({
+        "success": true,
+        "message": format!("{} installation started in background. Click 're-check' after a moment.", dep),
+    }))
 }
 
 #[tauri::command]

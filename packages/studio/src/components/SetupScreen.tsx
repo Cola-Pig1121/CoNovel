@@ -51,13 +51,11 @@ export function SetupScreen({ onComplete }: { onComplete: () => void }) {
 
   const handleInstallLitellm = async () => {
     setInstalling('litellm');
-    addLog('正在安装 litellm...');
+    addLog('正在启动 litellm 安装...');
     try {
       const result = await tauriInvoke<any>('install_python_dep', { dep: 'litellm' });
-      addLog(result.message || 'litellm 安装完成');
-      // Re-check
-      const newEnv = await tauriInvoke<EnvStatus>('check_environment');
-      setEnv(newEnv);
+      addLog(result.message || '安装已启动');
+      addLog('请等待安装完成后点击「重新检测」');
     } catch (e: any) {
       addLog(`安装失败: ${e.message || e}`);
     }
