@@ -1,10 +1,16 @@
-import { isTauri, tauriInvoke } from './tauri';
+import { isTauri, tauriInvoke, waitForTauri } from './tauri';
 
-/**
- * Unified API Layer
- * Tauri mode → Rust Commands
- * Static export mode → Tauri Commands (no API routes needed)
- */
+// Cache for Tauri readiness (avoid repeated polling)
+let tauriReady = false;
+
+async function ensureTauri(): Promise<boolean> {
+  if (tauriReady) return true;
+  tauriReady = await waitForTauri(5000);
+  return tauriReady;
+}
+
+// ===== Route → Command mapping =====
+// Tauri commands use snake_case params
 
 function urlToCommand(url: string, method: string, body?: unknown): { name: string; args: Record<string, unknown> } {
   const a: Record<string, unknown> = {};
@@ -37,7 +43,7 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
   // === Characters ===
   const charM = url.match(/^\/api\/books\/([^/?]+)\/characters$/);
   if (charM) {
-    if (method === 'GET') return { name: 'get_book', args: { book_id: charM[1] } }; // Characters stored in state
+    if (method === 'GET') return { name: 'get_book', args: { book_id: charM[1] } };
     if (method === 'POST') return { name: 'update_book', args: { book_id: charM[1], updates: { add_character: b } } };
   }
   const charDelM = url.match(/^\/api\/books\/([^/?]+)\/characters\/([^/?]+)$/);
@@ -68,8 +74,8 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
   const conM = url.match(/^\/api\/books\/([^/?]+)\/constraints(\?|$)/);
   if (conM) {
     if (method === 'GET') {
-      const fileParam = url.match(/[?&]file=([^&]+)/);
-      if (fileParam) return { name: 'get_constraint_file', args: { book_id: conM[1], name: fileParam[1] } };
+      const fp = url.match(/[?&]file=([^&]+)/);
+      if (fp) return { name: 'get_constraint_file', args: { book_id: conM[1], name: fp[1] } };
       return { name: 'list_constraints', args: { book_id: conM[1] } };
     }
     if (method === 'PUT') return { name: 'save_constraint_file', args: { book_id: conM[1], ...b } };
@@ -78,13 +84,13 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
   }
 
   // === Reference ===
-  const refM = url.match(/^\/api\/books\/([^/?]+)\/reference\/upload$/);
-  if (refM && method === 'POST') return { name: 'upload_reference_file', args: { book_id: refM[1], ...b } };
-  const refM2 = url.match(/^\/api\/books\/([^/?]+)\/reference(\?|$)/);
-  if (refM2) {
-    if (method === 'GET') return { name: 'list_references', args: { book_id: refM2[1] } };
-    if (method === 'POST') return { name: 'save_reference_meta', args: { book_id: refM2[1], ...b } };
-    if (method === 'DELETE') return { name: 'delete_reference_file', args: { book_id: refM2[1], ...b } };
+  const refUpM = url.match(/^\/api\/books\/([^/?]+)\/reference\/upload$/);
+  if (refUpM && method === 'POST') return { name: 'upload_reference_file', args: { book_id: refUpM[1], ...b } };
+  const refM = url.match(/^\/api\/books\/([^/?]+)\/reference(\?|$)/);
+  if (refM) {
+    if (method === 'GET') return { name: 'list_references', args: { book_id: refM[1] } };
+    if (method === 'POST') return { name: 'save_reference_meta', args: { book_id: refM[1], ...b } };
+    if (method === 'DELETE') return { name: 'delete_reference_file', args: { book_id: refM[1], ...b } };
   }
 
   // === Hooks ===
@@ -124,7 +130,12 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
     if (url.includes('agents')) return { name: 'get_agent_configs', args: a };
     return { name: 'get_providers', args: a };
   }
-  if (url === '/api/config' && method === 'PUT') return { name: 'save_providers', args: b };
+  if (url === '/api/config' && method === 'PUT') {
+    // Route to correct command based on body type
+    const type = (b as any).type;
+    if (type === 'agents' || type === 'single-agent') return { name: 'save_agent_configs', args: b };
+    return { name: 'save_providers', args: b };
+  }
 
   // === Models ===
   if (url === '/api/models/discover' && method === 'POST') return { name: 'scan_models', args: b };
@@ -140,34 +151,30 @@ function urlToCommand(url: string, method: string, body?: unknown): { name: stri
 
 export const api = {
   async get<T = any>(url: string): Promise<T> {
-    if (isTauri()) {
-      const { name, args } = urlToCommand(url, 'GET');
-      if (name) return tauriInvoke<T>(name, args);
-    }
-    throw new Error(`Route not available: ${url}`);
+    if (!(await ensureTauri())) throw new Error('Tauri not ready');
+    const { name, args } = urlToCommand(url, 'GET');
+    if (!name) throw new Error(`Unknown route: ${url}`);
+    return tauriInvoke<T>(name, args);
   },
 
   async post<T = any>(url: string, body?: unknown): Promise<T> {
-    if (isTauri()) {
-      const { name, args } = urlToCommand(url, 'POST', body);
-      if (name) return tauriInvoke<T>(name, args);
-    }
-    throw new Error(`Route not available: ${url}`);
+    if (!(await ensureTauri())) throw new Error('Tauri not ready');
+    const { name, args } = urlToCommand(url, 'POST', body);
+    if (!name) throw new Error(`Unknown route: ${url}`);
+    return tauriInvoke<T>(name, args);
   },
 
   async put<T = any>(url: string, body?: unknown): Promise<T> {
-    if (isTauri()) {
-      const { name, args } = urlToCommand(url, 'PUT', body);
-      if (name) return tauriInvoke<T>(name, args);
-    }
-    throw new Error(`Route not available: ${url}`);
+    if (!(await ensureTauri())) throw new Error('Tauri not ready');
+    const { name, args } = urlToCommand(url, 'PUT', body);
+    if (!name) throw new Error(`Unknown route: ${url}`);
+    return tauriInvoke<T>(name, args);
   },
 
   async del<T = any>(url: string, body?: unknown): Promise<T> {
-    if (isTauri()) {
-      const { name, args } = urlToCommand(url, 'DELETE', body);
-      if (name) return tauriInvoke<T>(name, args);
-    }
-    throw new Error(`Route not available: ${url}`);
+    if (!(await ensureTauri())) throw new Error('Tauri not ready');
+    const { name, args } = urlToCommand(url, 'DELETE', body);
+    if (!name) throw new Error(`Unknown route: ${url}`);
+    return tauriInvoke<T>(name, args);
   },
 };

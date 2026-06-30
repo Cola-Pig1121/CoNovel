@@ -150,9 +150,17 @@ pub fn list_templates() -> Result<Vec<serde_json::Value>, String> {
 
 /// Clone a template from a GitHub repository
 #[tauri::command]
-pub fn clone_template(repo_url: String, template_name: Option<String>) -> Result<serde_json::Value, String> {
+pub fn clone_template(params: serde_json::Value) -> Result<serde_json::Value, String> {
+    let repo_url = params.get("repo_url").or_else(|| params.get("repoUrl"))
+        .and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let template_name = params.get("template_name").or_else(|| params.get("templateName"))
+        .and_then(|v| v.as_str()).map(|s| s.to_string());
+
+    if repo_url.is_empty() {
+        return Err("repo_url is required".to_string());
+    }
+
     let tmpl_name = template_name.unwrap_or_else(|| {
-        // Extract name from URL
         repo_url.split('/').last().unwrap_or("template").replace(".git", "")
     });
 
@@ -203,7 +211,12 @@ pub fn delete_template(template_name: String) -> Result<(), String> {
 
 /// Push template to GitHub
 #[tauri::command]
-pub fn push_template(template_name: String, repo_url: String) -> Result<serde_json::Value, String> {
+pub fn push_template(params: serde_json::Value) -> Result<serde_json::Value, String> {
+    let template_name = params.get("template_name").or_else(|| params.get("templateName"))
+        .and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let repo_url = params.get("repo_url").or_else(|| params.get("repoUrl"))
+        .and_then(|v| v.as_str()).unwrap_or("").to_string();
+
     let dir = templates_dir().join(&template_name);
     if !dir.exists() {
         return Err("Template not found".to_string());
