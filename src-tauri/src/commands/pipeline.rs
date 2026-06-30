@@ -101,9 +101,9 @@ pub fn control_pipeline(
 }
 
 #[tauri::command]
-pub fn get_all_pipelines() -> Result<Vec<serde_json::Value>, String> {
+pub fn get_all_pipelines() -> Result<serde_json::Value, String> {
     let books_dir = config_dir().join("books");
-    if !books_dir.exists() { return Ok(vec![]); }
+    if !books_dir.exists() { return Ok(serde_json::json!({ "activeBooks": [] })); }
 
     let mut result = Vec::new();
     let dirs: Vec<_> = fs::read_dir(&books_dir)
@@ -143,7 +143,7 @@ pub fn get_all_pipelines() -> Result<Vec<serde_json::Value>, String> {
         }
     }
 
-    Ok(result)
+    Ok(serde_json::json!({ "activeBooks": result }))
 }
 
 fn get_progress(stage: &str) -> u32 {

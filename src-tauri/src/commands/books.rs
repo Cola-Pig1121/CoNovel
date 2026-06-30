@@ -106,8 +106,9 @@ fn write_index(books: &[BookMeta]) {
 }
 
 #[tauri::command]
-pub fn list_books() -> Result<Vec<BookMeta>, String> {
-    Ok(read_index())
+pub fn list_books() -> Result<serde_json::Value, String> {
+    let books = read_index();
+    Ok(serde_json::json!({ "books": books }))
 }
 
 #[tauri::command]

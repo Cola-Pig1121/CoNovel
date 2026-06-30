@@ -20,7 +20,7 @@ pub fn generate_names(
     gender: Option<String>,
     count: Option<u32>,
     avoid_names: Option<Vec<String>>,
-) -> Result<Vec<NameResult>, String> {
+) -> Result<serde_json::Value, String> {
     let count = count.unwrap_or(10) as usize;
     let mut avoid: Vec<&str> = HOMOGENIZED_PATTERNS.to_vec();
     if let Some(ref custom) = avoid_names {
@@ -83,5 +83,5 @@ pub fn generate_names(
         });
     }
 
-    Ok(results)
+    Ok(serde_json::json!({ "names": results }))
 }

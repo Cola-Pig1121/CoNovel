@@ -24,7 +24,7 @@ fn default_constraints() -> Vec<(String, String)> {
 }
 
 #[tauri::command]
-pub fn list_constraints(book_id: String) -> Result<Vec<serde_json::Value>, String> {
+pub fn list_constraints(book_id: String) -> Result<serde_json::Value, String> {
     let dir = constraints_dir(&book_id);
 
     // Initialize defaults if empty
@@ -53,17 +53,18 @@ pub fn list_constraints(book_id: String) -> Result<Vec<serde_json::Value>, Strin
         })
         .collect();
 
-    Ok(files)
+    Ok(serde_json::json!({ "files": files }))
 }
 
 #[tauri::command]
-pub fn get_constraint_file(book_id: String, name: String) -> Result<String, String> {
+pub fn get_constraint_file(book_id: String, name: String) -> Result<serde_json::Value, String> {
     let dir = constraints_dir(&book_id);
     let f = dir.join(&name);
     if !f.exists() {
         return Err("File not found".to_string());
     }
-    fs::read_to_string(&f).map_err(|e| e.to_string())
+    let content = fs::read_to_string(&f).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "content": content }))
 }
 
 #[tauri::command]

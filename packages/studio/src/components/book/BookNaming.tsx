@@ -23,14 +23,13 @@ export function BookNaming({ bookId, book }: { bookId: string; book: any }) {
 
   const handleGenerate = async () => {
     setLoading(true);
-    const res = await api.post('/api/naming', {
+    const data = await api.post<{ names: NameResult[] }>('/api/naming', {
         type,
         genre: book.genre || 'xianxia',
         gender: type === 'character' ? gender : undefined,
         count,
         avoidNames: avoidList,
       });
-    const data = await res.json();
     setResults(data.names || []);
     setLoading(false);
   };

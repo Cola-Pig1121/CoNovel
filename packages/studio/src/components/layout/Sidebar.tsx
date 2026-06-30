@@ -4,12 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: '仪表盘', labelEn: 'Dashboard' },
+  { href: '/', label: '项目中心', labelEn: 'Dashboard' },
   { href: '/books', label: '小说管理', labelEn: 'Books' },
-  { href: '/store', label: '模板商店', labelEn: 'Store' },
   { href: '/agents', label: 'Agent 监控', labelEn: 'Agents' },
-  { href: '/pipeline', label: '写作流水线', labelEn: 'Pipeline' },
-  { href: '/evolution', label: '进化追踪', labelEn: 'Evolution' },
+  { href: '/store', label: '模板商店', labelEn: 'Store' },
   { href: '/settings', label: '系统设置', labelEn: 'Settings' },
 ];
 

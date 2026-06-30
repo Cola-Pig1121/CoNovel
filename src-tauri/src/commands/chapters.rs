@@ -80,10 +80,10 @@ fn regex_replace(_pattern: &str, text: &str, _replacement: &str) -> String {
 }
 
 #[tauri::command]
-pub fn list_chapters(book_id: String) -> Result<Vec<ChapterMeta>, String> {
+pub fn list_chapters(book_id: String) -> Result<serde_json::Value, String> {
     let dir = chapters_dir(&book_id);
     if !dir.exists() {
-        return Ok(vec![]);
+        return Ok(serde_json::json!({ "chapters": [] }));
     }
 
     let mut chapters: Vec<ChapterMeta> = Vec::new();
@@ -103,7 +103,7 @@ pub fn list_chapters(book_id: String) -> Result<Vec<ChapterMeta>, String> {
         }
     }
 
-    Ok(chapters)
+    Ok(serde_json::json!({ "chapters": chapters }))
 }
 
 #[tauri::command]

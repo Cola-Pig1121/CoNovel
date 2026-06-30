@@ -4,7 +4,7 @@ style_slug: editorial
 style_source: /styles/editorial
 
 ## 项目上下文
-- 项目类型: 仪表盘
+- 项目类型: 编辑器核心型桌面应用
 
 # Hard Prompt
 
@@ -281,6 +281,124 @@ placeholder:text-muted
     </div>
   </div>
 </footer>
+```
+
+### 书架 Dashboard 骨架
+```html
+<div class="min-h-screen bg-[#F9F8F6] px-6 md:px-12 py-16 md:py-24">
+  <!-- 顶部标题区 -->
+  <div class="max-w-6xl mx-auto mb-12 md:mb-16">
+    <h1 class="font-serif tracking-tight text-3xl md:text-5xl mb-2">项目中心</h1>
+    <p class="font-sans text-sm text-[#1C1C1C]/60">管理你的书籍项目</p>
+  </div>
+
+  <!-- 书籍卡片网格 -->
+  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16">
+    <!-- Book Card — repeat for each book -->
+    <div class="border border-border hover:border-foreground transition-colors p-6 cursor-pointer">
+      <h2 class="font-serif tracking-tight text-xl md:text-2xl mb-1">{BOOK_TITLE}</h2>
+      <p class="font-sans text-xs tracking-[0.2em] uppercase text-[#1C1C1C]/40 mb-4">{BOOK_GENRE}</p>
+      <div class="flex items-center gap-4 font-sans text-xs text-[#1C1C1C]/60">
+        <span>第 {CHAPTER_NUM} 章</span>
+        <span>{WORD_COUNT} 字</span>
+      </div>
+      <p class="font-sans text-xs text-[#1C1C1C]/40 mt-2">更新于 {LAST_UPDATED}</p>
+    </div>
+
+    <!-- New Project Card -->
+    <div class="border border-border border-dashed hover:border-foreground transition-colors p-6 cursor-pointer flex items-center justify-center min-h-[160px]">
+      <span class="font-sans text-sm text-[#1C1C1C]/40 tracking-wide">+ 新建项目</span>
+    </div>
+  </div>
+
+  <!-- 底部 Agent 状态指示条 -->
+  <div class="max-w-6xl mx-auto border-t border-border pt-4 flex items-center gap-3">
+    <span class="w-2 h-2 rounded-full bg-green-600"></span>
+    <span class="font-sans text-xs text-[#1C1C1C]/60">所有 Agent 运行正常</span>
+  </div>
+</div>
+```
+
+### 编辑器三栏骨架
+```html
+<div class="flex h-screen bg-[#F9F8F6] overflow-hidden">
+
+  <!-- 左侧项目栏（可折叠） -->
+  <aside class="w-64 border-r border-border flex-shrink-0 flex flex-col hidden md:flex">
+    <div class="p-4 border-b border-border">
+      <h2 class="font-serif tracking-tight text-lg">{BOOK_TITLE}</h2>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+      <!-- Volume -->
+      <p class="font-sans text-xs tracking-[0.2em] uppercase text-[#1C1C1C]/40 mb-2">第一卷</p>
+      <!-- Chapter item -->
+      <a href="#" class="block font-sans text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C] hover:underline transition-colors py-1 pl-3 border-l border-border hover:border-[#1C1C1C]">
+        第一章 {CHAPTER_TITLE}
+      </a>
+      <a href="#" class="block font-sans text-sm text-[#1C1C1C]/40 hover:text-[#1C1C1C] hover:underline transition-colors py-1 pl-3 border-l border-transparent hover:border-[#1C1C1C]">
+        第二章 {CHAPTER_TITLE}
+      </a>
+    </nav>
+    <div class="p-4 border-t border-border">
+      <span class="font-sans text-xs text-[#1C1C1C]/40">v0.1.0</span>
+    </div>
+  </aside>
+
+  <!-- 中心编辑区 -->
+  <main class="flex-1 flex flex-col min-w-0">
+    <!-- 编辑器头部 -->
+    <header class="flex items-center justify-between px-6 py-3 border-b border-border">
+      <div class="flex items-center gap-3">
+        <span class="font-sans text-xs text-[#1C1C1C]/60">第三章</span>
+        <span class="font-serif text-lg">{CHAPTER_TITLE}</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-sans text-xs text-[#1C1C1C]/60">4,500 字</span>
+        <button class="font-sans text-xs tracking-wide px-4 py-2 border border-border hover:border-foreground transition-colors">
+          保存
+        </button>
+      </div>
+    </header>
+
+    <!-- 纯文本编辑器 -->
+    <div class="flex-1 overflow-y-auto p-6 md:p-12">
+      <textarea
+        class="w-full h-full bg-transparent font-sans text-base leading-relaxed text-[#1C1C1C] resize-none focus:outline-none"
+        placeholder="开始写作..."
+      ></textarea>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <footer class="flex items-center justify-between px-6 py-2 border-t border-border">
+      <span class="font-sans text-xs text-[#1C1C1C]/60">第三章 · 4,500 字</span>
+      <span class="font-sans text-xs text-[#1C1C1C]/40">main@abc1234</span>
+      <div class="flex items-center gap-3">
+        <span class="font-sans text-xs text-[#1C1C1C]/60">all agents active</span>
+        <button class="font-sans text-xs tracking-wide px-3 py-1 border border-border hover:border-foreground transition-colors">
+          Solo
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- 右侧工具栏 -->
+  <aside class="w-72 border-l border-border flex-shrink-0 flex flex-col">
+    <!-- Tab 切换栏 -->
+    <div class="flex border-b border-border">
+      <button class="flex-1 py-3 font-sans text-xs tracking-wide border-b-2 border-[#1C1C1C] text-[#1C1C1C]">大纲</button>
+      <button class="flex-1 py-3 font-sans text-xs tracking-wide text-[#1C1C1C]/40 hover:text-[#1C1C1C] transition-colors">角色</button>
+      <button class="flex-1 py-3 font-sans text-xs tracking-wide text-[#1C1C1C]/40 hover:text-[#1C1C1C] transition-colors">AI</button>
+      <button class="flex-1 py-3 font-sans text-xs tracking-wide text-[#1C1C1C]/40 hover:text-[#1C1C1C] transition-colors">设置</button>
+    </div>
+
+    <!-- Tab 内容区 -->
+    <div class="flex-1 overflow-y-auto p-4">
+      <p class="font-sans text-xs tracking-[0.2em] uppercase text-[#1C1C1C]/40 mb-3">章节大纲</p>
+      <p class="font-sans text-sm text-[#1C1C1C]/80 leading-relaxed">{OUTLINE_CONTENT}</p>
+    </div>
+  </aside>
+
+</div>
 ```
 
 ---

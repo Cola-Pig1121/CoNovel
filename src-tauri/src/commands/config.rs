@@ -64,13 +64,14 @@ fn ensure_config_dir() {
 }
 
 #[tauri::command]
-pub fn get_providers() -> Result<Vec<Provider>, String> {
+pub fn get_providers() -> Result<serde_json::Value, String> {
     let f = config_dir().join("providers.json");
     if !f.exists() {
-        return Ok(vec![]);
+        return Ok(serde_json::json!({ "providers": [] }));
     }
     let data = fs::read_to_string(&f).map_err(|e| e.to_string())?;
-    serde_json::from_str(&data).map_err(|e| e.to_string())
+    let providers: Vec<Provider> = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "providers": providers }))
 }
 
 #[tauri::command]
@@ -81,13 +82,14 @@ pub fn save_providers(providers: Vec<Provider>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_agent_configs() -> Result<Vec<AgentConfigEntry>, String> {
+pub fn get_agent_configs() -> Result<serde_json::Value, String> {
     let f = config_dir().join("agents.json");
     if !f.exists() {
-        return Ok(vec![]);
+        return Ok(serde_json::json!({ "agents": [] }));
     }
     let data = fs::read_to_string(&f).map_err(|e| e.to_string())?;
-    serde_json::from_str(&data).map_err(|e| e.to_string())
+    let agents: Vec<AgentConfigEntry> = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "agents": agents }))
 }
 
 #[tauri::command]
@@ -99,7 +101,9 @@ pub fn save_agent_configs(configs: Vec<AgentConfigEntry>) -> Result<(), String> 
 
 #[tauri::command]
 pub fn update_agent_config(role: String, updates: serde_json::Value) -> Result<AgentConfigEntry, String> {
-    let mut configs = get_agent_configs()?;
+    let agents_value = get_agent_configs()?;
+    let agents_arr = agents_value.get("agents").and_then(|v| v.as_array()).ok_or("Invalid agents data")?;
+    let mut configs: Vec<AgentConfigEntry> = serde_json::from_value(serde_json::Value::Array(agents_arr.clone())).map_err(|e| e.to_string())?;
     let idx = configs.iter().position(|c| c.role == role)
         .ok_or_else(|| format!("Agent not found: {}", role))?;
 
