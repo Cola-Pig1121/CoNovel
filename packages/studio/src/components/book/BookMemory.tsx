@@ -88,7 +88,7 @@ export function BookMemory({ bookId }: { bookId: string }) {
                     {selectedSnapshot.characters.map((c) => (
                       <div key={c.id} className="p-3 border border-border">
                         <p className="text-sm font-medium">{c.name}</p>
-                        <p className="text-xs text-muted mt-1">📍 {c.location} · 😊 {c.emotionalState}</p>
+                        <p className="text-xs text-muted mt-1">{c.location} · {c.emotionalState}</p>
                         {c.keyActions.length > 0 && (
                           <p className="text-xs text-muted mt-1">行为：{c.keyActions.join('；')}</p>
                         )}

@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { IconBookshelf, IconNovel, IconAgent, IconStore, IconSettings } from '@/components/icons';
 
 const navItems = [
-  { href: '/', icon: '📚', label: '项目中心' },
-  { href: '/books', icon: '📖', label: '小说管理' },
-  { href: '/agents', icon: '🤖', label: 'Agent' },
-  { href: '/store', icon: '🏪', label: '商店' },
-  { href: '/settings', icon: '⚙️', label: '设置' },
+  { href: '/', icon: IconBookshelf, label: '项目中心' },
+  { href: '/books', icon: IconNovel, label: '小说管理' },
+  { href: '/agents', icon: IconAgent, label: 'Agent' },
+  { href: '/store', icon: IconStore, label: '商店' },
+  { href: '/settings', icon: IconSettings, label: '设置' },
 ];
 
 export function Sidebar() {
@@ -26,6 +27,7 @@ export function Sidebar() {
       <nav className="flex-1 w-full px-2 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
@@ -37,7 +39,7 @@ export function Sidebar() {
                   : 'text-muted hover:text-foreground hover:bg-foreground/5'
               }`}
             >
-              <span className="text-base flex-shrink-0 w-5 text-center">{item.icon}</span>
+              <Icon size={18} className="flex-shrink-0" />
               <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">{item.label}</span>
             </Link>
           );
