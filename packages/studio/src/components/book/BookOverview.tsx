@@ -85,8 +85,8 @@ export function BookOverview({ book }: { book: any }) {
         <div className="card-editorial">
           <p className="label-editorial text-muted mb-3">快速操作</p>
           <div className="space-y-2">
-            <Link href={`/books/${book.id}`} className="btn-editorial text-xs w-full block text-center">管理章节</Link>
-            <Link href={`/books/${book.id}`} className="btn-editorial text-xs w-full block text-center">管理角色</Link>
+            <Link href={`/book?id=${book.id}&tab=chapters`} className="btn-editorial text-xs w-full block text-center">管理章节</Link>
+            <Link href={`/book?id=${book.id}&tab=characters`} className="btn-editorial text-xs w-full block text-center">管理角色</Link>
           </div>
         </div>
       </div>

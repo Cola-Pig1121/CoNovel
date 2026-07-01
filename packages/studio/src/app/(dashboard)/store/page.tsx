@@ -69,7 +69,7 @@ export default function StorePage() {
     if (!checkTauri()) return;
     const title = prompt('新项目名称：');
     if (!title) return;
-    try { const res = await tauriInvoke<any>('import_template', { template_name: templateName, new_book_id: crypto.randomUUID(), new_book_title: title }); setStatus(`模板已导入到 ${res.bookId}`); window.location.href = `/books/${res.bookId}`; } catch (e: any) { setStatus(`导入失败: ${e}`); }
+    try { const res = await tauriInvoke<any>('import_template', { template_name: templateName, new_book_id: crypto.randomUUID(), new_book_title: title }); setStatus(`模板已导入到 ${res.bookId}`); window.location.href = `/book?id=${res.bookId}`; } catch (e: any) { setStatus(`导入失败: ${e}`); }
   };
 
   const handleClone = async () => {

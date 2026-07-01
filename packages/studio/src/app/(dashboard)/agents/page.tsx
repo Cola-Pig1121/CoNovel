@@ -3,7 +3,6 @@
 import { api } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 interface AgentStatus {
   role: string;
@@ -100,10 +99,9 @@ export default function AgentsPage() {
             <h3 className="label-editorial text-muted mb-4">{category}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {agents.filter(a => a.category === category).map(agent => (
-                <Link
+                <div
                   key={agent.role}
-                  href={`/agents/${agent.role}`}
-                  className={`card-editorial block hover:border-foreground ${!agent.enabled ? 'opacity-50' : ''}`}
+                  className={`card-editorial block ${!agent.enabled ? 'opacity-50' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -124,7 +122,7 @@ export default function AgentsPage() {
                       </span>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           </section>

@@ -111,10 +111,14 @@ function EditorInner() {
   const handleSave = async () => {
     if (!chapter) return;
     setSaving(true);
-    await api.put(`/api/books/${bookId}/chapters/${num}`, { content });
+    try {
+      await api.put(`/api/books/${bookId}/chapters/${num}`, { content });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error('Save failed', e);
+    }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
 
   // Auto-save

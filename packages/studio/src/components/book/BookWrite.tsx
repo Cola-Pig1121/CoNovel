@@ -122,7 +122,7 @@ export function BookWrite({ bookId, book }: { bookId: string; book: any }) {
         <div className="card-editorial border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50">
           <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">创作失败</p>
           <p className="text-xs text-red-700 dark:text-red-400 whitespace-pre-wrap">{error}</p>
-          <p className="text-xs text-red-600 dark:text-red-400 mt-2">请检查：1) LiteLLM是否运行 2) Agent模型是否已配置 3) Python依赖是否安装（bash scripts/setup.sh）</p>
+          <p className="text-xs text-red-600 dark:text-red-400 mt-2">请检查：1) LLM服务商是否已配置 2) Agent模型是否已配置 3) API Key是否有效</p>
         </div>
       )}
 

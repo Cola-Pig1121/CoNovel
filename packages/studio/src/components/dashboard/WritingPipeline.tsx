@@ -50,7 +50,7 @@ export function WritingPipeline() {
         <div key={p.bookId} className="card-editorial">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <Link href={`/books/${p.bookId}`} className="font-serif hover:underline">{p.bookTitle}</Link>
+              <Link href={`/book?id=${p.bookId}`} className="font-serif hover:underline">{p.bookTitle}</Link>
               <p className="text-muted text-xs mt-1">第 {p.currentChapter} 章 · {p.pipelineStage}</p>
             </div>
             <span className="font-serif text-xl">{p.pipelineProgress}%</span>

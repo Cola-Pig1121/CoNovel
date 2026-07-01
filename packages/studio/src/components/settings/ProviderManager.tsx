@@ -11,7 +11,7 @@ interface Provider {
   id: string;
   name: string;
   baseUrl: string;
-  apiFormat: 'openai' | 'anthropic' | 'responses';
+  apiFormat: 'openai' | 'anthropic';
   apiKey: string;
   models: ModelEntry[];
   status: 'connected' | 'disconnected' | 'error';
@@ -124,12 +124,11 @@ export function ProviderManager() {
     if (!editingProvider) return;
     setScanning(true);
     try {
-      const res = await api.post('/api/models/discover', {
+      const data = await api.post<any>('/api/models/discover', {
           baseUrl: editingProvider.baseUrl,
           apiKey: editingProvider.apiKey,
           apiFormat: editingProvider.apiFormat,
         });
-      const data = await res.json();
       if (data.success && data.models?.length > 0) {
         // Merge discovered models with existing, preserving manual additions
         const existingIds = new Set(editingProvider.models.map(m => m.id));
@@ -257,9 +256,8 @@ export function ProviderManager() {
               <div>
                 <label className="label-editorial block mb-2">API 格式</label>
                 <select value={editingProvider.apiFormat} onChange={(e) => setEditingProvider({ ...editingProvider, apiFormat: e.target.value as Provider['apiFormat'] })} className="input-editorial">
-                  <option value="openai">Chat Completions (/chat/completions)</option>
-                  <option value="anthropic">Anthropic Messages (/v1/messages)</option>
-                  <option value="responses">Responses (/responses)</option>
+                  <option value="openai">OpenAI Compatible (/chat/completions)</option>
+                  <option value="anthropic">Anthropic (/v1/messages)</option>
                 </select>
               </div>
 
@@ -419,23 +417,21 @@ function AddProviderModal({ onAdd, onClose }: { onAdd: (p: Omit<Provider, 'id' |
         <div className="space-y-4">
           <div>
             <label className="label-editorial block mb-2">名称</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-editorial" placeholder="如：My LiteLLM Gateway" />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-editorial" placeholder="如：OpenAI" />
           </div>
           <div>
             <label className="label-editorial block mb-2">Base URL</label>
-            <input type="url" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} className="input-editorial" placeholder="http://localhost:4000" />
-            <p className="text-xs text-muted mt-1">LiteLLM 默认端口 4000，格式为 OpenAI 兼容</p>
+            <input type="url" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} className="input-editorial" placeholder="https://api.openai.com/v1" />
           </div>
           <div>
             <label className="label-editorial block mb-2">API Key</label>
-            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className="input-editorial" placeholder="sk-... 或 LiteLLM Master Key" />
+            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className="input-editorial" placeholder="sk-..." />
           </div>
           <div>
             <label className="label-editorial block mb-2">API 格式</label>
             <select value={apiFormat} onChange={(e) => setApiFormat(e.target.value as Provider['apiFormat'])} className="input-editorial">
-              <option value="openai">OpenAI Compatible — /chat/completions</option>
-              <option value="anthropic">Anthropic — /v1/messages (直连 Anthropic)</option>
-              <option value="responses">Responses — /responses</option>
+              <option value="openai">OpenAI Compatible (/chat/completions)</option>
+              <option value="anthropic">Anthropic (/v1/messages)</option>
             </select>
           </div>
         </div>

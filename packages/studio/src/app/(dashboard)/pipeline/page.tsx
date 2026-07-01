@@ -69,7 +69,7 @@ export default function PipelinePage() {
                   {/* Header */}
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <Link href={`/books/${p.bookId}`} className="font-serif text-lg hover:underline">{p.bookTitle}</Link>
+                      <Link href={`/book?id=${p.bookId}`} className="font-serif text-lg hover:underline">{p.bookTitle}</Link>
                       <p className="text-muted text-sm mt-1">第 {p.currentChapter} 章 · {p.pipelineStage}</p>
                     </div>
                     <div className="text-right">
