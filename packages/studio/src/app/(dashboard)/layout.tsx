@@ -11,6 +11,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [checking, setChecking] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const mainMargin = sidebarExpanded ? 'ml-44' : 'ml-14';
 
   useEffect(() => {
     const done = sessionStorage.getItem('conovel-setup-done');
@@ -19,16 +21,15 @@ export default function DashboardLayout({
       return;
     }
 
-    // First launch: check environment in background, then dismiss
     if (isTauri()) {
       waitForTauri(5000).then(ready => {
         if (ready) {
           tauriInvoke<{ allReady: boolean }>('check_environment')
-            .then(result => {
-              sessionStorage.setItem('conovel-setup-done', '1');
-            })
             .catch(() => {})
-            .finally(() => setChecking(false));
+            .finally(() => {
+              sessionStorage.setItem('conovel-setup-done', '1');
+              setChecking(false);
+            });
         } else {
           sessionStorage.setItem('conovel-setup-done', '1');
           setChecking(false);
@@ -43,8 +44,8 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <CommandPalette />
-      <Sidebar />
-      <main className="flex-1 ml-14 transition-all duration-200 group-hover:ml-48">
+      <Sidebar expanded={sidebarExpanded} onToggle={() => setSidebarExpanded(!sidebarExpanded)} />
+      <main className={`flex-1 ${mainMargin} transition-all duration-200`}>
         {checking ? (
           <div className="flex items-center justify-center min-h-[60vh]">
             <p className="text-sm text-muted">正在初始化...</p>
