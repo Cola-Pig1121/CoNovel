@@ -8,27 +8,14 @@ pub struct LLMCompletionInput {
     pub user: String,
     pub temperature: Option<f64>,
     pub max_tokens: Option<u32>,
+    #[allow(dead_code)]
     pub provider_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct LLMUsage {
+struct LLMUsage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
-}
-
-#[derive(Debug, Serialize)]
-pub struct LLMCompletionResult {
-    pub success: bool,
-    pub content: String,
-    pub usage: LLMUsage,
-    pub finish_reason: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct OpenAIMessage {
-    role: String,
-    content: String,
 }
 
 #[derive(Debug, Deserialize)]
