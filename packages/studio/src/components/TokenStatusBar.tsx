@@ -64,7 +64,7 @@ export function TokenStatusBar({ bookId }: { bookId: string }) {
 
       {/* Breakpoint Alert */}
       {breakpoint && (
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 border border-yellow-200 text-yellow-800">
+        <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/50 dark:border-yellow-800 dark:text-yellow-300">
           <span>⏸</span>
           <span>{breakpoint.at}: {breakpoint.reason}</span>
         </div>

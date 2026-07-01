@@ -101,7 +101,7 @@ export default function BooksPage() {
                     <Link href={`/book?id=${book.id}`} className="font-serif text-lg hover:underline">{book.title}</Link>
                     <p className="text-muted text-sm mt-1">{getGenreNames(book).join('、') || '未选择题材'}</p>
                   </div>
-                  <span className={`px-2 py-1 text-xs ${book.status === 'writing' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{statusLabels[book.status] || book.status}</span>
+                  <span className={`px-2 py-1 text-xs ${book.status === 'writing' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>{statusLabels[book.status] || book.status}</span>
                 </div>
                 {book.premise && <p className="text-xs text-muted mb-3 line-clamp-2">{book.premise}</p>}
                 <div className="space-y-3 mb-4">

@@ -4,60 +4,49 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: '项目中心', labelEn: 'Dashboard' },
-  { href: '/books', label: '小说管理', labelEn: 'Books' },
-  { href: '/agents', label: 'Agent 监控', labelEn: 'Agents' },
-  { href: '/store', label: '模板商店', labelEn: 'Store' },
-  { href: '/settings', label: '系统设置', labelEn: 'Settings' },
+  { href: '/', icon: '📚', label: '项目中心' },
+  { href: '/books', icon: '📖', label: '小说管理' },
+  { href: '/agents', icon: '🤖', label: 'Agent' },
+  { href: '/store', icon: '🏪', label: '商店' },
+  { href: '/settings', icon: '⚙️', label: '设置' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-background">
+    <aside className="fixed left-0 top-0 bottom-0 w-14 border-r border-border bg-background flex flex-col items-center py-4 z-50 group hover:w-48 transition-all duration-200">
       {/* Logo */}
-      <div className="px-6 py-8 border-b border-border">
-        <h1 className="font-serif text-xl tracking-tight">CoNovel</h1>
-        <p className="text-muted text-xs mt-1 font-sans tracking-[0.1em]">
-          NOVEL WRITING SYSTEM
-        </p>
+      <div className="mb-6 px-2 flex items-center justify-center w-full overflow-hidden">
+        <span className="font-serif text-lg tracking-tight whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">CoNovel</span>
+        <span className="font-serif text-lg group-hover:hidden">C</span>
       </div>
 
       {/* Navigation */}
-      <nav className="px-4 py-6">
-        <ul className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`
-                    block px-4 py-3 text-sm transition-colors
-                    ${isActive
-                      ? 'bg-foreground text-background'
-                      : 'text-foreground hover:bg-foreground/5'
-                    }
-                  `}
-                >
-                  <span className="font-sans">{item.label}</span>
-                  <span className="block text-xs text-muted mt-0.5 font-mono">
-                    {item.labelEn}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 w-full px-2 space-y-1">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors rounded-sm overflow-hidden whitespace-nowrap ${
+                isActive
+                  ? 'bg-foreground/10 text-foreground'
+                  : 'text-muted hover:text-foreground hover:bg-foreground/5'
+              }`}
+            >
+              <span className="text-base flex-shrink-0 w-5 text-center">{item.icon}</span>
+              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Bottom Section */}
-      <div className="absolute bottom-0 left-0 right-0 px-6 py-6 border-t border-border">
-        <div className="text-xs text-muted">
-          <p className="font-sans">CoNovel v0.1.0</p>
-          <p className="font-mono mt-1">Powered by Vercel Eve</p>
-        </div>
+      {/* Bottom */}
+      <div className="px-2 py-2 w-full overflow-hidden">
+        <p className="text-[10px] text-muted/40 text-center whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">v0.1.0</p>
       </div>
     </aside>
   );

@@ -82,9 +82,9 @@ export function BookWrite({ bookId, book }: { bookId: string; book: any }) {
     <div className="space-y-8">
       {/* Status Bar */}
       {!checkingStatus && !canStart && (
-        <div className="border border-yellow-300 bg-yellow-50 p-4 text-sm">
-          <p className="font-medium text-yellow-800">尚未配置Agent模型</p>
-          <p className="text-yellow-700 text-xs mt-1">请先在「设置 → Agent模型配置」中配置至少一个Agent的模型，才能开始创作。</p>
+        <div className="border border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/50 p-4 text-sm">
+          <p className="font-medium text-yellow-800 dark:text-yellow-300">尚未配置Agent模型</p>
+          <p className="text-yellow-700 dark:text-yellow-400 text-xs mt-1">请先在「设置 → Agent模型配置」中配置至少一个Agent的模型，才能开始创作。</p>
         </div>
       )}
 
@@ -119,10 +119,10 @@ export function BookWrite({ bookId, book }: { bookId: string; book: any }) {
 
       {/* Error */}
       {error && (
-        <div className="card-editorial border-red-300 bg-red-50">
-          <p className="text-sm font-medium text-red-800 mb-2">创作失败</p>
-          <p className="text-xs text-red-700 whitespace-pre-wrap">{error}</p>
-          <p className="text-xs text-red-600 mt-2">请检查：1) LiteLLM是否运行 2) Agent模型是否已配置 3) Python依赖是否安装（bash scripts/setup.sh）</p>
+        <div className="card-editorial border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50">
+          <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">创作失败</p>
+          <p className="text-xs text-red-700 dark:text-red-400 whitespace-pre-wrap">{error}</p>
+          <p className="text-xs text-red-600 dark:text-red-400 mt-2">请检查：1) LiteLLM是否运行 2) Agent模型是否已配置 3) Python依赖是否安装（bash scripts/setup.sh）</p>
         </div>
       )}
 

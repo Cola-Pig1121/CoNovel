@@ -50,9 +50,8 @@ fn main() {
             commands::pipeline::control_pipeline,
             commands::pipeline::get_all_pipelines,
             // LLM
-            commands::llm::call_llm_bridge,
+            commands::llm::call_llm,
             commands::llm::scan_models,
-            commands::llm::check_reasoning,
             // Naming
             commands::naming::generate_names,
             // Knowledge
@@ -91,9 +90,8 @@ fn check_environment_before_launch() -> serde_json::Value {
     let node = check_tool("node", &["--version"]);
     let pnpm = check_tool("pnpm", &["--version"]);
     let git = check_tool("git", &["--version"]);
-    let litellm = check_litellm();
 
-    let all_ready = python.0 && node.0 && litellm.0 && git.0;
+    let all_ready = python.0 && node.0 && git.0;
 
     if !all_ready {
         eprintln!("=== CoNovel Environment Check ===");
@@ -103,8 +101,6 @@ fn check_environment_before_launch() -> serde_json::Value {
         else { eprintln!("  [v] Node.js - {}", node.1); }
         if !pnpm.0 { eprintln!("  [ ] pnpm    - not found (optional)"); }
         else { eprintln!("  [v] pnpm    - {}", pnpm.1); }
-        if !litellm.0 { eprintln!("  [X] litellm - NOT FOUND (pip install litellm)"); }
-        else { eprintln!("  [v] litellm - {}", litellm.1); }
         if !git.0 { eprintln!("  [X] Git     - NOT FOUND"); }
         else { eprintln!("  [v] Git     - {}", git.1); }
         eprintln!("================================");
@@ -115,21 +111,12 @@ fn check_environment_before_launch() -> serde_json::Value {
         "python": { "installed": python.0, "version": python.1 },
         "node": { "installed": node.0, "version": node.1 },
         "pnpm": { "installed": pnpm.0, "version": pnpm.1 },
-        "litellm": { "installed": litellm.0, "version": litellm.1 },
         "git": { "installed": git.0, "version": git.1 },
     })
 }
 
 fn check_tool(name: &str, args: &[&str]) -> (bool, String) {
     match Command::new(name).args(args).output() {
-        Ok(o) if o.status.success() => (true, String::from_utf8_lossy(&o.stdout).trim().to_string()),
-        _ => (false, String::new()),
-    }
-}
-
-fn check_litellm() -> (bool, String) {
-    let py = if cfg!(target_os = "windows") { "python" } else { "python3" };
-    match Command::new(py).args(["-c", "import litellm; print(litellm.__version__)"]).output() {
         Ok(o) if o.status.success() => (true, String::from_utf8_lossy(&o.stdout).trim().to_string()),
         _ => (false, String::new()),
     }

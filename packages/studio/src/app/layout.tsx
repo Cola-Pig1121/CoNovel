@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '@/styles/editorial.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'CoNovel - 自进化多Agent小说写作系统',
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="bg-background text-foreground min-h-screen font-wenkai">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -37,10 +37,10 @@ export function BookHooks({ bookId }: { bookId: string }) {
   if (!data) return <div className="text-muted text-sm">加载失败</div>;
 
   const statusColors: Record<string, string> = {
-    planted: 'bg-blue-100 text-blue-800',
-    hinted: 'bg-yellow-100 text-yellow-800',
-    overdue: 'bg-red-100 text-red-800',
-    resolved: 'bg-green-100 text-green-800',
+    planted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    hinted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    overdue: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   };
   const statusLabels: Record<string, string> = { planted: '已植入', hinted: '已推进', overdue: '逾期', resolved: '已回收' };
 
@@ -53,9 +53,9 @@ export function BookHooks({ bookId }: { bookId: string }) {
 
       {/* Alerts */}
       {(data.alerts.overdueCount > 0 || data.alerts.burstDetected || data.alerts.noAdvanceCount > 0) && (
-        <div className="border border-red-300 bg-red-50 p-4">
-          <p className="text-sm font-medium text-red-800 mb-2">⚠ 警告</p>
-          <div className="space-y-1 text-sm text-red-700">
+        <div className="border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-4">
+          <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">⚠ 警告</p>
+          <div className="space-y-1 text-sm text-red-700 dark:text-red-400">
             {data.alerts.overdueCount > 0 && <p>• {data.alerts.overdueCount} 个伏笔已逾期未收</p>}
             {data.alerts.burstDetected && <p>• 最近3章植入了 {data.alerts.burstCount} 个伏笔，密度过高</p>}
             {data.alerts.noAdvanceCount > 0 && <p>• {data.alerts.noAdvanceCount} 个伏笔超过5章未推进</p>}

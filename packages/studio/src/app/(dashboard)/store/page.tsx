@@ -9,7 +9,17 @@ interface Template {
   description?: string;
   version?: string;
   createdAt?: string;
+  category?: string;
 }
+
+const CATEGORIES = [
+  { id: 'all', label: '全部' },
+  { id: 'template', label: '项目模板' },
+  { id: 'style', label: '风格包' },
+  { id: 'constraint', label: '约束规则' },
+  { id: 'reference', label: '参考作品' },
+  { id: 'plugin', label: '插件' },
+];
 
 export default function StorePage() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -20,6 +30,7 @@ export default function StorePage() {
   const [cloneUrl, setCloneUrl] = useState('');
   const [books, setBooks] = useState<any[]>([]);
   const [status, setStatus] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
 
   useEffect(() => {
     loadTemplates();
@@ -75,10 +86,14 @@ export default function StorePage() {
 
   // Official templates
   const officialTemplates = [
-    { name: '仙侠·废柴逆袭', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '仙侠题材模板：废柴逆袭型主角，修仙世界观，门派体系' },
-    { name: '都市·重生复仇', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '都市题材模板：重生复仇型主角，商战+感情线' },
-    { name: '玄幻·系统流', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '玄幻题材模板：系统辅助成长，快节奏' },
+    { name: '仙侠·废柴逆袭', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '仙侠题材模板：废柴逆袭型主角，修仙世界观，门派体系', category: 'template' },
+    { name: '都市·重生复仇', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '都市题材模板：重生复仇型主角，商战+感情线', category: 'template' },
+    { name: '玄幻·系统流', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '玄幻题材模板：系统辅助成长，快节奏', category: 'template' },
   ];
+
+  const filteredOfficial = activeCategory === 'all'
+    ? officialTemplates
+    : officialTemplates.filter(t => t.category === activeCategory);
 
   return (
     <div>
@@ -91,6 +106,23 @@ export default function StorePage() {
         {status && (
           <div className="mb-4 p-3 border border-border text-sm">{status}</div>
         )}
+
+        {/* Category Tabs */}
+        <div className="flex gap-1 mb-6 border-b border-border">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`px-4 py-2 text-xs transition-colors ${
+                activeCategory === cat.id
+                  ? 'border-b-2 border-foreground text-foreground'
+                  : 'text-muted hover:text-foreground'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
 
         {/* Actions */}
         <div className="flex gap-3 mb-8">
@@ -132,8 +164,13 @@ export default function StorePage() {
         {/* Official Templates */}
         <section>
           <h3 className="label-editorial text-muted mb-4">官方模板</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {officialTemplates.map((t, i) => (
+          {filteredOfficial.length === 0 ? (
+            <div className="card-editorial text-center py-8">
+              <p className="text-muted text-sm">该分类下暂无模板</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredOfficial.map((t, i) => (
               <div key={i} className="card-editorial">
                 <p className="font-serif mb-2">{t.name}</p>
                 <p className="text-xs text-muted mb-3">{t.description}</p>
@@ -149,7 +186,8 @@ export default function StorePage() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </section>
       </div>
 

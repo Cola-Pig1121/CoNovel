@@ -10,10 +10,10 @@ export function BookForeshadowing({ bookId, book }: { bookId: string; book: any 
   const [newFs, setNewFs] = useState({ description: '', type: 'plot', urgency: 'medium', plantedIn: book.currentChapter || 1, maxDelay: 20 });
 
   const statusColors: Record<string, string> = {
-    planted: 'bg-blue-100 text-blue-800',
-    hinted: 'bg-yellow-100 text-yellow-800',
-    resolved: 'bg-green-100 text-green-800',
-    overdue: 'bg-red-100 text-red-800',
+    planted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    hinted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    overdue: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   };
   const typeLabels: Record<string, string> = { plot: '情节', character: '角色', world: '世界', emotion: '情感' };
   const urgencyLabels: Record<string, string> = { low: '低', medium: '中', high: '高', critical: '紧急' };

@@ -44,7 +44,7 @@ export function BookOutline({ bookId, book }: { bookId: string; book: any }) {
                     <div key={ci} className="flex items-center gap-3 py-2 px-3 border border-border text-sm">
                       <span className="font-mono text-xs text-muted w-8">第{ch.chapterNumber}章</span>
                       <span className="flex-1">{ch.title || ch.summary?.substring(0, 30)}</span>
-                      <span className={`text-xs px-2 py-0.5 ${ch.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-muted/20 text-muted'}`}>{ch.status}</span>
+                      <span className={`text-xs px-2 py-0.5 ${ch.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-muted/20 text-muted'}`}>{ch.status}</span>
                     </div>
                   ))}
                 </div>

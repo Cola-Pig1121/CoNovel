@@ -226,7 +226,7 @@ export function BookReference({ bookId, book }: { bookId: string; book: any }) {
                 </div>
                 <div className="flex items-center gap-3">
                   {ref.styleExtracted ? (
-                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800">已分析</span>
+                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">已分析</span>
                   ) : (
                     <span className="px-2 py-0.5 text-xs bg-muted/20 text-muted">待分析</span>
                   )}

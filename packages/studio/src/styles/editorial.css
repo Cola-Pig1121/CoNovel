@@ -61,6 +61,14 @@
   --color-border: #1C1C1C;
   --color-accent: #816d70;
 }
+[data-theme="dark"] {
+  --color-bg: #1a1a1a;
+  --color-fg: #e8e6e3;
+  --color-muted: #8b8b8b;
+  --color-border: #333333;
+  --color-accent: #b8a0a3;
+}
+
 
 body {
   background-color: var(--color-bg);
@@ -112,7 +120,15 @@ body {
   @apply transition-colors;
   @apply placeholder:text-muted;
   background-color: var(--color-bg);
+  color: var(--color-fg);
 }
+
+.input-editorial option {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+}
+
+
 
 /* ===== Editorial Label ===== */
 
@@ -149,6 +165,14 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-fg);
+}
+
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #555;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
 
 /* ===== Selection ===== */

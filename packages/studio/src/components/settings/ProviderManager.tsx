@@ -402,7 +402,7 @@ export function ProviderManager() {
 
 function AddProviderModal({ onAdd, onClose }: { onAdd: (p: Omit<Provider, 'id' | 'status'>) => void; onClose: () => void }) {
   const [name, setName] = useState('');
-  const [baseUrl, setBaseUrl] = useState('http://localhost:4000');
+  const [baseUrl, setBaseUrl] = useState('https://api.openai.com/v1');
   const [apiKey, setApiKey] = useState('');
   const [apiFormat, setApiFormat] = useState<Provider['apiFormat']>('openai');
 
@@ -412,7 +412,7 @@ function AddProviderModal({ onAdd, onClose }: { onAdd: (p: Omit<Provider, 'id' |
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="font-serif text-lg">添加供应商</h3>
-            <p className="text-xs text-muted mt-1">通过 LiteLLM 网关统一管理模型调用</p>
+            <p className="text-xs text-muted mt-1">通过 API 直连管理模型服务商</p>
           </div>
           <button onClick={onClose} className="text-muted hover:text-foreground">✕</button>
         </div>
@@ -433,7 +433,7 @@ function AddProviderModal({ onAdd, onClose }: { onAdd: (p: Omit<Provider, 'id' |
           <div>
             <label className="label-editorial block mb-2">API 格式</label>
             <select value={apiFormat} onChange={(e) => setApiFormat(e.target.value as Provider['apiFormat'])} className="input-editorial">
-              <option value="openai">OpenAI Compatible — /chat/completions (LiteLLM 默认)</option>
+              <option value="openai">OpenAI Compatible — /chat/completions</option>
               <option value="anthropic">Anthropic — /v1/messages (直连 Anthropic)</option>
               <option value="responses">Responses — /responses</option>
             </select>

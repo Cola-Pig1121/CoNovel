@@ -1,17 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ["selector", "[data-theme=\"dark\"]"],
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        // Editorial Style Colors
-        background: '#F9F8F6',
-        foreground: '#1C1C1C',
-        muted: '#6b7280',
-        border: '#1C1C1C',
-        accent: '#816d70',
+        // Editorial Style Colors - mapped to CSS variables for dark mode support
+        background: "var(--color-bg)",
+        foreground: "var(--color-fg)",
+        muted: "var(--color-muted)",
+        border: "var(--color-border)",
+        accent: "var(--color-accent)",
       },
       fontFamily: {
         wenkai: ['"LXGW WenKai"', 'serif'],

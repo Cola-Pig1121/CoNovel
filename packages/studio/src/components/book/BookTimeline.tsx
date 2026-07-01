@@ -9,7 +9,7 @@ export function BookTimeline({ bookId, book }: { bookId: string; book: any }) {
   const [showAdd, setShowAdd] = useState(false);
   const [newEvent, setNewEvent] = useState({ description: '', chapterNumber: book.currentChapter || 1, location: '', significance: 'moderate', characters: '' });
 
-  const sigColors: Record<string, string> = { minor: 'bg-muted/20', moderate: 'bg-blue-100 text-blue-800', major: 'bg-yellow-100 text-yellow-800', critical: 'bg-red-100 text-red-800' };
+  const sigColors: Record<string, string> = { minor: 'bg-muted/20', moderate: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', major: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' };
   const sigLabels: Record<string, string> = { minor: '次要', moderate: '一般', major: '重要', critical: '关键' };
 
   const handleAdd = async () => {
