@@ -1,120 +1,146 @@
 'use client';
 
-import { api } from '@/lib/api';
-import { useState, useEffect, useRef } from 'react';
-
-const PIPELINE_STAGES = [
-  { id: 'context', nameZh: '上下文组装' },
-  { id: 'character-intel', nameZh: '角色推理' },
-  { id: 'writing', nameZh: '正文创作' },
-  { id: 'observation', nameZh: '事件记录' },
-  { id: 'fact-check', nameZh: '事实核查' },
-  { id: 'continuity', nameZh: '连续性检查' },
-  { id: 'pacing', nameZh: '节奏检查' },
-  { id: 'review', nameZh: '综合审阅' },
-  { id: 'editing', nameZh: '文字润色' },
-  { id: 'de-ai', nameZh: '去AI味' },
-  { id: 'reflector', nameZh: '质量反思' },
-  { id: 'sync', nameZh: '状态同步' },
-];
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { runPipeline, type PipelineState } from '@/lib/pipeline';
+import { PIPELINE_STAGES, STAGE_NAMES, STAGE_PROGRESS, type PipelineStage } from '@/lib/pipeline/prompts';
+import { getProviders } from '@/lib/providers';
 
 export function BookWrite({ bookId, book }: { bookId: string; book: any }) {
+  const router = useRouter();
   const [running, setRunning] = useState(false);
-  const [currentStage, setCurrentStage] = useState(-1);
-  const [result, setResult] = useState<string | null>(null);
+  const [state, setState] = useState<PipelineState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [agentResults, setAgentResults] = useState<any[]>([]);
-  const [gateStatus, setGateStatus] = useState<any>(null);
   const [canStart, setCanStart] = useState(true);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const abortRef = useRef(false);
 
   const nextChapter = (book.totalChapters || 0) + 1;
 
-  // Check if pipeline can start
+  // Check if LLM is configured
   useEffect(() => {
-    api.get(`/api/books/${bookId}/write`).then((data: any) => {
-      setCanStart(data.canStart);
-      setCheckingStatus(false);
-    }).catch(() => setCheckingStatus(false));
-  }, [bookId]);
+    getProviders()
+      .then(providers => {
+        const hasEnabled = providers.some(p => p.enabled && p.models.length > 0);
+        setCanStart(hasEnabled);
+        setCheckingStatus(false);
+      })
+      .catch(() => setCheckingStatus(false));
+  }, []);
 
   const handleStart = async () => {
     setRunning(true);
-    setCurrentStage(0);
-    setResult(null);
     setError(null);
-    setAgentResults([]);
+    abortRef.current = false;
 
-    // Simulate stage progression while waiting for real pipeline
-    // The real pipeline runs server-side, we poll for completion
-    const stageInterval = setInterval(() => {
-      setCurrentStage(prev => {
-        if (prev >= PIPELINE_STAGES.length - 1) return prev;
-        return prev + 1;
-      });
-    }, 3000); // Advance stage every 3 seconds while running
+    const pipelineState = await runPipeline(bookId, nextChapter, {
+      onStageStart: (stage, progress) => {
+        if (abortRef.current) return;
+        setState(prev => prev ? { ...prev, currentStage: stage, progress } : null);
+      },
+      onStageComplete: (stage, output, progress) => {
+        if (abortRef.current) return;
+        setState(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            progress,
+            stageResults: { ...prev.stageResults, [stage]: output.result },
+          };
+        });
+      },
+      onError: (stage, errorMsg) => {
+        if (abortRef.current) return;
+        console.error(`Stage ${stage} failed:`, errorMsg);
+      },
+    });
 
-    try {
-      const data = await api.post(`/api/books/${bookId}/write`, {
-        chapterNumber: nextChapter,
-        action: 'start',
-      });
-
-      clearInterval(stageInterval);
-      setCurrentStage(PIPELINE_STAGES.length - 1);
-
-      if (data.success) {
-        setResult(data.output || '创作完成');
-        setAgentResults(data.agentResults || []);
-        setGateStatus(data.gateStatus || null);
-      } else {
-        setError(data.error || '创作失败');
-      }
-    } catch (e: any) {
-      clearInterval(stageInterval);
-      setError(e.message || '网络错误');
-    }
-
+    if (abortRef.current) return;
+    setState(pipelineState);
     setRunning(false);
+
+    if (pipelineState.status === 'completed') {
+      // Refresh to pick up saved chapter content
+      router.refresh();
+    } else if (pipelineState.status === 'error') {
+      setError(pipelineState.errors.join('\n') || 'Pipeline failed');
+    }
   };
 
   return (
     <div className="space-y-8">
-      {/* Status Bar */}
+      {/* Warning: No provider configured */}
       {!checkingStatus && !canStart && (
         <div className="border border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/50 p-4 text-sm">
-          <p className="font-medium text-yellow-800 dark:text-yellow-300">尚未配置Agent模型</p>
-          <p className="text-yellow-700 dark:text-yellow-400 text-xs mt-1">请先在「设置 → Agent模型配置」中配置至少一个Agent的模型，才能开始创作。</p>
+          <p className="font-medium text-yellow-800 dark:text-yellow-300">尚未配置 LLM 服务商</p>
+          <p className="text-yellow-700 dark:text-yellow-400 text-xs mt-1">
+            请先在「设置」中配置至少一个 LLM 服务商（如 OpenAI、Anthropic、DeepSeek），才能开始创作。
+          </p>
         </div>
       )}
 
+      {/* Pipeline control */}
       <div className="card-editorial">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="label-editorial text-muted">创作流水线</p>
-            <p className="text-sm text-muted mt-1">下一个章节: 第{nextChapter}章</p>
+            <p className="text-sm text-muted mt-1">
+              下一个章节: 第{nextChapter}章
+              {state?.status === 'running' && state.currentStage && (
+                <span className="ml-2">· {STAGE_NAMES[state.currentStage]}</span>
+              )}
+            </p>
           </div>
-          <button onClick={handleStart} disabled={running || !canStart} className={`btn-editorial-primary text-xs ${running || !canStart ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            {running ? '创作中...' : '开始创作'}
-          </button>
+          <div className="flex items-center gap-2">
+            {running && (
+              <button
+                onClick={() => { abortRef.current = true; setRunning(false); }}
+                className="btn-editorial text-xs"
+              >
+                停止
+              </button>
+            )}
+            <button
+              onClick={handleStart}
+              disabled={running || !canStart}
+              className={`btn-editorial-primary text-xs ${running || !canStart ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {running ? `创作中... ${state?.progress || 0}%` : '开始创作'}
+            </button>
+          </div>
         </div>
 
+        {/* Stage grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {PIPELINE_STAGES.map((stage, i) => {
-            const isCompleted = i < currentStage || (!running && currentStage >= PIPELINE_STAGES.length);
-            const isCurrent = i === currentStage && running;
+          {PIPELINE_STAGES.map((stage) => {
+            const stageProgress = STAGE_PROGRESS[stage];
+            const currentProgress = state?.progress || 0;
+            const isCompleted = state?.status === 'completed' || currentProgress > stageProgress;
+            const isCurrent = state?.currentStage === stage && running;
             return (
-              <div key={stage.id} className={`border p-3 text-center transition-colors ${
+              <div key={stage} className={`border p-3 text-center transition-colors ${
                 isCompleted ? 'border-foreground bg-foreground text-background' :
-                isCurrent ? 'border-foreground bg-foreground/5' :
+                isCurrent ? 'border-foreground bg-foreground/5 animate-pulse' :
                 'border-border text-muted'
               }`}>
-                <span className="font-mono text-xs opacity-50">{String(i + 1).padStart(2, '0')}</span>
-                <p className="text-xs mt-1">{stage.nameZh}</p>
+                <span className="font-mono text-xs opacity-50">{String(STAGE_PROGRESS[stage]).padStart(2, '0')}%</span>
+                <p className="text-xs mt-1">{STAGE_NAMES[stage]}</p>
               </div>
             );
           })}
         </div>
+
+        {/* Progress bar */}
+        {state && (
+          <div className="mt-4">
+            <div className="w-full h-1.5 bg-border/30 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-foreground transition-all duration-500"
+                style={{ width: `${state.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error */}
@@ -122,57 +148,101 @@ export function BookWrite({ bookId, book }: { bookId: string; book: any }) {
         <div className="card-editorial border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50">
           <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">创作失败</p>
           <p className="text-xs text-red-700 dark:text-red-400 whitespace-pre-wrap">{error}</p>
-          <p className="text-xs text-red-600 dark:text-red-400 mt-2">请检查：1) LLM服务商是否已配置 2) Agent模型是否已配置 3) API Key是否有效</p>
+          <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+            请检查：1) LLM服务商是否已配置 2) API Key是否有效 3) 网络连接是否正常
+          </p>
         </div>
       )}
 
-      {/* Result */}
-      {result && (
+      {/* Completed result */}
+      {state?.status === 'completed' && state.stageResults.de_ai?.correctedText && (
         <div className="card-editorial">
           <div className="flex items-center justify-between mb-3">
             <p className="label-editorial text-muted">创作结果</p>
-            <span className="text-xs text-muted">{result.length} 字</span>
+            <span className="text-xs text-muted">
+              {state.stageResults.de_ai.correctedText.length} 字
+              · Token: {state.tokenUsage.promptTokens + state.tokenUsage.completionTokens}
+            </span>
           </div>
           <div className="border border-border p-4 max-h-96 overflow-y-auto">
-            <p className="text-sm whitespace-pre-wrap leading-relaxed">{result}</p>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+              {state.stageResults.de_ai.correctedText}
+            </p>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => {
+                const text = state.stageResults.de_ai.correctedText;
+                navigator.clipboard.writeText(text);
+              }}
+              className="btn-editorial text-xs"
+            >
+              复制全文
+            </button>
+            <button
+              onClick={() => router.push(`/editor?bookId=${bookId}&num=${nextChapter}`)}
+              className="btn-editorial-primary text-xs"
+            >
+              前往编辑
+            </button>
           </div>
         </div>
       )}
 
-      {/* Agent Results */}
-      {agentResults.length > 0 && (
+      {/* Quality gates */}
+      {state?.stageResults.review && (
         <div className="card-editorial">
-          <p className="label-editorial text-muted mb-3">Agent 执行结果</p>
-          <div className="space-y-2">
-            {agentResults.map((r: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0 text-xs">
-                <span className={`w-2 h-2 rounded-full ${r.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="font-mono w-32">{r.agent}</span>
-                {r.score && <span className="font-mono">得分: {r.score}</span>}
-                {r.duration && <span className="text-muted">{(r.duration / 1000).toFixed(1)}s</span>}
-                {r.issues?.length > 0 && <span className="text-yellow-600">{r.issues.length} 个问题</span>}
+          <p className="label-editorial text-muted mb-3">质量评估</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {Object.entries(state.stageResults.review.grades || {}).map(([key, grade]: [string, any]) => (
+              <div key={key} className="border border-border p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs">{key}</span>
+                  <span className="font-mono text-sm">{grade.score}/10</span>
+                </div>
+                <p className="text-[10px] text-muted">{grade.comment}</p>
               </div>
             ))}
           </div>
+          {state.stageResults.review.strengths?.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[10px] text-muted mb-1">亮点</p>
+              <ul className="text-xs list-disc list-inside">
+                {state.stageResults.review.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Gate Status */}
-      {gateStatus && (
+      {/* Token usage */}
+      {state && state.tokenUsage.promptTokens > 0 && (
         <div className="card-editorial">
-          <p className="label-editorial text-muted mb-3">质量门禁</p>
-          <div className="flex gap-4 flex-wrap">
-            {[
-              { key: 'l1_memorySync', label: 'L1 记忆同步' },
-              { key: 'l2_factCheck', label: 'L2 事实核查' },
-              { key: 'l3_continuity', label: 'L3 连续性' },
-              { key: 'l4_styleCalibration', label: 'L4 风格校准' },
-              { key: 'l5_deAi', label: 'L5 去AI味' },
-            ].map(g => (
-              <div key={g.key} className="flex items-center gap-2 text-xs">
-                <span className={`w-2 h-2 rounded-full ${gateStatus[g.key] ? 'bg-green-500' : 'bg-muted'}`} />
-                <span className={gateStatus[g.key] ? 'text-foreground' : 'text-muted'}>{g.label}</span>
-              </div>
+          <p className="label-editorial text-muted mb-3">资源消耗</p>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="font-mono text-lg">{state.tokenUsage.promptTokens.toLocaleString()}</p>
+              <p className="text-xs text-muted">输入 Token</p>
+            </div>
+            <div>
+              <p className="font-mono text-lg">{state.tokenUsage.completionTokens.toLocaleString()}</p>
+              <p className="text-xs text-muted">输出 Token</p>
+            </div>
+            <div>
+              <p className="font-mono text-lg">{(state.tokenUsage.promptTokens + state.tokenUsage.completionTokens).toLocaleString()}</p>
+              <p className="text-xs text-muted">总计</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pipeline errors (non-fatal) */}
+      {state?.errors && state.errors.length > 0 && (
+        <div className="card-editorial border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/50">
+          <p className="text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-2">部分阶段有问题</p>
+          <div className="space-y-1">
+            {state.errors.map((e, i) => (
+              <p key={i} className="text-xs text-yellow-700 dark:text-yellow-400">{e}</p>
             ))}
           </div>
         </div>
