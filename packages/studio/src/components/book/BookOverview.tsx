@@ -25,7 +25,7 @@ export function BookOverview({ book }: { book: any }) {
             ].map(item => (
               <Link
                 key={item.step}
-                href={`/books/${book.id}?tab=${item.tab}`}
+                href={`/book?id=${book.id}&tab=${item.tab}`}
                 className="flex items-start gap-3 p-3 border border-border hover:border-foreground transition-colors"
               >
                 <span className="font-mono text-xs text-muted w-6">{String(item.step).padStart(2, '0')}</span>

@@ -10,6 +10,7 @@ interface Book {
   title: string;
   genre: string;
   genres: string[];
+  premise?: string;
   currentWordCount: number;
   totalChapters: number;
   currentChapter: number;
@@ -18,11 +19,18 @@ interface Book {
   updatedAt?: string;
 }
 
+const GENRES = ['仙侠', '玄幻', '都市', '科幻', '悬疑', '历史', '军事', '游戏', '体育', '灵异', '同人', '轻小说'];
+
 export default function Home() {
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [agentStatus, setAgentStatus] = useState<'ok' | 'error' | 'loading'>('loading');
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newGenre, setNewGenre] = useState('');
+  const [newPremise, setNewPremise] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -35,13 +43,23 @@ export default function Home() {
     }).catch(() => setLoading(false));
   }, []);
 
-  const handleNewProject = async () => {
+  const handleCreate = async () => {
+    if (!newTitle.trim()) return;
+    setCreating(true);
     try {
-      const data = await api.post<any>('/api/books', { title: '未命名项目', genre: 'fantasy' });
-      router.push(`/book?id=${data.id}`);
-    } catch {
-      // fallback
+      const data = await api.post<any>('/api/books', {
+        title: newTitle.trim(),
+        genre: newGenre || 'fantasy',
+        genres: newGenre ? [newGenre] : [],
+        premise: newPremise.trim(),
+        targetWordCount: 3000,
+      });
+      setShowCreate(false);
+      router.push(`/editor?bookId=${data.id}&num=1`);
+    } catch (e) {
+      console.error('Failed to create book', e);
     }
+    setCreating(false);
   };
 
   return (
@@ -53,7 +71,7 @@ export default function Home() {
             <h1 className="font-serif text-2xl tracking-tight">CoNovel</h1>
             <p className="text-muted text-sm mt-1">项目中心</p>
           </div>
-          <button onClick={handleNewProject} className="btn-editorial-primary">
+          <button onClick={() => { setShowCreate(true); setNewTitle(''); setNewGenre(''); setNewPremise(''); }} className="btn-editorial-primary">
             新建项目
           </button>
         </div>
@@ -75,7 +93,7 @@ export default function Home() {
           <div className="text-center py-24">
             <p className="font-serif text-xl text-muted mb-2">还没有项目</p>
             <p className="text-sm text-muted mb-8">创建你的第一本小说，开始写作之旅</p>
-            <button onClick={handleNewProject} className="btn-editorial-primary">
+            <button onClick={() => { setShowCreate(true); setNewTitle(''); setNewGenre(''); setNewPremise(''); }} className="btn-editorial-primary">
               新建项目
             </button>
           </div>
@@ -94,7 +112,7 @@ export default function Home() {
                   {book.genre || '未分类'}
                 </p>
                 <div className="flex items-center gap-4 text-xs text-muted">
-                  <span>第 {book.currentChapter || 0} 章</span>
+                  <span>{book.totalChapters || 0} 章</span>
                   <span>{(book.currentWordCount || 0).toLocaleString()} 字</span>
                 </div>
                 <p className="text-xs text-muted/60 mt-2">
@@ -107,7 +125,7 @@ export default function Home() {
 
             {/* New Project Card */}
             <button
-              onClick={handleNewProject}
+              onClick={() => { setShowCreate(true); setNewTitle(''); setNewGenre(''); setNewPremise(''); }}
               className="card-editorial border-dashed p-6 flex items-center justify-center min-h-[160px] text-muted hover:text-foreground transition-colors"
             >
               <span className="text-sm tracking-wide">+ 新建项目</span>
@@ -115,6 +133,67 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Create Project Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setShowCreate(false)}>
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="relative bg-background border border-border w-[28rem] p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-serif text-lg mb-4">新建项目</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted block mb-1">书名 *</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  className="input-editorial w-full"
+                  placeholder="输入书名..."
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1">类型</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {GENRES.map(g => (
+                    <button
+                      key={g}
+                      onClick={() => setNewGenre(newGenre === g ? '' : g)}
+                      className={`px-2.5 py-1 text-[11px] border transition-colors ${
+                        newGenre === g ? 'border-foreground bg-foreground/10' : 'border-border hover:border-foreground/50'
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1">核心设定</label>
+                <textarea
+                  value={newPremise}
+                  onChange={e => setNewPremise(e.target.value)}
+                  className="input-editorial w-full h-20 resize-none"
+                  placeholder="一句话描述故事核心..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button onClick={() => setShowCreate(false)} className="btn-editorial text-xs px-4 py-2">取消</button>
+              <button
+                onClick={handleCreate}
+                disabled={!newTitle.trim() || creating}
+                className="btn-editorial-primary text-xs px-4 py-2 disabled:opacity-40"
+              >
+                {creating ? '创建中...' : '创建'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Agent Status Bar */}
       <div className="border-t border-border px-12 py-3 flex items-center gap-3">
