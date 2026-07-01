@@ -21,16 +21,32 @@ import { BookHooks } from '@/components/book/BookHooks';
 import { TokenStatusBar } from '@/components/TokenStatusBar';
 import Link from 'next/link';
 
-const TABS = [
-  { id: 'overview', label: '概览' }, { id: 'outline', label: '大纲' },
-  { id: 'characters', label: '角色' }, { id: 'foreshadowing', label: '伏笔' },
-  { id: 'hooks', label: 'Hook治理' }, { id: 'reading-power', label: '追读力' },
-  { id: 'timeline', label: '时间线' }, { id: 'chapters', label: '章节' },
-  { id: 'reference', label: '参考' }, { id: 'techniques', label: '技法' },
-  { id: 'naming', label: '取名' }, { id: 'constraints', label: '约束' },
-  { id: 'style', label: '风格' }, { id: 'write', label: '写作' },
-  { id: 'git', label: '版本' },
+const TAB_GROUPS = [
+  { label: '项目', tabs: [
+    { id: 'overview', label: '概览' },
+    { id: 'chapters', label: '章节' },
+    { id: 'write', label: '写作' },
+    { id: 'git', label: '版本' },
+  ]},
+  { label: '创作', tabs: [
+    { id: 'outline', label: '大纲' },
+    { id: 'characters', label: '角色' },
+    { id: 'foreshadowing', label: '伏笔' },
+    { id: 'timeline', label: '时间线' },
+  ]},
+  { label: '风格', tabs: [
+    { id: 'style', label: '风格' },
+    { id: 'constraints', label: '约束' },
+    { id: 'reference', label: '参考' },
+    { id: 'techniques', label: '技法' },
+    { id: 'naming', label: '取名' },
+  ]},
+  { label: '分析', tabs: [
+    { id: 'hooks', label: 'Hook治理' },
+    { id: 'reading-power', label: '追读力' },
+  ]},
 ];
+const TABS = TAB_GROUPS.flatMap(g => g.tabs);
 
 function BookPageInner() {
   const searchParams = useSearchParams();
@@ -63,9 +79,14 @@ function BookPageInner() {
         </div>
         <TokenStatusBar bookId={id} />
       </header>
-      <div className="flex gap-1 px-8 border-b border-border overflow-x-auto">
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-3 py-2.5 text-xs transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-b-2 border-foreground' : 'text-muted hover:text-foreground'}`}>{tab.label}</button>
+      <div className="flex items-end gap-4 px-8 border-b border-border overflow-x-auto">
+        {TAB_GROUPS.map(group => (
+          <div key={group.label} className="flex items-end gap-0">
+            <span className="text-[10px] text-muted/40 uppercase tracking-widest pb-2.5 pr-2 flex-shrink-0">{group.label}</span>
+            {group.tabs.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-2.5 py-2.5 text-xs transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-b-2 border-foreground' : 'text-muted hover:text-foreground'}`}>{tab.label}</button>
+            ))}
+          </div>
         ))}
       </div>
       <div className="px-8 py-6">

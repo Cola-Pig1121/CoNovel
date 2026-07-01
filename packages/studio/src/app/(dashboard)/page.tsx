@@ -26,6 +26,7 @@ export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [agentStatus, setAgentStatus] = useState<'ok' | 'error' | 'loading'>('loading');
+  const [hasProviders, setHasProviders] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newGenre, setNewGenre] = useState('');
@@ -36,9 +37,12 @@ export default function Home() {
     Promise.all([
       api.get<{ books: Book[] }>('/api/books'),
       api.get<any>('/api/config?type=agents'),
-    ]).then(([booksData, agentsData]) => {
+      api.get<any>('/api/config?type=providers'),
+    ]).then(([booksData, agentsData, providersData]) => {
       setBooks(booksData.books || []);
       setAgentStatus(agentsData.agents?.length > 0 ? 'ok' : 'error');
+      const providers = providersData.providers || [];
+      setHasProviders(providers.some((p: any) => p.enabled && p.models?.length > 0));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -76,6 +80,19 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+      {/* Onboarding: No LLM configured */}
+      {!loading && !hasProviders && (
+        <div className="mx-12 mt-6 p-4 border border-border bg-background">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium mb-1">配置 LLM 服务商</p>
+              <p className="text-xs text-muted">在开始写作前，需要配置一个 LLM 服务商（如 OpenAI、Anthropic、DeepSeek）来使用 AI 功能。</p>
+            </div>
+            <Link href="/settings" className="btn-editorial-primary text-xs flex-shrink-0">去配置</Link>
+          </div>
+        </div>
+      )}
 
       {/* Bookshelf */}
       <div className="flex-1 p-12">
@@ -195,11 +212,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bottom Agent Status Bar */}
+      {/* Bottom Status Bar */}
       <div className="border-t border-border px-12 py-3 flex items-center gap-3">
         <span className={`w-2 h-2 rounded-full ${agentStatus === 'ok' ? 'bg-green-600' : agentStatus === 'error' ? 'bg-red-500' : 'bg-muted animate-pulse'}`} />
         <span className="text-xs text-muted">
-          {agentStatus === 'ok' ? '所有 Agent 运行正常' : agentStatus === 'error' ? 'Agent 服务异常' : '检测中...'}
+          {agentStatus === 'ok' ? 'Agent 就绪' : agentStatus === 'error' ? <Link href="/settings" className="underline hover:text-foreground">未配置 LLM 服务商</Link> : '检测中...'}
         </span>
         <span className="text-xs text-muted/40 ml-auto">CoNovel v0.1.0</span>
       </div>
