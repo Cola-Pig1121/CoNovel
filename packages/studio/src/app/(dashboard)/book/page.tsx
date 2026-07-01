@@ -49,9 +49,9 @@ function BookPageInner() {
     if (tab && TABS.some(t => t.id === tab)) setActiveTab(tab);
   }, [searchParams]);
 
-  if (!id) return <div className="p-12 text-muted">未指定项目</div>;
+  if (!id) return <div className="p-12"><p className="text-muted mb-4">未指定项目</p><Link href="/" className="btn-editorial text-xs">返回项目中心</Link></div>;
   if (loading) return <div className="p-12 text-muted">加载中...</div>;
-  if (!book) return <div className="p-12 text-muted">项目不存在</div>;
+  if (!book) return <div className="p-12"><p className="text-muted mb-4">项目不存在</p><Link href="/" className="btn-editorial text-xs">返回项目中心</Link></div>;
 
   return (
     <div>
