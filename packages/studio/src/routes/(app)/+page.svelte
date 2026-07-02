@@ -16,6 +16,7 @@
   const GENRES = ['仙侠', '玄幻', '都市', '科幻', '悬疑', '历史', '军事', '游戏', '体育', '灵异', '同人', '轻小说'];
 
   onMount(async () => {
+    const timeout = setTimeout(() => { loading = false; }, 5000);
     try {
       const [booksData, providersData] = await Promise.all([
         api.get('/api/books'),
@@ -24,7 +25,8 @@
       books = booksData.books || [];
       const providers = providersData.providers || [];
       hasProviders = providers.some(p => p.enabled && p.models?.length > 0);
-    } catch {}
+    } catch (e) { console.error('Dashboard load failed:', e); }
+    clearTimeout(timeout);
     loading = false;
   });
 
@@ -77,9 +79,10 @@
     {#if loading}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {#each [1, 2, 3] as _}
-          <div class="border border-border p-6 animate-pulse">
-            <div class="h-4 bg-muted/20 rounded w-32 mb-4"></div>
-            <div class="h-3 bg-muted/20 rounded w-20"></div>
+          <div class="border border-border p-6">
+            <div class="h-4 bg-black/5 dark:bg-white/5 rounded w-32 mb-4"></div>
+            <div class="h-3 bg-black/5 dark:bg-white/5 rounded w-20 mb-2"></div>
+            <div class="h-3 bg-black/5 dark:bg-white/5 rounded w-24"></div>
           </div>
         {/each}
       </div>
