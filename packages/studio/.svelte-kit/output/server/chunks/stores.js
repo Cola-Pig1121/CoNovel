@@ -1,8 +1,9 @@
-import { g as getContext } from "./root.js";
+import { g as getContext } from "./index.js";
 import "@sveltejs/kit/internal";
 import "./exports.js";
 import "./utils2.js";
 import "@sveltejs/kit/internal/server";
+import "./root.js";
 import "./state.svelte.js";
 const getStores = () => {
   const stores$1 = getContext("__svelte__");

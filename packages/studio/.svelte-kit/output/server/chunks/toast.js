@@ -1,4 +1,4 @@
-import { w as writable } from "./index.js";
+import { w as writable } from "./index2.js";
 function createToastStore() {
   const { subscribe, update } = writable([]);
   let nextId = 0;

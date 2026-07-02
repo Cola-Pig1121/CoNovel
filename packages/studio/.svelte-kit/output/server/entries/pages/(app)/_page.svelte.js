@@ -1,8 +1,9 @@
-import { e as escape_html, a as attr_class } from "../../../chunks/root.js";
+import { e as escape_html, a as attr_class } from "../../../chunks/index.js";
 import "@sveltejs/kit/internal";
 import "../../../chunks/exports.js";
 import "../../../chunks/utils2.js";
 import "@sveltejs/kit/internal/server";
+import "../../../chunks/root.js";
 import "../../../chunks/state.svelte.js";
 import "../../../chunks/toast.js";
 function _page($$renderer, $$props) {

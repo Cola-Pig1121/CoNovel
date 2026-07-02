@@ -1,11 +1,20 @@
-import "@sveltejs/kit/internal";
-import "../../../../chunks/exports.js";
-import "../../../../chunks/utils2.js";
-import "@sveltejs/kit/internal/server";
-import "../../../../chunks/root.js";
-import "../../../../chunks/state.svelte.js";
-function _page($$renderer) {
-  $$renderer.push(`<div class="p-12"><h1 class="font-serif text-2xl tracking-tight mb-4">book</h1> <p class="text-sm text-muted">此页面正在迁移中...</p> <a href="/" class="inline-block mt-4 border border-border px-4 py-2 text-xs hover:border-foreground transition-colors">返回项目中心</a></div>`);
+import { s as store_get, u as unsubscribe_stores, f as derived } from "../../../../chunks/index.js";
+import { p as page } from "../../../../chunks/stores.js";
+function _page($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    var $$store_subs;
+    let id = derived(() => store_get($$store_subs ??= {}, "$page", page).url.searchParams.get("id") || "");
+    store_get($$store_subs ??= {}, "$page", page).url.searchParams.get("tab") || "overview";
+    if (!id()) {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<div class="p-12"><p class="text-muted mb-4">未指定项目</p><a href="/" class="border border-border px-4 py-2 text-xs hover:border-foreground transition-colors">返回项目中心</a></div>`);
+    } else {
+      $$renderer2.push("<!--[1-->");
+      $$renderer2.push(`<div class="p-12 text-muted">加载中...</div>`);
+    }
+    $$renderer2.push(`<!--]-->`);
+    if ($$store_subs) unsubscribe_stores($$store_subs);
+  });
 }
 export {
   _page as default

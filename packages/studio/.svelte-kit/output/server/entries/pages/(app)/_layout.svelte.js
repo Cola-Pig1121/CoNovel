@@ -1,4 +1,4 @@
-import { a as attr_class, b as attr, c as ensure_array_like, s as store_get, e as escape_html, u as unsubscribe_stores, d as bind_props } from "../../../chunks/root.js";
+import { a as attr_class, b as attr, c as ensure_array_like, s as store_get, e as escape_html, u as unsubscribe_stores, d as bind_props } from "../../../chunks/index.js";
 import { p as page } from "../../../chunks/stores.js";
 import { t as toasts } from "../../../chunks/toast.js";
 function Sidebar($$renderer, $$props) {
