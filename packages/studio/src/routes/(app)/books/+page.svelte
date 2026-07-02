@@ -8,20 +8,23 @@
   let loading = $state(true);
 
   onMount(async () => {
+    const timeout = setTimeout(() => { loading = false; }, 5000);
     try {
       const data = await api.get('/api/books');
       books = data.books || [];
-    } catch {}
+    } catch (e) { console.error('Books load failed:', e); }
+    clearTimeout(timeout);
     loading = false;
   });
 
-  async function deleteBook(id) {
-    if (!confirm('确定删除？')) return;
+  async function deleteBook(id, title) {
+    toasts.add(`确定删除「${title}」？点击确认后将永久删除`, 'info');
+    // Simple confirm - Tauri WebView may not support window.confirm
     try {
       await api.del(`/api/books/${id}`);
       books = books.filter(b => b.id !== id);
       toasts.add('已删除', 'success');
-    } catch { toasts.add('删除失败', 'error'); }
+    } catch (e) { console.error('Delete failed:', e); toasts.add('删除失败', 'error'); }
   }
 </script>
 
@@ -40,10 +43,10 @@
       {#each books as book}
         <div class="border border-border p-4 flex items-center justify-between">
           <div>
-            <a href="/editor?bookId={book.id}&num={book.currentChapter || 1}" class="font-serif hover:underline">{book.title}</a>
+            <a href="/editor?bookId={book.id}&num={Math.max(book.currentChapter || 1, 1)}" class="font-serif hover:underline">{book.title}</a>
             <p class="text-xs text-muted mt-1">{book.genre || '未分类'} · {book.totalChapters || 0} 章 · {(book.currentWordCount || 0).toLocaleString()} 字</p>
           </div>
-          <button onclick={() => deleteBook(book.id)} class="text-xs text-red-500 hover:text-red-700 transition-colors">删除</button>
+          <button onclick={() => deleteBook(book.id, book.title)} class="text-xs text-red-500 hover:text-red-700 transition-colors border border-red-200 px-3 py-1 hover:bg-red-50">删除</button>
         </div>
       {/each}
     </div>

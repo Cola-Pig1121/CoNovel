@@ -97,16 +97,16 @@
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {#each books as book}
-          <a href="/editor?bookId={book.id}&num={book.currentChapter || 1}" class="border border-border p-6 block group hover:border-foreground transition-colors">
+          <a href="/editor?bookId={book.id}&num={Math.max(book.currentChapter || 1, 1)}" class="border border-border p-6 block group hover:border-foreground transition-colors">
             <h2 class="font-serif text-xl tracking-tight mb-1 group-hover:underline">{book.title}</h2>
             <p class="text-xs uppercase tracking-[0.2em] text-muted mb-4">{book.genre || '未分类'}</p>
             <div class="flex items-center gap-4 text-xs text-muted">
               <span>{book.totalChapters || 0} 章</span>
               <span>{(book.currentWordCount || 0).toLocaleString()} 字</span>
             </div>
-            <p class="text-xs text-muted/60 mt-2">
-              {book.updatedAt ? new Date(book.updatedAt).toLocaleDateString('zh-CN') : new Date(book.createdAt).toLocaleDateString('zh-CN')}
-            </p>
+            {#if book.createdAt}
+              <p class="text-xs text-muted/60 mt-2">{new Date(book.createdAt).toLocaleDateString('zh-CN')}</p>
+            {/if}
           </a>
         {/each}
         <button onclick={() => { showCreate = true; newTitle = ''; newGenre = ''; newPremise = ''; }} class="border border-border border-dashed p-6 flex items-center justify-center min-h-[160px] text-muted hover:text-foreground transition-colors">
