@@ -18,8 +18,7 @@
   });
 
   async function deleteBook(id, title) {
-    toasts.add(`确定删除「${title}」？点击确认后将永久删除`, 'info');
-    // Simple confirm - Tauri WebView may not support window.confirm
+    if (!confirm(`确定删除「${title}」？此操作不可撤销。`)) return;
     try {
       await api.del(`/api/books/${id}`);
       books = books.filter(b => b.id !== id);

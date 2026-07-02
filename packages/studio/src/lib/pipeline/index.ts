@@ -2,9 +2,9 @@
  * Pipeline orchestrator — manages the 12-stage writing pipeline.
  */
 
-import { api } from '@/lib/api';
-import { buildWritingContext, formatContextForWriting } from '@/lib/context-builder';
-import { getLatestSnapshot, getRecentSummaries } from '@/lib/memory';
+import { api } from '../api';
+import { buildWritingContext, formatContextForWriting } from '../context-builder';
+import { getLatestSnapshot, getRecentSummaries } from '../memory';
 import { runStage, type StageInput, type StageOutput } from './stages';
 import { PIPELINE_STAGES, STAGE_PROGRESS, type PipelineStage } from './prompts';
 

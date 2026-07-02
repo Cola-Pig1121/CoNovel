@@ -35,7 +35,7 @@
     loading = false;
   });
 
-  $derived: categories = [...new Set(agents.map(a => AGENT_META[a.role]?.category || '其他'))];
+  let categories = $derived([...new Set(agents.map(a => AGENT_META[a.role]?.category || '其他'))]);
 </script>
 
 <div class="p-8">

@@ -13,7 +13,7 @@
   let canStart = $state(true);
   let checking = $state(true);
 
-  const nextChapter = (book?.totalChapters || 0) + 1;
+  let nextChapter = $derived((book?.totalChapters || 0) + 1);
 
   onMount(async () => {
     try { const p = await getProviders(); canStart = p.some(x => x.enabled && x.models.length > 0); } catch {}

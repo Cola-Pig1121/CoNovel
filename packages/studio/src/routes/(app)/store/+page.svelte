@@ -30,7 +30,7 @@
     { name: '玄幻·系统流', repo: 'https://github.com/Cola-Pig1121/conovel-templates', description: '玄幻题材模板', category: 'template' },
   ];
 
-  $derived: filteredOfficial = activeCategory === 'all' ? officialTemplates : officialTemplates.filter(t => t.category === activeCategory);
+  let filteredOfficial = $derived(activeCategory === 'all' ? officialTemplates : officialTemplates.filter(t => t.category === activeCategory));
 
   onMount(async () => {
     if (isTauri()) {

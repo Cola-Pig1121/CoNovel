@@ -6,6 +6,8 @@
   let selected = $state(null);
   let content = $state('');
   let loading = $state(true);
+  let showNewFile = $state(false);
+  let newFileName = $state('');
 
   async function loadFiles() {
     try { const data = await api.get(`/api/books/${bookId}/constraints`); files = data.files || []; } catch {}
@@ -24,15 +26,24 @@
   }
 
   async function createFile() {
-    const name = prompt('文件名（如 writing-guide.md）');
-    if (!name) return;
+    if (!newFileName.trim()) return;
+    const name = newFileName.trim();
     try { await api.post(`/api/books/${bookId}/constraints`, { name, content: '' }); await loadFiles(); selectFile(name); } catch {}
+    showNewFile = false;
+    newFileName = '';
   }
 </script>
 
 <div class="flex gap-4">
   <div class="w-40 flex-shrink-0 space-y-1">
-    <div class="flex items-center justify-between mb-2"><p class="text-[10px] uppercase tracking-widest text-muted">约束文件</p><button onclick={createFile} class="text-xs text-muted hover:text-foreground">+</button></div>
+    <div class="flex items-center justify-between mb-2"><p class="text-[10px] uppercase tracking-widest text-muted">约束文件</p><button onclick={() => { showNewFile = true; newFileName = ''; }} class="text-xs text-muted hover:text-foreground">+</button></div>
+    {#if showNewFile}
+      <div class="flex gap-1 mb-2">
+        <input type="text" bind:value={newFileName} placeholder="文件名.md" class="flex-1 border border-border px-2 py-1 text-[10px] bg-transparent focus:outline-none focus:border-foreground" onkeydown={(e) => e.key === 'Enter' && createFile()} />
+        <button onclick={createFile} class="bg-foreground text-background px-2 py-1 text-[10px]">✓</button>
+        <button onclick={() => showNewFile = false} class="border border-border px-2 py-1 text-[10px]">✕</button>
+      </div>
+    {/if}
     {#each files as f}
       <button onclick={() => selectFile(f.name)} class="w-full text-left px-2 py-1.5 text-xs transition-colors {selected === f.name ? 'bg-foreground/10 text-foreground' : 'text-muted hover:text-foreground hover:bg-foreground/5'}">{f.name}</button>
     {/each}

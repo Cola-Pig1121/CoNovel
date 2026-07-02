@@ -7,7 +7,7 @@
   const categories = [...new Set(WRITING_TECHNIQUES.map(t => t.category))];
   const CATEGORY_LABELS = { plot: '剧情', character: '角色', world: '世界', hook: '钩子', technique: '技法' };
 
-  $derived: filtered = activeCategory === 'all' ? WRITING_TECHNIQUES : WRITING_TECHNIQUES.filter(t => t.category === activeCategory);
+  let filtered = $derived(activeCategory === 'all' ? WRITING_TECHNIQUES : WRITING_TECHNIQUES.filter(t => t.category === activeCategory));
 
   function toggle(id) { expanded[id] = !expanded[id]; expanded = { ...expanded }; }
 </script>

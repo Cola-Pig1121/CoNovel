@@ -1,10 +1,10 @@
 <script>
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { api } from '$lib/api';
 
-  let id = $derived($page.url.searchParams.get('id') || '');
-  let activeTab = $state($page.url.searchParams.get('tab') || 'overview');
+  let id = $derived(page.url.searchParams.get('id') || '');
+  let activeTab = $state(page.url.searchParams.get('tab') || 'overview');
   let book = $state(null);
   let loading = $state(true);
 

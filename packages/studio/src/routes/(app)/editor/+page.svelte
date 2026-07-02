@@ -1,11 +1,11 @@
 <script>
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { api } from '$lib/api';
   import { toasts } from '$lib/stores/toast';
 
-  let bookId = $derived($page.url.searchParams.get('bookId') || '');
-  let num = $derived(parseInt($page.url.searchParams.get('num') || '1', 10));
+  let bookId = $derived(page.url.searchParams.get('bookId') || '');
+  let num = $derived(parseInt(page.url.searchParams.get('num') || '1', 10));
 
   let chapter = $state(null);
   let content = $state('');

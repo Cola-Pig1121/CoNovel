@@ -1,5 +1,5 @@
 <script>
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
 
   let { expanded = $bindable(false) } = $props();
 
@@ -32,7 +32,7 @@
 
   <nav class="flex-1 px-2 py-3 space-y-1">
     {#each navItems as item}
-      {@const isActive = $page.url.pathname === item.href}
+      {@const isActive = page.url.pathname === item.href}
       <a
         href={item.href}
         class="flex items-center gap-3 px-3 py-2.5 text-sm transition-colors rounded-sm {isActive ? 'bg-foreground/10 text-foreground' : 'text-muted hover:text-foreground hover:bg-foreground/5'}"

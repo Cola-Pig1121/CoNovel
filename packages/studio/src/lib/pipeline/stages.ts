@@ -2,9 +2,9 @@
  * Pipeline stage handlers — each stage receives input and returns output.
  */
 
-import { callLLM } from '@/lib/llm';
-import { getProviders, type Provider } from '@/lib/providers';
-import { extractSnapshot, generateSummary, type FactSnapshot } from '@/lib/memory';
+import { callLLM } from '../llm';
+import { getProviders, type Provider } from '../providers';
+import { extractSnapshot, generateSummary, type FactSnapshot } from '../memory';
 import { PROMPTS, STAGE_NAMES, type PipelineStage } from './prompts';
 
 export interface StageInput {
