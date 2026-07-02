@@ -76,7 +76,12 @@
   <div class="flex-1 p-12">
     {#if loading}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {[1, 2, 3].map(() => `<div class="border border-border p-6 animate-pulse"><div class="h-4 bg-muted/20 rounded w-32 mb-4"></div><div class="h-3 bg-muted/20 rounded w-20"></div></div>`).join('')}
+        {#each [1, 2, 3] as _}
+          <div class="border border-border p-6 animate-pulse">
+            <div class="h-4 bg-muted/20 rounded w-32 mb-4"></div>
+            <div class="h-3 bg-muted/20 rounded w-20"></div>
+          </div>
+        {/each}
       </div>
     {:else if books.length === 0}
       <div class="text-center py-24">
