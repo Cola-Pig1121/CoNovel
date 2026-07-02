@@ -1,0 +1,1 @@
+import{t as l}from"./C-MSq_w7.js";import{S as i,H as f}from"./CqWs38ap.js";function u(r,t,o,e){var p=r[i];if(f||p!==t){var s=l(t,e);(!f||s!==r.getAttribute("style"))&&(s==null?r.removeAttribute("style"):r.style.cssText=s),r[i]=t}return e}export{u as s};

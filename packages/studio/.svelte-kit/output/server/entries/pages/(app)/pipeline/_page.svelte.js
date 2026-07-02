@@ -1,11 +1,12 @@
-import "@sveltejs/kit/internal";
-import "../../../../chunks/exports.js";
-import "../../../../chunks/utils2.js";
-import "@sveltejs/kit/internal/server";
-import "../../../../chunks/root.js";
-import "../../../../chunks/state.svelte.js";
-function _page($$renderer) {
-  $$renderer.push(`<div class="p-12"><h1 class="font-serif text-2xl tracking-tight mb-4">pipeline</h1> <p class="text-sm text-muted">此页面正在迁移中...</p> <a href="/" class="inline-block mt-4 border border-border px-4 py-2 text-xs hover:border-foreground transition-colors">返回项目中心</a></div>`);
+function _page($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    $$renderer2.push(`<div class="p-8"><h1 class="font-serif text-xl tracking-tight mb-6">写作流水线</h1> `);
+    {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<p class="text-sm text-muted">加载中...</p>`);
+    }
+    $$renderer2.push(`<!--]--></div>`);
+  });
 }
 export {
   _page as default

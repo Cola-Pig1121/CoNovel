@@ -1,1 +1,0 @@
-import{w as c}from"./DWCvzjsq.js";function d(){const{subscribe:s,update:e}=c([]);let r=0;return{subscribe:s,add(i,a="info"){const o=++r;e(t=>[...t,{id:o,message:i,type:a}]),setTimeout(()=>{e(t=>t.filter(n=>n.id!==o))},3e3)}}}const f=d();export{f as t};
