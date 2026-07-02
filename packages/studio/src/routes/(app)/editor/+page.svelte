@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { api } from '$lib/api';
   import { toasts } from '$lib/stores/toast';
+  import ChatPanel from '$lib/components/ChatPanel.svelte';
 
   let bookId = $derived(page.url.searchParams.get('bookId') || '');
   let num = $derived(parseInt(page.url.searchParams.get('num') || '1', 10));
@@ -19,6 +20,14 @@
   let textareaEl = $state(null);
   let dirty = false;
   let saveTimer = null;
+  let selectedText = $state('');
+
+  function trackSelection() {
+    if (!textareaEl) return;
+    const s = textareaEl.selectionStart;
+    const e = textareaEl.selectionEnd;
+    selectedText = s !== e ? content.substring(s, e) : '';
+  }
 
   const TOOLS = [
     { id: 'outline', label: '大纲' },
@@ -182,7 +191,7 @@
       </aside>
 
       <div class="flex-1 flex flex-col min-w-0">
-        <textarea bind:this={textareaEl} bind:value={content} class="flex-1 w-full p-8 font-sans text-base leading-loose resize-none focus:outline-none bg-background text-foreground" placeholder="在此输入章节内容... (Ctrl+S 保存)" spellcheck="true"></textarea>
+        <textarea bind:this={textareaEl} bind:value={content} onselect={trackSelection} class="flex-1 w-full p-8 font-sans text-base leading-loose resize-none focus:outline-none bg-background text-foreground" placeholder="在此输入章节内容... (Ctrl+S 保存)" spellcheck="true"></textarea>
       </div>
 
       <aside class="w-72 border-l border-border flex-shrink-0 overflow-y-auto">
@@ -193,13 +202,7 @@
         </div>
         <div class="p-4">
           {#if activeTool === 'ai'}
-            <p class="text-[10px] uppercase tracking-widest text-muted mb-3">AI 助手</p>
-            <p class="text-xs text-muted mb-4">在编辑器中选中文本，然后点击按钮：</p>
-            <div class="space-y-2">
-              {#each ['润色', '去AI味', '扩写', '缩写'] as action}
-                <button class="w-full text-left border border-border px-3 py-2 text-xs hover:border-foreground transition-colors">{action}</button>
-              {/each}
-            </div>
+            <ChatPanel bookId={bookId} {book} {selectedText} />
           {:else}
             <p class="text-[10px] uppercase tracking-widest text-muted mb-3">{TOOLS.find(t => t.id === activeTool)?.label}</p>
             <p class="text-xs text-muted">内容面板</p>
