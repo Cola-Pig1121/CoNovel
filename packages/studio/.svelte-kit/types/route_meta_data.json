@@ -1,0 +1,12 @@
+{
+	"/(app)": [],
+	"/": [],
+	"/(app)/agents": [],
+	"/(app)/books": [],
+	"/(app)/book": [],
+	"/(app)/editor": [],
+	"/(app)/evolution": [],
+	"/(app)/pipeline": [],
+	"/(app)/settings": [],
+	"/(app)/store": []
+}

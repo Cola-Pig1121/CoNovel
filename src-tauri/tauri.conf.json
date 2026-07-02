@@ -4,8 +4,8 @@
   "identifier": "com.conovel.app",
   "version": "0.1.0",
   "build": {
-    "frontendDist": "../packages/studio/out",
-    "devUrl": "http://localhost:3002",
+    "frontendDist": "../packages/studio/build",
+    "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm --filter @conovel/studio dev",
     "beforeBuildCommand": "pnpm --filter @conovel/studio build"
   },

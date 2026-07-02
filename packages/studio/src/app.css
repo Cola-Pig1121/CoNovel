@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('/fonts/fonts/LXGW WenKai Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('/fonts/fonts/LXGW WenKai Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('/fonts/fonts/LXGW WenKai Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai Mono';
+  src: url('/fonts/fonts/LXGW WenKai Mono Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai Mono';
+  src: url('/fonts/fonts/LXGW WenKai Mono Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai Mono';
+  src: url('/fonts/fonts/LXGW WenKai Mono Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  --color-bg: #F9F8F6;
+  --color-fg: #1C1C1C;
+  --color-muted: #6b7280;
+  --color-border: #1C1C1C;
+  --color-accent: #816d70;
+}
+
+[data-theme="dark"] {
+  --color-bg: #1a1a1a;
+  --color-fg: #e8e6e3;
+  --color-muted: #8b8b8b;
+  --color-border: #333333;
+  --color-accent: #b8a0a3;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+}
+
+::selection {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-fg); }
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #555; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #777; }
