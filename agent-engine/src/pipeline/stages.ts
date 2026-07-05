@@ -684,9 +684,9 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
   {
     stage: "state_sync",
     agentName: AGENT_NAMES.REFLECTOR,
-    description: "状态同步：更新书籍状态文件，消费事件记录输出，生成章节摘要",
+    description: "状态同步：更新书籍状态文件，消费事件记录输出，提取记忆事实，生成章节摘要",
     execute: async (ctx) => {
-      const { bookPath, chapterNumber, bookState } = ctx;
+      const { bookPath, chapterNumber, bookState, chapterOutline } = ctx;
       const finalContent = ctx.stageResults.get("de_ai")?.output
         ?? ctx.stageResults.get("editing")?.output
         ?? ctx.chapterContent
@@ -893,7 +893,142 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
         );
       }
 
-      // ── Step 6: Commit changes to git ──
+      // ── Step 6: Extract facts from chapter content and save to memory/facts/ ──
+      let extractedFacts: any[] = [];
+      if (finalContent) {
+        try {
+          const factExtractorPrompt = [
+            {
+              role: "system",
+              content: `你是一个专业的小说事实提取器。请从章节内容中提取所有关键事实，按以下JSON格式输出：
+{
+  "facts": [
+    {
+      "category": "character|event|world|relationship|emotion",
+      "subject": "事实涉及的主体名称",
+      "content": "事实内容的简洁描述",
+      "evidence": "原文中的关键引文（50字以内）",
+      "confidence": 0.9
+    }
+  ]
+}
+只输出JSON，不要加任何前缀或解释。每条事实必须有category、subject和content字段。`,
+            },
+            {
+              role: "user",
+              content: `请从以下第${chapterNumber}章内容中提取关键事实：\n\n${finalContent.slice(0, 4000)}`,
+            },
+          ];
+
+          const factsOutput = await ctx.llmCall(AGENT_NAMES.EVENT_RECORDER, factExtractorPrompt, {
+            temperature: 0.2,
+            max_tokens: 4000,
+          });
+
+          // Parse JSON from LLM output (may be wrapped in ```json fences)
+          let factsJsonStr = factsOutput;
+          const factsJsonMatch = factsOutput.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+          if (factsJsonMatch) {
+            factsJsonStr = factsJsonMatch[1];
+          }
+
+          try {
+            const parsed = JSON.parse(factsJsonStr);
+            extractedFacts = (parsed.facts ?? []).map((f: any) => ({
+              ...f,
+              chapter: chapterNumber,
+              extracted_at: new Date().toISOString(),
+            }));
+          } catch {
+            console.warn(`[stages] Failed to parse extracted facts JSON, using raw output`);
+            extractedFacts = [{
+              category: "event",
+              subject: `第${chapterNumber}章`,
+              content: factsOutput.slice(0, 200),
+              chapter: chapterNumber,
+              extracted_at: new Date().toISOString(),
+            }];
+          }
+
+          // Save facts to memory/facts/
+          const factsDir = join(bookPath, "memory", "facts");
+          await mkdir(factsDir, { recursive: true });
+          await writeFile(
+            join(factsDir, `chapter_${String(chapterNumber).padStart(4, "0")}.json`),
+            JSON.stringify(extractedFacts, null, 2),
+            "utf-8"
+          );
+          console.log(`[stages] Extracted and saved ${extractedFacts.length} facts for chapter ${chapterNumber}`);
+        } catch (err) {
+          console.error(`[stages] Fact extraction failed for chapter ${chapterNumber}:`, err);
+        }
+      }
+
+      // ── Step 7: Save summary to memory/summaries/ ──
+      try {
+        const summariesDir = join(bookPath, "memory", "summaries");
+        await mkdir(summariesDir, { recursive: true });
+
+        const summaryEntry = {
+          chapter: chapterNumber,
+          summary,
+          word_count: finalContent.length,
+          created_at: new Date().toISOString(),
+        };
+
+        await writeFile(
+          join(summariesDir, `chapter_${String(chapterNumber).padStart(4, "0")}.json`),
+          JSON.stringify(summaryEntry, null, 2),
+          "utf-8"
+        );
+        console.log(`[stages] Saved summary for chapter ${chapterNumber} to memory/summaries/`);
+      } catch (err) {
+        console.error(`[stages] Failed to save summary to memory/summaries/:`, err);
+      }
+
+      // ── Step 8: Update character states in memory/character_states/ ──
+      try {
+        const charStatesDir = join(bookPath, "memory", "character_states");
+        await mkdir(charStatesDir, { recursive: true });
+
+        // Write character state files for characters that appeared in this chapter
+        const charactersInChapter = chapterOutline?.characters_present ?? [];
+        for (const charName of charactersInChapter) {
+          const char = bookState.characters.find(
+            (c) => c.name === charName || c.id === charName
+          );
+          if (!char) continue;
+
+          const stateEntry = {
+            char_id: char.id,
+            name: char.name,
+            role: char.role,
+            emotional_state: char.emotional_state.current_mood,
+            mood_history: char.emotional_state.mood_history ?? [],
+            known_facts: char.knowledge.known_facts.slice(-20), // last 20 facts
+            misconceptions: char.knowledge.misconceptions ?? [],
+            relationships: char.relationships.map((r) => ({
+              target: r.target_character,
+              type: r.relationship_type,
+              dynamic: r.dynamic,
+              tension: r.current_tension,
+            })),
+            last_updated: new Date().toISOString(),
+            chapter: chapterNumber,
+          };
+
+          await writeFile(
+            join(charStatesDir, `${char.id}.json`),
+            JSON.stringify(stateEntry, null, 2),
+            "utf-8"
+          );
+        }
+        console.log(`[stages] Updated character states for ${charactersInChapter.length} characters`);
+      } catch (err) {
+        console.error(`[stages] Failed to update character states:`, err);
+      }
+
+      // ── Step 9: Commit changes to git ──
       try {
         const { commitChanges } = await import("../utils/state-sync.js");
         commitChanges(bookPath, `Chapter ${chapterNumber}: ${chapterMeta.title}`);
@@ -904,7 +1039,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
 
       return {
         stage: "state_sync",
-        output: `状态已同步。${eventRecord ? "已更新角色、伏笔和时间线。" : ""}章节摘要：${summary}`,
+        output: `状态已同步。${eventRecord ? "已更新角色、伏笔和时间线。" : ""}提取了${extractedFacts.length}条记忆事实。章节摘要：${summary}`,
         metadata: {
           chapter_number: chapterNumber,
           word_count: finalContent.length,
@@ -914,6 +1049,9 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
           characters_updated: eventRecord?.character_updates?.length ?? 0,
           foreshadowing_updated: eventRecord?.foreshadowing?.length ?? 0,
           timeline_updated: eventRecord?.timeline_updates?.length ?? 0,
+          memory_facts_extracted: extractedFacts.length,
+          memory_summaries_saved: true,
+          memory_character_states_updated: (chapterOutline?.characters_present ?? []).length,
         },
       };
     },

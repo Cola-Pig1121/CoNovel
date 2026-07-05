@@ -511,127 +511,557 @@ function ConstraintsTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Memory Tab
+// Memory Tab — 4 sub-tabs: Facts, Characters, Long-term, Search
 // ---------------------------------------------------------------------------
 
-function MemoryTab() {
-  const [searchParams] = useSearchParams()
-  const bookId = searchParams.get('bookId') ?? ''
-  const { characters } = useBookStore()
+type MemorySubTab = 'facts' | 'characters' | 'long-term' | 'search'
 
-  const [summaries, setSummaries] = useState<{ chapter: number; summary: string; created_at: string }[]>([])
-  const [snapshots, setSnapshots] = useState<any[]>([])
+const MEMORY_SUB_TABS: { key: MemorySubTab; label: string }[] = [
+  { key: 'facts', label: '事实流' },
+  { key: 'characters', label: '角色档案' },
+  { key: 'long-term', label: '长期记忆' },
+  { key: 'search', label: '记忆检索' },
+]
+
+// ---------------------------------------------------------------------------
+// FactsTab — extracted facts grouped by chapter
+// ---------------------------------------------------------------------------
+
+function FactsTab() {
+  const { bookId } = useSearchParamsToObject()
+  const [facts, setFacts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!bookId) return
+    setLoading(true)
+    memoryApi
+      .getFacts(bookId)
+      .then((data) => setFacts(Array.isArray(data) ? data : []))
+      .catch(() => setFacts([]))
+      .finally(() => setLoading(false))
+  }, [bookId])
+
+  // Group facts by chapter
+  const byChapter = new Map<number, any[]>()
+  for (const fact of facts) {
+    const ch = fact.chapter ?? fact.chapter_number ?? 0
+    const arr = byChapter.get(ch) ?? []
+    arr.push(fact)
+    byChapter.set(ch, arr)
+  }
+
+  const categoryColor: Record<string, string> = {
+    character: 'border-foreground bg-foreground text-background',
+    event: 'border-foreground/50 text-foreground',
+    world: 'border-border text-muted',
+    relationship: 'border-foreground/30 text-foreground',
+    emotion: 'border-border text-muted',
+  }
+
+  return (
+    <div>
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
+        事实流 · 从章节中自动提取的结构化事实 ({facts.length})
+      </h3>
+
+      {loading && (
+        <p className="text-sm text-muted italic">加载中...</p>
+      )}
+
+      {!loading && facts.length === 0 && (
+        <div className="border border-border p-6">
+          <p className="text-sm text-muted italic">运行 Pipeline 后将自动提取事实。</p>
+          <p className="text-[10px] text-muted mt-2">
+            事实由 Observer Agent 从每章提取，按类别（角色、事件、世界、关系、情感）分类，存储在 memory/facts/ 目录。
+          </p>
+        </div>
+      )}
+
+      {!loading && facts.length > 0 && (
+        <div className="space-y-6">
+          {Array.from(byChapter.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([chapter, chapterFacts]) => (
+              <div key={chapter}>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3 border-b border-border pb-2">
+                  第{chapter}章 · {chapterFacts.length} 条事实
+                </div>
+                <div className="space-y-2">
+                  {chapterFacts.map((fact, i) => (
+                    <div
+                      key={i}
+                      className="border border-border p-4 hover:border-foreground transition-colors"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span
+                          className={`text-[10px] uppercase tracking-widest border px-2 py-0 ${
+                            categoryColor[fact.category ?? ''] ?? 'border-border text-muted'
+                          }`}
+                        >
+                          {fact.category ?? 'unknown'}
+                        </span>
+                        {fact.subject && (
+                          <span className="text-xs text-muted">{fact.subject}</span>
+                        )}
+                      </div>
+                      <p className="text-sm leading-relaxed">{fact.content ?? fact.text ?? fact.description ?? JSON.stringify(fact)}</p>
+                      {fact.evidence && (
+                        <p className="text-xs text-muted mt-2 italic">「{fact.evidence}」</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// CharacterStatesTab — character memory states with emotional arcs
+// ---------------------------------------------------------------------------
+
+function CharacterStatesTab() {
+  const { bookId } = useSearchParamsToObject()
+  const { characters } = useBookStore()
   const [charStates, setCharStates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!bookId) return
     setLoading(true)
-    Promise.all([
-      memoryApi.getSummaries(bookId).catch(() => ({ summaries: [] })),
-      memoryApi.getSnapshots(bookId).catch(() => ({ snapshots: [] })),
-      memoryApi.getCharacterStates(bookId).catch(() => ({ states: [] })),
-    ]).then(([sumData, snapData, stateData]) => {
-      setSummaries(sumData.summaries ?? [])
-      setSnapshots(snapData.snapshots ?? [])
-      setCharStates(stateData.states ?? [])
-      setLoading(false)
-    })
+    memoryApi
+      .getCharacterStates(bookId)
+      .then((data) => setCharStates(Array.isArray(data) ? data : []))
+      .catch(() => setCharStates([]))
+      .finally(() => setLoading(false))
   }, [bookId])
 
   // Fallback: use character profiles from store if no memory states
-  const displayCharStates = charStates.length > 0
-    ? charStates
-    : characters.map((c) => ({
-        name: c.name,
-        role: c.role,
-        emotional_state: c.emotionalState?.current ?? '未知',
-        known_facts: c.knowledgeBoundary?.knows?.slice(0, 3) ?? [],
-      }))
+  const displayStates =
+    charStates.length > 0
+      ? charStates
+      : characters.map((c) => ({
+          name: c.name,
+          char_id: c.id,
+          role: c.role,
+          emotional_state: c.emotionalState?.current ?? '未知',
+          mood_history: [],
+          known_facts: c.knowledgeBoundary?.knows ?? [],
+          relationships: c.relationships ?? {},
+        }))
+
+  const moodColor = (mood: string) => {
+    const m = mood.toLowerCase()
+    if (m.includes('愤怒') || m.includes('angry') || m.includes('怒')) return 'text-red-400'
+    if (m.includes('开心') || m.includes('happy') || m.includes('喜')) return 'text-green-400'
+    if (m.includes('悲伤') || m.includes('sad') || m.includes('悲')) return 'text-blue-400'
+    if (m.includes('恐惧') || m.includes('fear') || m.includes('恐')) return 'text-yellow-400'
+    if (m.includes('平静') || m.includes('calm') || m.includes('平')) return 'text-muted'
+    return 'text-foreground'
+  }
+
+  return (
+    <div>
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
+        角色档案 · 角色在记忆系统中的状态 ({displayStates.length})
+      </h3>
+
+      {loading && (
+        <p className="text-sm text-muted italic">加载中...</p>
+      )}
+
+      {!loading && displayStates.length === 0 && (
+        <div className="border border-border p-6">
+          <p className="text-sm text-muted italic">暂无角色记忆数据。</p>
+          <p className="text-[10px] text-muted mt-2">
+            运行 Pipeline 后，角色的情绪变化、认知边界和关系动态将自动记录到 memory/character_states/ 目录。
+          </p>
+        </div>
+      )}
+
+      {!loading && displayStates.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          {displayStates.map((c: any) => {
+            const moodHistory: Array<{ chapter: number; mood: string; trigger: string }> =
+              c.mood_history ?? []
+            return (
+              <div key={c.char_id ?? c.name} className="border border-border p-5 hover:border-foreground transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-serif text-lg tracking-tight">{c.name ?? c.char_id}</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted">{c.role ?? '角色'}</p>
+                  </div>
+                  <span className={`text-sm font-serif ${moodColor(c.emotional_state ?? '未知')}`}>
+                    {c.emotional_state ?? '未知'}
+                  </span>
+                </div>
+
+                {/* Emotional Arc */}
+                {moodHistory.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-2">情绪弧线</p>
+                    <div className="relative border-l border-border ml-2">
+                      {moodHistory.slice(-5).map((h, i) => (
+                        <div key={i} className="relative pl-4 pb-2">
+                          <div className="absolute -left-1 top-1 w-1.5 h-1.5 border border-foreground bg-background" />
+                          <span className="text-[10px] text-muted">Ch.{h.chapter}</span>
+                          <span className={`text-xs ml-2 ${moodColor(h.mood)}`}>{h.mood}</span>
+                          {h.trigger && (
+                            <span className="text-[10px] text-muted ml-1">— {h.trigger}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Known Facts */}
+                {(c.known_facts ?? []).length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">已知事实</p>
+                    <div className="flex flex-wrap gap-1">
+                      {(c.known_facts ?? []).slice(0, 5).map((f: string, i: number) => (
+                        <span key={i} className="text-[10px] border border-border px-1.5 py-0 text-muted">
+                          {f.length > 40 ? f.slice(0, 40) + '…' : f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Relationships */}
+                {Object.keys(c.relationships ?? {}).length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">关系</p>
+                    <div className="space-y-1">
+                      {Object.entries(c.relationships).slice(0, 3).map(([name, rel]: [string, any]) => (
+                        <div key={name} className="flex items-center gap-2 text-xs text-muted">
+                          <span className="border border-border px-1.5 py-0">{rel.type ?? rel.relationship_type ?? '—'}</span>
+                          <span>→ {name}</span>
+                          {rel.trust !== undefined && (
+                            <span className="tabular-nums">{Math.round(rel.trust * 100)}%</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// LongTermTab — world facts, active plot threads, style evolution
+// ---------------------------------------------------------------------------
+
+function LongTermTab() {
+  const { bookId } = useSearchParamsToObject()
+  const [longTerm, setLongTerm] = useState<any>(null)
+  const [summaries, setSummaries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!bookId) return
+    setLoading(true)
+    Promise.all([
+      memoryApi.getLongTerm(bookId).catch(() => null),
+      memoryApi.getSummaries(bookId).catch(() => []),
+    ])
+      .then(([lt, sums]) => {
+        setLongTerm(lt)
+        setSummaries(Array.isArray(sums) ? sums : [])
+      })
+      .finally(() => setLoading(false))
+  }, [bookId])
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
+          长期记忆 · 世界观事实、活跃情节线索、风格演变
+        </h3>
+
+        {loading && (
+          <p className="text-sm text-muted italic">加载中...</p>
+        )}
+
+        {!loading && !longTerm && summaries.length === 0 && (
+          <div className="border border-border p-6">
+            <p className="text-sm text-muted italic">暂无长期记忆数据。</p>
+            <p className="text-[10px] text-muted mt-2">
+              长期记忆在多章写作后自动积累，包含世界观事实、活跃情节线索和风格演变数据。至少完成2章后开始生成。
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* World Facts */}
+      {!loading && longTerm?.world_facts && (
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
+            世界观事实 ({(longTerm.world_facts ?? []).length})
+          </h4>
+          <div className="space-y-2">
+            {(longTerm.world_facts ?? []).map((fact: any, i: number) => (
+              <div key={i} className="border border-border p-3 hover:border-foreground transition-colors">
+                <p className="text-sm leading-relaxed">{typeof fact === 'string' ? fact : fact.content ?? fact.description ?? JSON.stringify(fact)}</p>
+                {fact.chapter && (
+                  <span className="text-[10px] text-muted mt-1 block">Ch.{fact.chapter}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active Plot Threads */}
+      {!loading && longTerm?.active_threads && (
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
+            活跃情节线索 ({(longTerm.active_threads ?? []).length})
+          </h4>
+          <div className="space-y-2">
+            {(longTerm.active_threads ?? []).map((thread: any, i: number) => (
+              <div key={i} className="border border-border p-3 hover:border-foreground transition-colors">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm">{typeof thread === 'string' ? thread : thread.description ?? thread.content ?? JSON.stringify(thread)}</p>
+                  {thread.importance && (
+                    <span className={`text-[10px] uppercase tracking-widest border px-2 py-0 ${
+                      thread.importance === 'critical'
+                        ? 'border-foreground bg-foreground text-background'
+                        : thread.importance === 'major'
+                          ? 'border-foreground/50 text-foreground'
+                          : 'border-border text-muted'
+                    }`}>
+                      {thread.importance}
+                    </span>
+                  )}
+                </div>
+                {thread.planted_chapter !== undefined && (
+                  <span className="text-[10px] text-muted">
+                    埋设于 Ch.{thread.planted_chapter}
+                    {thread.status ? ` · ${thread.status}` : ''}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Style Evolution */}
+      {!loading && longTerm?.style_evolution && (
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
+            风格演变
+          </h4>
+          <div className="border border-border p-4">
+            <pre className="text-xs text-muted whitespace-pre-wrap font-mono leading-relaxed">
+              {typeof longTerm.style_evolution === 'string'
+                ? longTerm.style_evolution
+                : JSON.stringify(longTerm.style_evolution, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* Chapter Summary Chain */}
+      {!loading && summaries.length > 0 && (
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
+            章节摘要链 ({summaries.length})
+          </h4>
+          <div className="relative border-l border-border ml-4">
+            {summaries.map((s: any) => (
+              <div key={s.chapter ?? s.chapter_number} className="relative pl-6 pb-5">
+                <div className="absolute -left-1.5 top-1 w-2.5 h-2.5 border border-foreground bg-background" />
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
+                  第{s.chapter ?? s.chapter_number}章 · {s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}
+                </div>
+                <p className="text-sm leading-relaxed">{s.summary}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// SearchTab — search box querying memory/search endpoint
+// ---------------------------------------------------------------------------
+
+function SearchTab() {
+  const { bookId } = useSearchParamsToObject()
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+
+  async function handleSearch() {
+    if (!bookId || !query.trim()) return
+    setLoading(true)
+    setSearched(true)
+    try {
+      const data = await memoryApi.searchFacts(bookId, query.trim(), category || undefined)
+      setResults(Array.isArray(data) ? data : [])
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') handleSearch()
+  }
+
+  return (
+    <div>
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
+        记忆检索 · 在所有记忆中搜索事实和信息
+      </h3>
+
+      <div className="flex gap-3 mb-6">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="输入关键词搜索记忆..."
+          className="flex-1 border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
+        />
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="border border-border bg-background px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
+        >
+          <option value="">全部类别</option>
+          <option value="character">角色</option>
+          <option value="event">事件</option>
+          <option value="world">世界</option>
+          <option value="relationship">关系</option>
+          <option value="emotion">情感</option>
+        </select>
+        <button
+          onClick={handleSearch}
+          disabled={loading || !query.trim()}
+          className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
+        >
+          {loading ? '检索中...' : '检索'}
+        </button>
+      </div>
+
+      {loading && (
+        <p className="text-sm text-muted italic">检索中...</p>
+      )}
+
+      {!loading && searched && results.length === 0 && (
+        <div className="border border-border p-6">
+          <p className="text-sm text-muted italic">未找到匹配的记忆。</p>
+          <p className="text-[10px] text-muted mt-2">尝试使用不同的关键词或放宽类别筛选。</p>
+        </div>
+      )}
+
+      {!loading && results.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted">
+            找到 {results.length} 条匹配结果
+          </p>
+          {results.map((r, i) => (
+            <div key={i} className="border border-border p-4 hover:border-foreground transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                {r.category && (
+                  <span className="text-[10px] uppercase tracking-widest border border-border px-2 py-0 text-muted">
+                    {r.category}
+                  </span>
+                )}
+                {r.chapter !== undefined && (
+                  <span className="text-[10px] text-muted">Ch.{r.chapter}</span>
+                )}
+                {r.score !== undefined && (
+                  <span className="text-[10px] text-muted tabular-nums ml-auto">
+                    相关度: {typeof r.score === 'number' ? (r.score * 100).toFixed(0) : r.score}%
+                  </span>
+                )}
+              </div>
+              <p className="text-sm leading-relaxed">
+                {r.content ?? r.text ?? r.description ?? JSON.stringify(r)}
+              </p>
+              {r.subject && (
+                <p className="text-xs text-muted mt-1">{r.subject}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !searched && (
+        <div className="text-center py-12">
+          <p className="text-sm text-muted">
+            输入关键词后按回车或点击「检索」按钮搜索记忆库。
+          </p>
+          <p className="text-xs text-muted mt-2">
+            支持按角色、事件、世界、关系、情感等类别筛选。
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// MemoryTab — main container with sub-tab navigation
+// ---------------------------------------------------------------------------
+
+function MemoryTab() {
+  const [subTab, setSubTab] = useState<MemorySubTab>('facts')
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">记忆系统</h2>
-
-      {loading && (
-        <p className="text-sm text-muted italic mb-4">加载中...</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Chapter Summaries — from memory/summaries/ */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-            章节摘要 ({summaries.length})
-          </h3>
-          {summaries.length === 0 ? (
-            <div className="border border-border p-4">
-              <p className="text-sm text-muted italic">运行 Pipeline 后将自动生成章节摘要。</p>
-              <p className="text-[10px] text-muted mt-2">摘要由 Reflector Agent 在每章写完后生成，存储在 memory/summaries/ 目录。</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {summaries.map((s) => (
-                <div key={s.chapter} className="border border-border p-4">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-                    第{s.chapter}章 · {new Date(s.created_at).toLocaleDateString()}
-                  </div>
-                  <p className="text-sm">{s.summary}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          <h2 className="font-serif text-2xl tracking-tight">记忆系统</h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+            Memory — structured facts, character states, and long-term knowledge
+          </p>
         </div>
+      </div>
 
-        {/* Fact Snapshots — from memory/snapshots/ */}
-        <div>
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-            事实快照 ({snapshots.length})
-          </h3>
-          {snapshots.length === 0 ? (
-            <div className="border border-border p-4">
-              <p className="text-sm text-muted italic">运行 Pipeline 后将自动提取事实快照。</p>
-              <p className="text-[10px] text-muted mt-2">Observer Agent 从每章提取关键事实，存储在 memory/snapshots/ 目录。</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {snapshots.map((snap, i) => (
-                <div key={i} className="border border-border p-4">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-2">
-                    快照 #{i + 1}
-                  </div>
-                  <pre className="text-xs text-muted whitespace-pre-wrap font-mono">
-                    {JSON.stringify(snap, null, 2).substring(0, 500)}
-                  </pre>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Sub-tab bar */}
+      <div className="flex items-center gap-0 border-b border-border mb-6">
+        {MEMORY_SUB_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSubTab(tab.key)}
+            className={`text-xs uppercase tracking-widest px-5 py-3 border-b-2 transition-colors whitespace-nowrap ${
+              subTab === tab.key
+                ? 'border-foreground text-foreground'
+                : 'border-transparent text-muted hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Character States — from memory/character_states/ or fallback to profiles */}
-        <div className="col-span-2">
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-            角色状态 ({displayCharStates.length})
-          </h3>
-          {displayCharStates.length === 0 ? (
-            <p className="text-sm text-muted italic">暂无角色数据。</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {displayCharStates.map((c: any) => (
-                <div key={c.name ?? c.char_id} className="border border-border p-4">
-                  <p className="font-serif text-sm">{c.name ?? c.char_id}</p>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted">{c.role ?? '角色'}</p>
-                  <p className="text-xs text-muted mt-2">情绪: {c.emotional_state ?? c.emotionalState ?? '未知'}</p>
-                  {(c.known_facts ?? c.knowledgeBoundary?.knows ?? []).length > 0 && (
-                    <p className="text-xs text-muted mt-1">
-                      已知: {(c.known_facts ?? c.knowledgeBoundary?.knows ?? []).slice(0, 3).join('、')}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Sub-tab content */}
+      <div>
+        {subTab === 'facts' && <FactsTab />}
+        {subTab === 'characters' && <CharacterStatesTab />}
+        {subTab === 'long-term' && <LongTermTab />}
+        {subTab === 'search' && <SearchTab />}
       </div>
     </div>
   )

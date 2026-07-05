@@ -132,11 +132,23 @@ export const constraintsApi = {
 
 export const memoryApi = {
   getSnapshots: (bookId: string) =>
-    request<{ snapshots: any[] }>('GET', `/books/${bookId}/memory/snapshots`),
+    request<any[]>('GET', `/books/${bookId}/memory/snapshots`),
   getSummaries: (bookId: string) =>
-    request<{ summaries: any[] }>('GET', `/books/${bookId}/memory/summaries`),
+    request<any[]>('GET', `/books/${bookId}/memory/summaries`),
   getCharacterStates: (bookId: string) =>
-    request<{ states: any[] }>('GET', `/books/${bookId}/memory/character-states`),
+    request<any[]>('GET', `/books/${bookId}/memory/character-states`),
+  getFacts: (bookId: string, chapter?: number) =>
+    request<any[]>('GET', `/books/${bookId}/memory/facts${chapter ? `?chapter=${chapter}` : ''}`),
+  searchFacts: (bookId: string, q: string, category?: string) =>
+    request<any[]>('GET', `/books/${bookId}/memory/search?q=${encodeURIComponent(q)}${category ? `&category=${category}` : ''}`),
+  getLongTerm: (bookId: string) =>
+    request<any>('GET', `/books/${bookId}/memory/long-term`),
+  getIndex: (bookId: string) =>
+    request<any>('GET', `/books/${bookId}/memory/index`),
+  extractFacts: (bookId: string, chapterNumber: number, content: string) =>
+    request<any>('POST', `/memory/extract`, { book_id: bookId, chapter_number: chapterNumber, content }),
+  consolidate: (bookId: string) =>
+    request<any>('POST', `/memory/consolidate`, { book_id: bookId }),
 }
 
 // --- Style ---

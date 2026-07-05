@@ -303,6 +303,41 @@ def get_character_states(book_id: str):
     return {"states": fm.read_character_states(book_id)}
 
 
+@router.get("/{book_id}/memory/facts")
+def get_memory_facts(book_id: str, chapter: int | None = None):
+    """Get all facts, optionally filtered by chapter."""
+    _book_dir(book_id)
+    if chapter:
+        return fm.read_memory_facts(book_id, chapter)
+    return fm.read_memory_all_facts(book_id)
+
+
+@router.get("/{book_id}/memory/long-term")
+def get_long_term_memory(book_id: str):
+    """Get long-term memory for a book."""
+    _book_dir(book_id)
+    return fm.read_memory_long_term(book_id)
+
+
+@router.get("/{book_id}/memory/index")
+def get_memory_index(book_id: str):
+    """Get memory index for a book."""
+    _book_dir(book_id)
+    return fm.read_memory_index(book_id)
+
+
+@router.get("/{book_id}/memory/search")
+def search_memory(book_id: str, q: str = "", category: str | None = None):
+    """Search facts by keyword."""
+    _book_dir(book_id)
+    facts = fm.read_memory_all_facts(book_id)
+    # Simple keyword search
+    results = [f for f in facts if q.lower() in f.get("content", "").lower() or q.lower() in f.get("subject", "").lower()]
+    if category:
+        results = [f for f in results if f.get("category") == category]
+    return results[:50]
+
+
 # ── Git Worktree ──────────────────────────────────────────────────────────
 
 

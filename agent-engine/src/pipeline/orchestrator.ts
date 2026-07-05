@@ -307,7 +307,157 @@ export class PipelineOrchestrator {
     console.log(`[orchestrator] Pipeline ${this.currentState.status} for chapter ${chapterNumber}`);
     console.log(`[orchestrator] Results: ${this.stageResults.size} stages completed`);
 
+    // ── Post-pipeline: Memory consolidation ──
+    if (this.currentState.status === "completed") {
+      try {
+        await this.consolidateMemory(bookPath, chapterNumber);
+      } catch (err) {
+        console.error(`[orchestrator] Memory consolidation failed (non-fatal):`, err);
+      }
+    }
+
     return this.currentState;
+  }
+
+  /**
+   * Consolidate memory: read all facts and summaries, generate long-term memory.
+   * This runs after each successful pipeline completion.
+   */
+  private async consolidateMemory(bookPath: string, _chapterNumber: number): Promise<void> {
+    console.log(`[orchestrator] Starting memory consolidation...`);
+
+    // Collect all facts from memory/facts/
+    const factsDir = join(bookPath, "memory", "facts");
+    let allFacts: any[] = [];
+    try {
+      const factFiles = await readdir(factsDir);
+      for (const file of factFiles) {
+        if (!file.endsWith(".json")) continue;
+        try {
+          const content = await readFile(join(factsDir, file), "utf-8");
+          const facts = JSON.parse(content);
+          if (Array.isArray(facts)) {
+            allFacts.push(...facts);
+          }
+        } catch {
+          // Skip unreadable fact files
+        }
+      }
+    } catch {
+      // No facts directory yet
+    }
+
+    // Collect all summaries from memory/summaries/
+    const summariesDir = join(bookPath, "memory", "summaries");
+    let allSummaries: any[] = [];
+    try {
+      const summaryFiles = await readdir(summariesDir);
+      for (const file of summaryFiles) {
+        if (!file.endsWith(".json")) continue;
+        try {
+          const content = await readFile(join(summariesDir, file), "utf-8");
+          const summary = JSON.parse(content);
+          allSummaries.push(summary);
+        } catch {
+          // Skip unreadable summary files
+        }
+      }
+    } catch {
+      // No summaries directory yet
+    }
+
+    // Sort summaries by chapter
+    allSummaries.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
+
+    // Only consolidate if we have enough data (at least 2 chapters)
+    if (allSummaries.length < 2 && allFacts.length < 5) {
+      console.log(`[orchestrator] Not enough data for consolidation (${allSummaries.length} summaries, ${allFacts.length} facts). Skipping.`);
+      return;
+    }
+
+    // Build long-term memory using LLM
+    const factsSummary = allFacts.slice(-50).map((f) =>
+      `[${f.category ?? 'unknown'}] ${f.subject ?? ''}: ${f.content ?? f.text ?? ''}`
+    ).join("\n");
+
+    const summaryChain = allSummaries.map((s) =>
+      `第${s.chapter}章: ${s.summary}`
+    ).join("\n");
+
+    const longTermPrompt = [
+      {
+        role: "system",
+        content: `你是一个小说记忆整合专家。请根据所有章节的事实和摘要，生成长期记忆。输出JSON格式：
+{
+  "world_facts": ["事实1", "事实2", ...],
+  "active_threads": [
+    {"description": "线索描述", "importance": "critical|major|minor", "planted_chapter": 1, "status": "active|resolved"}
+  ],
+  "style_evolution": "写作风格的演变趋势描述"
+}
+只输出JSON。world_facts应包含从所有章节中提炼的持久性世界观事实（去重、合并）。
+active_threads应包含尚未解决的情节线索。style_evolution应描述写作风格的变化趋势。`,
+      },
+      {
+        role: "user",
+        content: `章节数: ${allSummaries.length}\n总事实数: ${allFacts.length}\n\n最近50条事实:\n${factsSummary || '（无）'}\n\n章节摘要链:\n${summaryChain}`,
+      },
+    ];
+
+    try {
+      const llmCall = async (agentName: string, messages: Array<{ role: string; content: string }>, opts?: { temperature?: number; max_tokens?: number }) => {
+        return this.engine.executeAgent(agentName, messages, opts);
+      };
+
+      const longTermOutput = await llmCall("event_recorder", longTermPrompt, {
+        temperature: 0.3,
+        max_tokens: 4000,
+      });
+
+      // Parse JSON from LLM output
+      let longTermJsonStr = longTermOutput;
+      const jsonMatch = longTermOutput.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (jsonMatch) {
+        longTermJsonStr = jsonMatch[1];
+      }
+
+      let longTermData: any;
+      try {
+        longTermData = JSON.parse(longTermJsonStr);
+      } catch {
+        console.warn(`[orchestrator] Failed to parse long-term memory JSON`);
+        longTermData = {
+          world_facts: [],
+          active_threads: [],
+          style_evolution: longTermOutput.slice(0, 500),
+        };
+      }
+
+      // Add metadata
+      longTermData.consolidated_at = new Date().toISOString();
+      longTermData.total_facts = allFacts.length;
+      longTermData.total_summaries = allSummaries.length;
+
+      // Save to memory/long_term/
+      const longTermDir = join(bookPath, "memory", "long_term");
+      await mkdir(longTermDir, { recursive: true });
+      await writeFile(
+        join(longTermDir, "current.json"),
+        JSON.stringify(longTermData, null, 2),
+        "utf-8"
+      );
+
+      // Also save a versioned snapshot
+      await writeFile(
+        join(longTermDir, `snapshot_${Date.now()}.json`),
+        JSON.stringify(longTermData, null, 2),
+        "utf-8"
+      );
+
+      console.log(`[orchestrator] Memory consolidation complete: ${longTermData.world_facts?.length ?? 0} world facts, ${longTermData.active_threads?.length ?? 0} active threads`);
+    } catch (err) {
+      console.error(`[orchestrator] Long-term memory generation failed:`, err);
+    }
   }
 
   /**

@@ -17,7 +17,7 @@ import httpx
 from app import agent_lifecycle, file_manager
 from app.config import AGENT_ENGINE_URL, FRONTEND_DIR, SERVER_HOST, SERVER_PORT, ensure_data_dirs
 from app.models import DeAIRequest, StyleAnalyzeRequest
-from app.routers import agents, books, chapters, goals, pipeline, questions, settings, store
+from app.routers import agents, books, chapters, goals, memory, pipeline, questions, settings, store
 
 # ── Logging ────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,7 @@ app.include_router(settings.router)
 app.include_router(store.router)
 app.include_router(questions.router)
 app.include_router(goals.router)
+app.include_router(memory.router)
 
 
 # ── System Endpoints ──────────────────────────────────────────────────────

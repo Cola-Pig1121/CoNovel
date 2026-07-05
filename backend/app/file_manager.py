@@ -374,6 +374,70 @@ def write_character_state(book_id: str, char_id: str, state: dict) -> None:
     write_json(memory_dir / f"{char_id}.json", state)
 
 
+def read_memory_facts(book_id: str, chapter_num: int | None = None) -> list[dict]:
+    """Read fact entries. If chapter_num is provided, filter by chapter."""
+    memory_dir = get_book_dir(book_id) / "memory" / "facts"
+    if not memory_dir.exists():
+        return []
+    if chapter_num is not None:
+        # Read only the specific chapter file
+        chapter_file = memory_dir / f"chapter_{chapter_num:04d}.json"
+        data = read_json(chapter_file)
+        if data is None:
+            return []
+        return data if isinstance(data, list) else []
+    # Read all chapter fact files
+    all_facts: list[dict] = []
+    for f in sorted(memory_dir.glob("chapter_*.json")):
+        data = read_json(f)
+        if data is not None:
+            if isinstance(data, list):
+                all_facts.extend(data)
+            else:
+                all_facts.append(data)
+    return all_facts
+
+
+def write_memory_facts(book_id: str, chapter_num: int, facts: list[dict]) -> None:
+    """Write fact entries for a chapter."""
+    memory_dir = get_book_dir(book_id) / "memory" / "facts"
+    ensure_dir(memory_dir)
+    write_json(memory_dir / f"chapter_{chapter_num:04d}.json", facts)
+
+
+def read_memory_all_facts(book_id: str) -> list[dict]:
+    """Read all facts across all chapters."""
+    return read_memory_facts(book_id)
+
+
+def read_memory_long_term(book_id: str) -> dict:
+    """Read long-term memory."""
+    path = get_book_dir(book_id) / "memory" / "long_term.json"
+    data = read_json(path)
+    return data if data is not None else {}
+
+
+def write_memory_long_term(book_id: str, data: dict) -> None:
+    """Write long-term memory."""
+    memory_dir = get_book_dir(book_id) / "memory"
+    ensure_dir(memory_dir)
+    write_json(memory_dir / "long_term.json", data)
+
+
+def read_memory_index(book_id: str) -> dict:
+    """Read memory index."""
+    path = get_book_dir(book_id) / "memory" / "index.json"
+    data = read_json(path)
+    return data if data is not None else {}
+
+
+def write_memory_index(book_id: str, data: dict) -> None:
+    """Write memory index."""
+    memory_dir = get_book_dir(book_id) / "memory"
+    ensure_dir(memory_dir)
+    write_json(memory_dir / "index.json", data)
+
+
 # ── .eve Template ──────────────────────────────────────────────────────────
 
 DEFAULT_AGENT_CONFIG = {
