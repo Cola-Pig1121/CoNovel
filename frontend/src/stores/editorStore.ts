@@ -15,18 +15,34 @@ interface EditorStore {
   showRightPanel: boolean
   rightPanelTab: 'outline' | 'characters' | 'ai' | 'settings'
 
+  // Editor display settings (persisted to localStorage)
+  fontSize: string
+  lineHeight: string
+
   // Actions
   setBookContext: (bookId: string, chapterNumber: number) => void
   setContent: (content: string) => void
   setDirty: (dirty: boolean) => void
   setSaving: (saving: boolean) => void
   setLastSaved: (time: string) => void
+  setFontSize: (size: string) => void
+  setLineHeight: (height: string) => void
   toggleMode: () => void
   toggleLeftPanel: () => void
   toggleRightPanel: () => void
   setRightPanelTab: (tab: EditorStore['rightPanelTab']) => void
   reset: () => void
 }
+
+// Load persisted editor settings from localStorage
+function loadPersistedSettings() {
+  return {
+    fontSize: localStorage.getItem('conovel-font-size') || '16',
+    lineHeight: localStorage.getItem('conovel-line-height') || '1.8',
+  }
+}
+
+const persisted = loadPersistedSettings()
 
 const initialState = {
   bookId: null as string | null,
@@ -39,6 +55,8 @@ const initialState = {
   showLeftPanel: true,
   showRightPanel: true,
   rightPanelTab: 'outline' as const,
+  fontSize: persisted.fontSize,
+  lineHeight: persisted.lineHeight,
 }
 
 export const useEditorStore = create<EditorStore>((set) => ({
@@ -58,6 +76,16 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   setLastSaved: (time) =>
     set({ lastSavedAt: time, isDirty: false }),
+
+  setFontSize: (size) => {
+    localStorage.setItem('conovel-font-size', size)
+    set({ fontSize: size })
+  },
+
+  setLineHeight: (height) => {
+    localStorage.setItem('conovel-line-height', height)
+    set({ lineHeight: height })
+  },
 
   toggleMode: () =>
     set((s) => ({

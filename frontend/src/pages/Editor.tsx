@@ -228,6 +228,8 @@ function AIAssistantPanel() {
 
 /* ---- Settings ---- */
 function SettingsPanel() {
+  const { fontSize, lineHeight, setFontSize, setLineHeight } = useEditorStore()
+
   return (
     <div>
       <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
@@ -239,10 +241,16 @@ function SettingsPanel() {
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
             Font Size
           </span>
-          <select className="w-full border border-border bg-background px-3 py-2 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer">
-            <option>14px</option>
-            <option>16px</option>
-            <option>18px</option>
+          <select
+            value={`${fontSize}px`}
+            onChange={(e) => setFontSize(e.target.value.replace('px', ''))}
+            className="w-full border border-border bg-background px-3 py-2 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
+          >
+            <option value="14px">14px</option>
+            <option value="16px">16px</option>
+            <option value="18px">18px</option>
+            <option value="20px">20px</option>
+            <option value="22px">22px</option>
           </select>
         </label>
 
@@ -250,10 +258,15 @@ function SettingsPanel() {
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
             Line Height
           </span>
-          <select className="w-full border border-border bg-background px-3 py-2 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer">
-            <option>1.6</option>
-            <option>1.8</option>
-            <option>2.0</option>
+          <select
+            value={lineHeight}
+            onChange={(e) => setLineHeight(e.target.value)}
+            className="w-full border border-border bg-background px-3 py-2 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
+          >
+            <option value="1.6">1.6</option>
+            <option value="1.8">1.8</option>
+            <option value="2.0">2.0</option>
+            <option value="2.2">2.2</option>
           </select>
         </label>
 
@@ -356,6 +369,8 @@ export default function Editor() {
     toggleRightPanel,
     setBookContext,
     chapterNumber,
+    fontSize,
+    lineHeight,
   } = useEditorStore()
   const { fetchBook, fetchChapters, fetchCharacters, currentBook, loading: bookLoading, error: bookError } = useBookStore()
 
@@ -408,12 +423,10 @@ export default function Editor() {
         setToast('De-AI returned empty result')
         return
       }
-      // Replace selected text via execCommand (works with contentEditable / Lexical)
-      const sel = window.getSelection()
-      if (sel && sel.rangeCount > 0) {
-        sel.deleteFromDocument()
-        document.execCommand('insertText', false, result)
-      }
+      // Replace selected text in the content string instead of using
+      // document.execCommand which bypasses Lexical's internal state.
+      const newContent = content.replace(selectedText, result)
+      setContent(newContent)
       setToast('De-AI applied successfully')
     } catch (err) {
       console.error('De-AI error:', err)
@@ -421,7 +434,7 @@ export default function Editor() {
     } finally {
       setDeAILoading(false)
     }
-  }, [])
+  }, [content, setContent])
 
   // ---- Save handler ----
   const handleSave = useCallback(async () => {
@@ -537,6 +550,8 @@ export default function Editor() {
                 initialContent={content}
                 onChange={(text) => setContent(text)}
                 placeholder="Begin writing your chapter here..."
+                fontSize={Number(fontSize)}
+                lineHeight={Number(lineHeight)}
               />
             </div>
           )}

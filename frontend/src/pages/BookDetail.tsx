@@ -416,8 +416,14 @@ function CharactersTab() {
 // ---------------------------------------------------------------------------
 
 function ForeshadowingTab() {
-  const { currentBook } = useBookStore()
+  const [searchParams] = useSearchParams()
+  const bookId = searchParams.get('bookId') ?? ''
+  const { currentBook, fetchBook } = useBookStore()
   const items: ForeshadowingItem[] = currentBook?.foreshadowing ?? []
+  const [showAdd, setShowAdd] = useState(false)
+  const [newDesc, setNewDesc] = useState('')
+  const [newUrgency, setNewUrgency] = useState<'low' | 'medium' | 'high' | 'critical'>('medium')
+  const [saving, setSaving] = useState(false)
 
   const typeLabels = {
     planted: '已埋',
@@ -433,6 +439,31 @@ function ForeshadowingTab() {
     critical: 'border-foreground bg-foreground text-background',
   }
 
+  async function handleAdd() {
+    if (!newDesc.trim() || !bookId) return
+    setSaving(true)
+    try {
+      await fetch(`/api/books/${bookId}/foreshadowing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: newDesc.trim(),
+          type: 'planted',
+          urgency: newUrgency,
+          plantedInChapter: currentBook?.currentChapter ?? 1,
+          relatedCharacters: [],
+        }),
+      })
+      setNewDesc('')
+      setNewUrgency('medium')
+      setShowAdd(false)
+      fetchBook(bookId)
+    } catch (e) {
+      console.error('Add foreshadowing failed:', e)
+    }
+    setSaving(false)
+  }
+
   return (
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
@@ -442,10 +473,49 @@ function ForeshadowingTab() {
             Track narrative threads and their resolution
           </p>
         </div>
-        <button className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
-          + Add Thread
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
+        >
+          {showAdd ? 'Cancel' : '+ Add Thread'}
         </button>
       </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <div className="border border-border p-4 rounded-none mb-4 space-y-3">
+          <textarea
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Describe the foreshadowing thread..."
+            rows={3}
+            className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
+          />
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted">Urgency:</span>
+              <select
+                value={newUrgency}
+                onChange={(e) => setNewUrgency(e.target.value as any)}
+                className="border border-border bg-background px-3 py-1.5 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </label>
+            <div className="flex-1" />
+            <button
+              onClick={handleAdd}
+              disabled={saving || !newDesc.trim()}
+              className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
+            >
+              {saving ? 'Adding...' : 'Add Thread'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {items.map((item) => (
@@ -473,7 +543,7 @@ function ForeshadowingTab() {
         ))}
       </div>
 
-      {items.length === 0 && (
+      {items.length === 0 && !showAdd && (
         <p className="text-sm text-muted py-8 text-center">
           No foreshadowing threads defined.
         </p>
@@ -487,8 +557,45 @@ function ForeshadowingTab() {
 // ---------------------------------------------------------------------------
 
 function TimelineTab() {
-  const { currentBook } = useBookStore()
+  const [searchParams] = useSearchParams()
+  const bookId = searchParams.get('bookId') ?? ''
+  const { currentBook, fetchBook } = useBookStore()
   const events: TimelineEvent[] = currentBook?.timeline ?? []
+  const [showAdd, setShowAdd] = useState(false)
+  const [newDesc, setNewDesc] = useState('')
+  const [newLocation, setNewLocation] = useState('')
+  const [newCharacters, setNewCharacters] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function handleAdd() {
+    if (!newDesc.trim() || !bookId) return
+    setSaving(true)
+    try {
+      const chars = newCharacters
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean)
+      await fetch(`/api/books/${bookId}/timeline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: newDesc.trim(),
+          location: newLocation.trim() || 'Unknown',
+          characters: chars,
+          chapterNumber: currentBook?.currentChapter ?? 1,
+          timestamp: new Date().toISOString(),
+        }),
+      })
+      setNewDesc('')
+      setNewLocation('')
+      setNewCharacters('')
+      setShowAdd(false)
+      fetchBook(bookId)
+    } catch (e) {
+      console.error('Add timeline event failed:', e)
+    }
+    setSaving(false)
+  }
 
   return (
     <div className="border border-border p-6 rounded-none">
@@ -499,10 +606,51 @@ function TimelineTab() {
             In-world chronological events
           </p>
         </div>
-        <button className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
-          + Add Event
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
+        >
+          {showAdd ? 'Cancel' : '+ Add Event'}
         </button>
       </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <div className="border border-border p-4 rounded-none mb-4 space-y-3">
+          <textarea
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Describe the timeline event..."
+            rows={2}
+            className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
+          />
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={newLocation}
+              onChange={(e) => setNewLocation(e.target.value)}
+              placeholder="Location"
+              className="flex-1 border border-border bg-transparent px-3 py-2 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
+            />
+            <input
+              type="text"
+              value={newCharacters}
+              onChange={(e) => setNewCharacters(e.target.value)}
+              placeholder="Characters (comma separated)"
+              className="flex-1 border border-border bg-transparent px-3 py-2 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={handleAdd}
+              disabled={saving || !newDesc.trim()}
+              className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
+            >
+              {saving ? 'Adding...' : 'Add Event'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="relative border-l border-border ml-4">
         {events.map((evt) => (
@@ -526,7 +674,7 @@ function TimelineTab() {
         ))}
       </div>
 
-      {events.length === 0 && (
+      {events.length === 0 && !showAdd && (
         <p className="text-sm text-muted py-8 text-center">
           No timeline events recorded.
         </p>
@@ -1494,14 +1642,78 @@ function HooksTab() {
 // ---------------------------------------------------------------------------
 
 function ReadingPowerTab() {
-  const { currentBook } = useBookStore()
-  const hasChapters = (currentBook?.currentChapter ?? 0) > 0
+  const { chapters } = useBookStore()
+
+  const totalWordCount = chapters.reduce((sum, ch) => sum + ch.wordCount, 0)
+  const chapterCount = chapters.length
+  const avgChapterLength = chapterCount > 0 ? Math.round(totalWordCount / chapterCount) : 0
+  // Chinese reading speed: ~300 characters per minute (chars ≈ words for Chinese)
+  const readingTimeMinutes = Math.round(totalWordCount / 300)
+  const readingTimeHours = (readingTimeMinutes / 60).toFixed(1)
+
+  // Basic pacing metrics derived from chapter lengths
+  const wordCounts = chapters.map((ch) => ch.wordCount).filter((w) => w > 0)
+  const maxChapter = wordCounts.length > 0 ? Math.max(...wordCounts) : 0
+  const minChapter = wordCounts.length > 0 ? Math.min(...wordCounts) : 0
+  const variance =
+    wordCounts.length > 1
+      ? wordCounts.reduce((sum, w) => sum + Math.pow(w - avgChapterLength, 2), 0) /
+        wordCounts.length
+      : 0
+  const stdDev = Math.round(Math.sqrt(variance))
+
+  // Estimated pacing score (0-100): moderate variance = good pacing
+  const pacingScore =
+    chapterCount < 2
+      ? 0
+      : Math.min(100, Math.max(0, Math.round(50 + (stdDev / (avgChapterLength || 1)) * 100 - 50)))
+
+  // Word count progression trend
+  const firstHalf = wordCounts.slice(0, Math.floor(wordCounts.length / 2))
+  const secondHalf = wordCounts.slice(Math.floor(wordCounts.length / 2))
+  const firstAvg = firstHalf.length > 0 ? firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length : 0
+  const secondAvg = secondHalf.length > 0 ? secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length : 0
+  const trend =
+    firstAvg === 0 ? '—' : secondAvg > firstAvg * 1.05 ? '↗ Growing' : secondAvg < firstAvg * 0.95 ? '↘ Shrinking' : '→ Steady'
+
+  const metrics = [
+    {
+      label: '总字数',
+      value: totalWordCount.toLocaleString() + ' 字',
+      desc: 'Across all chapters',
+    },
+    {
+      label: 'Average Chapter Length',
+      value: avgChapterLength.toLocaleString() + ' 字',
+      desc: `${chapterCount} chapters total`,
+    },
+    {
+      label: 'Estimated Reading Time',
+      value: readingTimeMinutes < 60 ? `${readingTimeMinutes} min` : `${readingTimeHours} hrs`,
+      desc: '~300 字/min (Chinese)',
+    },
+    {
+      label: 'Pacing Score',
+      value: pacingScore === 0 ? 'N/A' : `${pacingScore}/100`,
+      desc: 'Chapter length consistency',
+    },
+    {
+      label: 'Length Variance',
+      value: wordCounts.length > 1 ? `σ = ${stdDev}` : 'N/A',
+      desc: `Range: ${minChapter.toLocaleString()}–${maxChapter.toLocaleString()} 字`,
+    },
+    {
+      label: 'Word Count Trend',
+      value: chapterCount < 2 ? 'N/A' : trend,
+      desc: 'First half vs second half average',
+    },
+  ]
 
   return (
     <div className="border border-border p-6 rounded-none">
       <h2 className="font-serif text-2xl tracking-tight mb-6">Reading Power Analysis</h2>
 
-      {!hasChapters ? (
+      {chapterCount === 0 ? (
         <div className="text-center py-12">
           <p className="text-sm text-muted mb-2">需要先运行 Pipeline 才能生成阅读力分析。</p>
           <p className="text-xs text-muted">
@@ -1510,12 +1722,7 @@ function ReadingPowerTab() {
         </div>
       ) : (
         <div className="space-y-4">
-          {[
-            { label: 'Pacing Score', desc: 'Story rhythm and momentum' },
-            { label: 'Tension Curve', desc: 'Rising and falling action' },
-            { label: 'Emotional Range', desc: 'Reader emotional engagement' },
-            { label: 'Page Turn Index', desc: 'Hook effectiveness per chapter' },
-          ].map((metric) => (
+          {metrics.map((metric) => (
             <div
               key={metric.label}
               className="flex items-center justify-between border border-border p-4 rounded-none hover:border-foreground transition-colors"
@@ -1524,12 +1731,14 @@ function ReadingPowerTab() {
                 <span className="text-sm font-serif">{metric.label}</span>
                 <span className="text-[10px] text-muted ml-3">{metric.desc}</span>
               </div>
-              <span className="font-serif text-xl text-muted">—</span>
+              <span className="font-serif text-xl tabular-nums">{metric.value}</span>
             </div>
           ))}
-          <p className="text-xs text-muted mt-4">
-            运行 Pipeline 后将自动生成各项指标。
-          </p>
+          {pacingScore === 0 && (
+            <p className="text-xs text-muted mt-4">
+              需要至少 2 章才能计算节奏评分。运行 Pipeline 后将自动分析各项指标。
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAgentStore } from '@/stores/agentStore'
 
 // Pipeline stages matching the TypeScript PipelineStage type exactly
@@ -36,7 +38,50 @@ const STATUS_LABELS: Record<StageStatus, string> = {
 }
 
 export default function Pipeline() {
-  const { pipelineState } = useAgentStore()
+  const [searchParams] = useSearchParams()
+  const bookId = searchParams.get('bookId') ?? ''
+  const { pipelineState, pipelineRunning, fetchPipelineStatus } = useAgentStore()
+  const [polling, setPolling] = useState(false)
+
+  // Detect if any stage is currently running
+  const hasRunningStage =
+    pipelineState?.activeStage !== null && pipelineState?.activeStage !== undefined
+
+  // On mount, check if a pipeline is active and auto-start polling
+  useEffect(() => {
+    if (bookId) {
+      fetchPipelineStatus(bookId).then(() => {
+        const state = useAgentStore.getState().pipelineState
+        if (state?.activeStage) {
+          setPolling(true)
+        }
+      })
+    }
+  }, [bookId, fetchPipelineStatus])
+
+  // Auto-detect running pipeline and start polling
+  useEffect(() => {
+    if (bookId && (pipelineRunning || hasRunningStage)) {
+      setPolling(true)
+    }
+  }, [bookId, pipelineRunning, hasRunningStage])
+
+  // Poll pipeline status every 3 seconds while running
+  useEffect(() => {
+    if (!polling || !bookId) return
+
+    const interval = setInterval(() => {
+      fetchPipelineStatus(bookId).then(() => {
+        // Check if still running
+        const state = useAgentStore.getState().pipelineState
+        if (!state?.activeStage) {
+          setPolling(false)
+        }
+      })
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [polling, bookId, fetchPipelineStatus])
 
   const findStage = (stageId: string) =>
     pipelineState?.stages?.find((s) => s.stage === stageId)
@@ -54,7 +99,15 @@ export default function Pipeline() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
-        <h1 className="font-serif text-3xl">Pipeline Monitor</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-serif text-3xl">Pipeline Monitor</h1>
+          {polling && (
+            <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted">
+              <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
+              Polling every 3s
+            </span>
+          )}
+        </div>
         <p className="text-muted text-sm mt-1">
           Real-time view of the chapter generation pipeline
         </p>
