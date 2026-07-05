@@ -1,0 +1,15 @@
+{
+  "name": "@conovel/agent-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/agent-server.ts",
+    "build": "bun build ./src/agent-server.ts --compile --outfile conovel-agent-engine.exe",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

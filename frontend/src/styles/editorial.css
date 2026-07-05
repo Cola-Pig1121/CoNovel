@@ -1,0 +1,104 @@
+/* Editorial Magazine-Style Design System */
+/* Based on editorial-design-spec.md and editorial-hard-prompt.md */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-foreground: #1C1C1C;
+    --color-background: #F9F8F6;
+    --color-muted: #6b7280;
+    --color-border: rgba(28, 28, 28, 0.1);
+    --color-accent: #816d70;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: "LXGW WenKai", sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    line-height: 1.75;
+  }
+
+  ::selection {
+    background-color: var(--color-foreground);
+    color: var(--color-background);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(28, 28, 28, 0.15);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(28, 28, 28, 0.3);
+  }
+}
+
+@layer components {
+  /* Editorial button */
+  .btn-editorial {
+    @apply text-xs uppercase tracking-widest border border-foreground px-6 py-3
+           transition-colors duration-200 hover:bg-foreground hover:text-background
+           active:scale-95 rounded-none;
+  }
+
+  /* Editorial card */
+  .card-editorial {
+    @apply border border-border p-6 rounded-none transition-colors duration-200
+           hover:border-foreground bg-transparent;
+  }
+
+  /* Editorial input */
+  .input-editorial {
+    @apply border-b border-foreground bg-transparent text-sm w-full
+           focus:outline-none tracking-wide py-1 transition-colors duration-200
+           placeholder:text-muted;
+  }
+
+  /* Editorial label */
+  .label-editorial {
+    @apply text-[10px] uppercase tracking-[0.2em] font-sans;
+  }
+
+  /* Section heading */
+  .heading-editorial {
+    @apply font-serif text-2xl italic border-b border-foreground pb-2;
+  }
+
+  /* Hover underline animation */
+  .hover-underline {
+    @apply relative cursor-pointer;
+  }
+
+  .hover-underline::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-[1px] bg-foreground
+           transition-all duration-300;
+  }
+
+  .hover-underline:hover::after {
+    @apply w-full;
+  }
+}

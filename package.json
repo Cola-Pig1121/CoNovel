@@ -1,20 +1,16 @@
 {
   "name": "conovel",
-  "version": "0.1.0",
   "private": true,
-  "description": "自进化多Agent小说写作系统 - Self-evolving multi-agent novel writing system",
+  "version": "0.1.0",
+  "description": "CoNovel - Autonomous Multi-Agent Narrative System",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint",
-    "studio": "pnpm --filter @conovel/studio dev"
+    "frontend": "pnpm --filter @conovel/studio",
+    "agent": "pnpm --filter @conovel/agent-engine"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
-    "typescript": "^5.7.0"
+    "turbo": "^2.3.0"
   },
-  "packageManager": "pnpm@9.15.0",
-  "engines": {
-    "node": ">=20.0.0"
-  }
+  "packageManager": "pnpm@9.15.0"
 }

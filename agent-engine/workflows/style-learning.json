@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "name": "style-learning",
+  "description": "Reference novel analysis for style learning and calibration",
+  "defaults": {
+    "agent": "style-analyst",
+    "readOnly": true,
+    "tools": ["file-read"]
+  },
+  "artifactGraph": {
+    "stages": [
+      {
+        "id": "text_analysis",
+        "type": "single",
+        "agent": "text-analyzer",
+        "prompt": "Analyze the reference text provided. Perform:\n1. Basic statistics (word count, sentence count, paragraph count)\n2. Vocabulary richness analysis\n3. Sentence structure patterns\n4. Dialogue ratio and formatting\n5. Pacing indicators\n\nOutput a comprehensive text analysis report.",
+        "tools": ["file-read"]
+      },
+      {
+        "id": "style_extraction",
+        "type": "single",
+        "agent": "style-analyst",
+        "prompt": "Extract the style fingerprint from the analyzed text:\n1. Narrative voice (1st/3rd person, tense)\n2. Prose style (sparse, lyrical, minimal, etc.)\n3. Dialogue style and formatting\n4. Description approach (sparse vs. detailed)\n5. Pacing and rhythm patterns\n6. Emotional distance\n7. Vocabulary choices\n\nOutput a detailed style fingerprint document.",
+        "from": ["text_analysis"]
+      },
+      {
+        "id": "technique_extraction",
+        "type": "single",
+        "agent": "technique-analyst",
+        "prompt": "Extract writing techniques from the reference text:\n1. Sentence structure techniques\n2. Dialogue techniques\n3. Description techniques\n4. Pacing techniques\n5. Emotional impact techniques\n6. Transition techniques\n7. Foreshadowing techniques\n\nFor each technique, provide examples from the text.\nOutput a techniques catalog.",
+        "from": ["text_analysis"]
+      },
+      {
+        "id": "profile_generation",
+        "type": "single",
+        "agent": "profile-builder",
+        "prompt": "Generate a comprehensive style profile JSON based on all previous analyses. Include:\n1. Style fingerprint (from style_extraction)\n2. Techniques catalog (from technique_extraction)\n3. Statistics (from text_analysis)\n4. Usage guidelines\n5. Anti-patterns to avoid\n\nOutput as structured JSON for use by writing agents.",
+        "from": ["style_extraction", "technique_extraction"],
+        "output": {
+          "controlSchema": {
+            "type": "object",
+            "properties": {
+              "fingerprint": { "type": "object" },
+              "techniques": { "type": "array" },
+              "statistics": { "type": "object" },
+              "guidelines": { "type": "array" },
+              "antiPatterns": { "type": "array" }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

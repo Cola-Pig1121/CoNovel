@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "name": "novel-init",
+  "description": "Book initialization workflow for setting up a new novel project",
+  "defaults": {
+    "agent": "novel-writer",
+    "readOnly": false,
+    "tools": ["file-read", "file-write", "git"]
+  },
+  "artifactGraph": {
+    "stages": [
+      {
+        "id": "genre_analysis",
+        "type": "single",
+        "agent": "genre-specialist",
+        "prompt": "Analyze the genre '{{genre}}' and establish:\n1. Genre conventions and reader expectations\n2. Common tropes to use or subvert\n3. Pacing patterns typical for this genre\n4. Tone and style considerations\n5. Successful examples in the genre\n\nOutput a structured genre analysis document.",
+        "tools": ["file-write"]
+      },
+      {
+        "id": "world_design",
+        "type": "single",
+        "agent": "world-builder",
+        "prompt": "Design the world settings based on the genre analysis and user inputs:\n1. World type and rules (fantasy, sci-fi, realistic, etc.)\n2. Setting details (time period, location, atmosphere)\n3. Social/political systems\n4. Magic/technology systems (if applicable)\n5. Cultural elements and history\n\nOutput a comprehensive world-building document.",
+        "from": ["genre_analysis"],
+        "tools": ["file-read", "file-write"]
+      },
+      {
+        "id": "character_design",
+        "type": "foreach",
+        "agent": "character-designer",
+        "prompt": "Design character '{{item.name}}' based on their role '{{item.role}}':\n1. Physical appearance and mannerisms\n2. Personality traits and flaws\n3. Backstory and motivations\n4. Character arc over the story\n5. Relationships with other characters\n6. Voice and speech patterns\n\nOutput a detailed character profile.",
+        "from": ["world_design"],
+        "fromPath": "$.characters",
+        "each": {
+          "prompt": "Design character '{{item.name}}' based on their role '{{item.role}}':\n1. Physical appearance and mannerisms\n2. Personality traits and flaws\n3. Backstory and motivations\n4. Character arc over the story\n5. Relationships with other characters\n6. Voice and speech patterns\n\nOutput a detailed character profile."
+        }
+      },
+      {
+        "id": "outline_design",
+        "type": "single",
+        "agent": "plot-architect",
+        "prompt": "Create a detailed outline for the novel:\n1. Volume structure (if applicable)\n2. Chapter-by-chapter breakdown\n3. Major plot points and turning points\n4. Subplot threads\n5. Foreshadowing opportunities\n6. Character introduction/development points\n7. Pacing structure\n\nOutput a structured outline document.",
+        "from": ["character_design"],
+        "tools": ["file-read", "file-write"]
+      },
+      {
+        "id": "style_calibration",
+        "type": "single",
+        "agent": "style-analyst",
+        "prompt": "Calibrate the writing style for this novel based on:\n1. Genre conventions\n2. Target audience\n3. Tone preferences\n4. Point of view choices\n5. Narrative distance\n6. Prose style (literary, commercial, etc.)\n\nIf reference novels are provided, analyze their style and create a style profile.\n\nOutput a style guide and calibration document.",
+        "from": ["outline_design"],
+        "tools": ["file-read", "file-write"]
+      }
+    ]
+  }
+}

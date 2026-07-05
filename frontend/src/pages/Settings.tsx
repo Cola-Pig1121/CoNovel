@@ -1,0 +1,586 @@
+import { useEffect, useState } from 'react'
+import { useProviderStore } from '@/stores/providerStore'
+import { useAgentConfigStore } from '@/stores/agentConfigStore'
+import type { Provider, ModelEntry } from '@/lib/types'
+
+type SettingsTab = 'providers' | 'agentConfig'
+
+export default function Settings() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('providers')
+  const initProviders = useProviderStore((s) => s.init)
+  const initAgents = useAgentConfigStore((s) => s.init)
+
+  useEffect(() => {
+    initProviders()
+    initAgents()
+  }, [initProviders, initAgents])
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border px-8 py-6">
+        <h1 className="font-serif text-3xl">Settings</h1>
+        <p className="text-muted text-sm mt-1">
+          配置 LLM Provider 和 Agent 模型分配（数据存储在浏览器本地）
+        </p>
+      </header>
+
+      <div className="border-b border-border px-8">
+        <div className="flex gap-8">
+          {([
+            { key: 'providers', label: 'Providers' },
+            { key: 'agentConfig', label: 'Agent Model Config' },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`text-xs uppercase tracking-widest px-4 py-3 border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-foreground text-foreground'
+                  : 'border-transparent text-muted hover:text-foreground'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="px-8 py-8">
+        {activeTab === 'providers' && <ProvidersPanel />}
+        {activeTab === 'agentConfig' && <AgentConfigPanel />}
+      </main>
+    </div>
+  )
+}
+
+// =============================================================================
+// Providers Panel
+// =============================================================================
+
+function ProvidersPanel() {
+  const { providers, addProvider, updateProvider, deleteProvider, toggleProvider, resetToDefaults } =
+    useProviderStore()
+  const [editing, setEditing] = useState<string | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="font-serif text-xl">LLM Providers</h2>
+          <p className="text-muted text-sm mt-1">
+            管理 API 提供商连接，所有配置保存在浏览器 localStorage
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={resetToDefaults}
+            className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+          >
+            重置默认
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors"
+          >
+            + 添加 Provider
+          </button>
+        </div>
+      </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <AddProviderForm
+          onAdd={(data) => {
+            addProvider(data)
+            setShowAdd(false)
+          }}
+          onCancel={() => setShowAdd(false)}
+        />
+      )}
+
+      {/* Provider list */}
+      <div className="space-y-3">
+        {providers.map((provider) => (
+          <div key={provider.id}>
+            {editing === provider.id ? (
+              <EditProviderForm
+                provider={provider}
+                onSave={(data) => {
+                  updateProvider(provider.id, data)
+                  setEditing(null)
+                }}
+                onCancel={() => setEditing(null)}
+              />
+            ) : (
+              <div className="border border-border p-6 hover:border-foreground transition-colors flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-serif text-lg">{provider.name}</h3>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+                      {provider.models.length} 模型
+                    </span>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+                      {provider.apiFormat}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted mt-1">{provider.baseUrl}</p>
+                  <p className="text-[10px] text-muted mt-1 font-mono">
+                    {provider.apiKey ? `sk-...${provider.apiKey.slice(-4)}` : '未配置 API Key'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => toggleProvider(provider.id)}
+                    className={`w-10 h-5 border transition-colors flex items-center ${
+                      provider.enabled
+                        ? 'bg-foreground border-foreground justify-end'
+                        : 'bg-transparent border-border justify-start'
+                    }`}
+                  >
+                    <span
+                      className={`block w-4 h-4 mx-0.5 transition-colors ${
+                        provider.enabled ? 'bg-background' : 'bg-muted/40'
+                      }`}
+                    />
+                  </button>
+
+                  <button
+                    onClick={() => setEditing(provider.id)}
+                    className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    编辑
+                  </button>
+                  <button
+                    onClick={() => deleteProvider(provider.id)}
+                    className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// --- Add Provider Form ---
+
+function AddProviderForm({
+  onAdd,
+  onCancel,
+}: {
+  onAdd: (data: Omit<Provider, 'id'>) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState('')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [apiFormat, setApiFormat] = useState<'openai' | 'anthropic' | 'custom'>('openai')
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name || !baseUrl) return
+    onAdd({ name, baseUrl, apiKey, apiFormat, models: [], enabled: true })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="border border-border p-6 space-y-4">
+      <h3 className="font-serif text-lg">添加 Provider</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">名称</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="My Provider"
+            className="w-full border border-border bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">API Format</span>
+          <select
+            value={apiFormat}
+            onChange={(e) => setApiFormat(e.target.value as 'openai' | 'anthropic' | 'custom')}
+            className="w-full border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+          >
+            <option value="openai">OpenAI Compatible</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+      </div>
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">Base URL</span>
+        <input
+          value={baseUrl}
+          onChange={(e) => setBaseUrl(e.target.value)}
+          placeholder="https://api.example.com/v1"
+          className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors"
+          required
+        />
+      </label>
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">API Key</span>
+        <input
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          type="password"
+          placeholder="sk-..."
+          className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors"
+        />
+      </label>
+      <div className="flex gap-3 justify-end">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          className="text-xs uppercase tracking-widest border border-foreground px-6 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
+        >
+          添加
+        </button>
+      </div>
+    </form>
+  )
+}
+
+// --- Edit Provider Form ---
+
+function EditProviderForm({
+  provider,
+  onSave,
+  onCancel,
+}: {
+  provider: Provider
+  onSave: (data: Partial<Provider>) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(provider.name)
+  const [baseUrl, setBaseUrl] = useState(provider.baseUrl)
+  const [apiKey, setApiKey] = useState(provider.apiKey)
+  const [apiFormat, setApiFormat] = useState(provider.apiFormat)
+  const [newModelName, setNewModelName] = useState('')
+  const [newModelContext, setNewModelContext] = useState('128000')
+  const [newModelOutput, setNewModelOutput] = useState('16384')
+  const { addModel, deleteModel } = useProviderStore()
+
+  function handleSave() {
+    onSave({ name, baseUrl, apiKey, apiFormat })
+  }
+
+  function handleAddModel(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newModelName) return
+    const model: ModelEntry = {
+      id: newModelName.toLowerCase().replace(/\s+/g, '-'),
+      name: newModelName,
+      contextWindow: parseInt(newModelContext) || 128000,
+      maxOutput: parseInt(newModelOutput) || 16384,
+    }
+    addModel(provider.id, model)
+    setNewModelName('')
+  }
+
+  return (
+    <div className="border border-border p-6 space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-serif text-lg">编辑 {provider.name}</h3>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleSave}
+            className="text-xs uppercase tracking-widest border border-foreground px-6 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
+          >
+            保存
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">名称</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border border-border bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">API Format</span>
+          <select
+            value={apiFormat}
+            onChange={(e) => setApiFormat(e.target.value as 'openai' | 'anthropic' | 'custom')}
+            className="w-full border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+          >
+            <option value="openai">OpenAI Compatible</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+      </div>
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">Base URL</span>
+        <input
+          value={baseUrl}
+          onChange={(e) => setBaseUrl(e.target.value)}
+          className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors"
+        />
+      </label>
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">API Key</span>
+        <input
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          type="password"
+          className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors"
+        />
+      </label>
+
+      {/* 模型列表 */}
+      <div className="border-t border-border pt-4">
+        <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">模型列表</h4>
+        <div className="space-y-2">
+          {provider.models.map((m) => (
+            <div key={m.id} className="flex items-center justify-between border border-border px-3 py-2">
+              <div className="flex items-center gap-4 text-xs">
+                <span className="font-mono">{m.name}</span>
+                <span className="text-muted">{(m.contextWindow / 1000).toFixed(0)}K ctx</span>
+                <span className="text-muted">{(m.maxOutput / 1000).toFixed(0)}K out</span>
+              </div>
+              <button
+                onClick={() => deleteModel(provider.id, m.id)}
+                className="text-[10px] text-muted hover:text-foreground transition-colors"
+              >
+                删除
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* 添加模型 */}
+        <form onSubmit={handleAddModel} className="flex gap-2 mt-3">
+          <input
+            value={newModelName}
+            onChange={(e) => setNewModelName(e.target.value)}
+            placeholder="模型名称"
+            className="flex-1 border border-border bg-transparent px-3 py-2 text-xs focus:outline-none focus:border-foreground transition-colors"
+          />
+          <input
+            value={newModelContext}
+            onChange={(e) => setNewModelContext(e.target.value)}
+            placeholder="Context"
+            className="w-20 border border-border bg-transparent px-3 py-2 text-xs font-mono focus:outline-none focus:border-foreground transition-colors"
+          />
+          <input
+            value={newModelOutput}
+            onChange={(e) => setNewModelOutput(e.target.value)}
+            placeholder="Output"
+            className="w-20 border border-border bg-transparent px-3 py-2 text-xs font-mono focus:outline-none focus:border-foreground transition-colors"
+          />
+          <button
+            type="submit"
+            className="text-xs uppercase tracking-widest border border-foreground px-3 py-2 hover:bg-foreground hover:text-background transition-colors"
+          >
+            +
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// Agent Config Panel
+// =============================================================================
+
+const TIER_PRESETS = [
+  {
+    label: 'Strong',
+    description: '核心写作 Agent (Strong 模型)',
+    roles: ['story_architect', 'narrative_writer', 'reviewer', 'character_intelligence'],
+  },
+  {
+    label: 'Medium',
+    description: '标准任务 Agent (Medium 模型)',
+    roles: ['executive_editor', 'character_designer', 'editor', 'de_ai_editor', 'style_analyzer', 'reflector'],
+  },
+  {
+    label: 'Light',
+    description: '辅助 Agent (Light 模型)',
+    roles: ['fact_checker', 'continuity_checker', 'pacing_controller', 'foreshadowing_tracker', 'observer', 'radar'],
+  },
+] as const
+
+function AgentConfigPanel() {
+  const { agents, updateAgent, batchAssign, resetToDefaults } = useAgentConfigStore()
+  const providers = useProviderStore((s) => s.providers)
+  const enabledProviders = providers.filter((p) => p.enabled)
+
+  function getModelsForProvider(providerId: string) {
+    const p = providers.find((pp) => pp.id === providerId)
+    return p?.models ?? []
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="font-serif text-xl">Agent 模型配置</h2>
+          <p className="text-muted text-sm mt-1">
+            为每个 Agent 分配 Provider 和模型，调整参数
+          </p>
+        </div>
+        <button
+          onClick={resetToDefaults}
+          className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+        >
+          重置默认
+        </button>
+      </div>
+
+      {/* 批量分配 */}
+      <div className="flex gap-3">
+        {TIER_PRESETS.map((tier) => (
+          <div key={tier.label} className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted">{tier.label}:</span>
+            <select
+              onChange={(e) => {
+                const [providerId, modelId] = e.target.value.split('::')
+                if (providerId && modelId) {
+                  batchAssign(providerId, modelId, [...tier.roles])
+                }
+              }}
+              className="border border-border bg-background text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors"
+              defaultValue=""
+            >
+              <option value="" disabled>选择模型</option>
+              {enabledProviders.map((p) =>
+                p.models.map((m) => (
+                  <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
+                    {p.name} / {m.name}
+                  </option>
+                )),
+              )}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      {/* Agent 表格 */}
+      <div className="border border-border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Agent</th>
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Provider</th>
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Model</th>
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Temperature</th>
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Max Tokens</th>
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {agents.map((agent) => {
+              const models = getModelsForProvider(agent.providerId)
+              return (
+                <tr
+                  key={agent.role}
+                  className="border-b border-border last:border-b-0 hover:bg-foreground/[0.02] transition-colors"
+                >
+                  <td className="px-6 py-4">
+                    <div className="font-serif text-sm">{agent.nameZh}</div>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-muted mt-0.5">{agent.role}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={agent.providerId}
+                      onChange={(e) => {
+                        const newProviderId = e.target.value
+                        const newModels = getModelsForProvider(newProviderId)
+                        updateAgent(agent.role, {
+                          providerId: newProviderId,
+                          modelId: newModels[0]?.id ?? '',
+                        })
+                      }}
+                      className="border border-border bg-transparent text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors w-full"
+                    >
+                      {enabledProviders.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={agent.modelId}
+                      onChange={(e) => updateAgent(agent.role, { modelId: e.target.value })}
+                      className="border border-border bg-transparent text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors w-full"
+                    >
+                      {models.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={agent.temperature}
+                        onChange={(e) => updateAgent(agent.role, { temperature: parseFloat(e.target.value) })}
+                        className="flex-1 accent-foreground"
+                      />
+                      <span className="text-xs text-muted w-8 text-right tabular-nums">
+                        {agent.temperature.toFixed(1)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <input
+                      type="number"
+                      value={agent.maxTokens}
+                      onChange={(e) => updateAgent(agent.role, { maxTokens: parseInt(e.target.value) || 2048 })}
+                      className="w-20 border border-border bg-transparent text-xs px-3 py-2 font-mono focus:outline-none focus:border-foreground transition-colors"
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => updateAgent(agent.role, { enabled: !agent.enabled })}
+                      className={`w-10 h-5 border transition-colors flex items-center ${
+                        agent.enabled
+                          ? 'bg-foreground border-foreground justify-end'
+                          : 'bg-transparent border-border justify-start'
+                      }`}
+                    >
+                      <span
+                        className={`block w-4 h-4 mx-0.5 transition-colors ${
+                          agent.enabled ? 'bg-background' : 'bg-muted/40'
+                        }`}
+                      />
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}

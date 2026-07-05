@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "name": "review-cycle",
+  "description": "Multi-chapter review workflow for consistency and quality analysis",
+  "defaults": {
+    "agent": "quality-reviewer",
+    "readOnly": true,
+    "tools": ["file-read"]
+  },
+  "artifactGraph": {
+    "stages": [
+      {
+        "id": "chapter_scan",
+        "type": "foreach",
+        "agent": "chapter-analyzer",
+        "prompt": "Scan chapter '{{item.title}}' ({{item.id}}) and extract:\n1. Key events and timeline\n2. Character appearances and actions\n3. Dialogue highlights\n4. Plot threads mentioned\n5. Foreshadowing elements\n6. Quality metrics (word count, pacing score)\n\nOutput a structured chapter summary.",
+        "fromPath": "$.chapters",
+        "each": {
+          "prompt": "Scan chapter '{{item.title}}' ({{item.id}}) and extract:\n1. Key events and timeline\n2. Character appearances and actions\n3. Dialogue highlights\n4. Plot threads mentioned\n5. Foreshadowing elements\n6. Quality metrics (word count, pacing score)\n\nOutput a structured chapter summary."
+        }
+      },
+      {
+        "id": "cross_chapter_review",
+        "type": "single",
+        "agent": "continuity-manager",
+        "prompt": "Review all scanned chapters for cross-chapter consistency:\n1. Character development continuity\n2. Timeline consistency\n3. Plot thread tracking\n4. Setting consistency\n5. Relationship evolution\n6. Information flow\n\nIdentify any inconsistencies or continuity errors.\nOutput a consistency report.",
+        "from": ["chapter_scan"]
+      },
+      {
+        "id": "foreshadowing_audit",
+        "type": "single",
+        "agent": "plot-analyst",
+        "prompt": "Audit foreshadowing across all chapters:\n1. List all foreshadowing elements planted\n2. Check which have been paid off\n3. Identify abandoned foreshadowing\n4. Suggest opportunities for new foreshadowing\n5. Verify foreshadowing timing and relevance\n\nOutput a foreshadowing status report.",
+        "from": ["chapter_scan"]
+      },
+      {
+        "id": "pacing_analysis",
+        "type": "single",
+        "agent": "pacing-analyst",
+        "prompt": "Analyze pacing across all chapters:\n1. Overall pacing arc\n2. Tension and release patterns\n3. Scene vs. summary balance\n4. Dialogue vs. action ratio progression\n5. Chapter length variation\n6. Potential pacing issues\n\nOutput a pacing analysis report with recommendations.",
+        "from": ["chapter_scan"]
+      },
+      {
+        "id": "report",
+        "type": "reduce",
+        "agent": "report-synthesizer",
+        "prompt": "Synthesize all review findings into a comprehensive report:\n1. Executive summary\n2. Consistency issues found\n3. Foreshadowing status\n4. Pacing analysis\n5. Recommendations for improvement\n6. Action items for next revision\n\nCombine insights from all previous stages into actionable feedback.",
+        "from": ["cross_chapter_review", "foreshadowing_audit", "pacing_analysis"],
+        "output": {
+          "controlSchema": {
+            "type": "object",
+            "properties": {
+              "summary": { "type": "string" },
+              "consistencyIssues": { "type": "array" },
+              "foreshadowingStatus": { "type": "object" },
+              "pacingAnalysis": { "type": "object" },
+              "recommendations": { "type": "array" },
+              "actionItems": { "type": "array" }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

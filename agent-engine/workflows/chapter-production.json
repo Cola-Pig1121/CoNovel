@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "name": "chapter-production",
+  "description": "Core chapter production pipeline for writing novel chapters",
+  "defaults": {
+    "agent": "novel-writer",
+    "readOnly": false,
+    "tools": ["file-read", "file-write", "git"]
+  },
+  "artifactGraph": {
+    "stages": [
+      {
+        "id": "context_assembly",
+        "type": "single",
+        "agent": "context-manager",
+        "prompt": "Assemble complete context for chapter {{chapterId}}. Include: previous chapter summaries, character states, world state, plot threads, and any pending foreshadowing. Output a structured context document.",
+        "tools": ["file-read"]
+      },
+      {
+        "id": "character_reasoning",
+        "type": "single",
+        "agent": "character-analyst",
+        "prompt": "Based on the context assembled, reason about how each character would feel and behave in this chapter. Consider their motivations, relationships, and recent experiences. Update character states.",
+        "from": ["context_assembly"],
+        "tools": ["file-read", "file-write"]
+      },
+      {
+        "id": "writing",
+        "type": "single",
+        "agent": "novel-writer",
+        "prompt": "Write chapter {{chapterId}} following these guidelines:\n1. Maintain consistent voice and style\n2. Show, don't tell\n3. Use sensory details\n4. Vary sentence structure\n5. End with a hook or emotional beat\n\nContext from previous stages is available in the context.",
+        "from": ["character_reasoning"]
+      },
+      {
+        "id": "event_recording",
+        "type": "single",
+        "agent": "event-tracker",
+        "prompt": "Extract all key events, facts, and character developments from the written chapter. Record: timeline of events, character state changes, new information revealed, and any plot threads advanced or introduced.",
+        "from": ["writing"],
+        "tools": ["file-read", "file-write"]
+      },
+      {
+        "id": "quality_gate",
+        "type": "dag",
+        "agent": "quality-reviewer",
+        "prompt": "Quality gate: run all checks in parallel and aggregate results.",
+        "from": ["event_recording"],
+        "stages": [
+          {
+            "id": "fact_check",
+            "type": "single",
+            "agent": "fact-checker",
+            "prompt": "Check the written chapter for factual consistency. Verify: character abilities match established powers, locations exist in world-building, timeline is logical, and no contradictions with previous chapters.",
+            "from": ["event_recording"]
+          },
+          {
+            "id": "continuity_check",
+            "type": "single",
+            "agent": "continuity-manager",
+            "prompt": "Check continuity across chapters. Verify: character appearances are consistent, setting details match, plot threads are properly continued, and no dangling plot holes.",
+            "from": ["event_recording"]
+          },
+          {
+            "id": "pacing_check",
+            "type": "single",
+            "agent": "pacing-analyst",
+            "prompt": "Analyze the pacing of the chapter. Check: scene transitions are smooth, dialogue/action balance is appropriate, information density is suitable, and chapter length feels right.",
+            "from": ["event_recording"]
+          }
+        ]
+      },
+      {
+        "id": "character_intelligence",
+        "type": "single",
+        "agent": "character-analyst",
+        "prompt": "Perform character self-review. For each major character in the chapter, verify: their voice is distinct, their actions align with established personality, their development feels earned, and their relationships are portrayed consistently.",
+        "from": ["quality_gate"]
+      },
+      {
+        "id": "review",
+        "type": "loop",
+        "agent": "quality-reviewer",
+        "prompt": "Perform 13-dimension review of the chapter:\n1. Plot coherence\n2. Character consistency\n3. Dialogue authenticity\n4. Pacing and rhythm\n5. Sensory immersion\n6. Emotional impact\n7. Information density\n8. Style consistency\n9. Originality\n10. Grammar and mechanics\n11. Chapter structure\n12. Hook effectiveness\n13. Overall quality\n\nOutput a score for each dimension (1-10) and overall pass/fail.",
+        "from": ["character_intelligence"],
+        "until": "$.overall >= 7",
+        "maxRounds": 3
+      },
+      {
+        "id": "editing",
+        "type": "single",
+        "agent": "editor",
+        "prompt": "Polish the text for publication. Fix: awkward phrasing, repetitive words, unclear sentences, and any remaining issues from the review stage. Maintain the author's voice while improving clarity.",
+        "from": ["review"]
+      },
+      {
+        "id": "de_ai",
+        "type": "single",
+        "agent": "de-ai-writer",
+        "prompt": "Remove AI-generated patterns from the text. Focus on: reducing formal phrasing, adding more personality, varying sentence structure, removing hedging language, and making dialogue more natural.",
+        "from": ["editing"]
+      },
+      {
+        "id": "reflector",
+        "type": "single",
+        "agent": "reflector",
+        "prompt": "Generate a self-reflection on the chapter writing process. What worked well? What could be improved? What patterns should be avoided in future chapters? Output as structured notes.",
+        "from": ["de_ai"]
+      },
+      {
+        "id": "state_sync",
+        "type": "single",
+        "agent": "state-manager",
+        "prompt": "Save all chapter data to disk: chapter file, updated character states, timeline events, and metadata. Create a git commit with descriptive message.",
+        "from": ["reflector"],
+        "tools": ["file-read", "file-write", "git"]
+      }
+    ]
+  }
+}

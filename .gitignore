@@ -4,20 +4,18 @@ node_modules/
 
 # Build outputs
 dist/
-.next/
-out/
 build/
-.svelte-kit/
-.turbo/
+*.exe
+*.bin
+conovel-agent-engine.exe
 
-# Rust
-src-tauri/target/
-src-tauri/gen/schemas/
-
-# Environment
-.env
-.env.local
-.env.*.local
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
 
 # IDE
 .vscode/
@@ -29,25 +27,28 @@ src-tauri/gen/schemas/
 .DS_Store
 Thumbs.db
 
-# Debug
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Reference files (large, personal)
+_refs/
+
+# Runtime data (user-specific)
+~/
+
+# Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 
-# Testing
+# Coverage
 coverage/
 
-# Story data (runtime)
-story/
-data/
+# Turbo
+.turbo/
 
-# Reference repos (not part of this project)
-oh-story-claudecode/
-CodeCoNoveloh-story-claudecode/
-
-# Temp files
+# Temp
 *.tmp
 *.temp
-nul
-NUL
