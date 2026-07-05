@@ -399,6 +399,9 @@ export default function Dashboard() {
                   <li
                     key={tpl}
                     className="flex items-center justify-between border-b border-border last:border-b-0 py-3 group cursor-pointer hover:bg-foreground/[0.02] transition-colors px-1 -mx-1"
+                    onClick={() => {
+                      openModal('createBook')
+                    }}
                   >
                     <span className="text-sm font-sans">{tpl}</span>
                     <span className="text-[10px] uppercase tracking-widest text-muted group-hover:text-foreground transition-colors">

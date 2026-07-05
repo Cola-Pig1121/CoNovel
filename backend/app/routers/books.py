@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app import file_manager as fm
 from app.agent_lifecycle import proxy_request
@@ -336,6 +337,36 @@ def search_memory(book_id: str, q: str = "", category: str | None = None):
     if category:
         results = [f for f in results if f.get("category") == category]
     return results[:50]
+
+
+# ── Constraints ────────────────────────────────────────────────────────────
+
+
+@router.get("/{book_id}/constraints")
+def get_constraints(book_id: str):
+    """Read the combined constraints markdown content for a book."""
+    _book_dir(book_id)
+    constraints_dir = get_book_dir(book_id) / "constraints"
+    if not constraints_dir.exists():
+        return {"content": ""}
+    # Read all .md files and concatenate
+    content = ""
+    for f in sorted(constraints_dir.glob("*.md")):
+        content += f.read_text(encoding="utf-8") + "\n\n"
+    return {"content": content.strip()}
+
+
+@router.put("/{book_id}/constraints")
+async def save_constraints(book_id: str, request: Request):
+    """Save constraints markdown content for a book."""
+    _book_dir(book_id)
+    raw = await request.body()
+    body = json.loads(raw)
+    content = body.get("content", "")
+    constraints_dir = get_book_dir(book_id) / "constraints"
+    constraints_dir.mkdir(parents=True, exist_ok=True)
+    (constraints_dir / "custom.md").write_text(content, encoding="utf-8")
+    return {"ok": True}
 
 
 # ── Git Worktree ──────────────────────────────────────────────────────────

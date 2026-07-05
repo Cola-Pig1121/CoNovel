@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { readFile, readdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadKnowledgeBase, formatTechniquesForPrompt, getTechniques } from "./knowledge/csv-reader.js";
@@ -39,6 +40,7 @@ const PORT = parseInt(process.env.PORT ?? "3583", 10);
 const HOST = process.env.HOST ?? "0.0.0.0";
 const KNOWLEDGE_DIR = process.env.KNOWLEDGE_DIR ?? join(getProjectRoot(), "knowledge-base");
 const BOOKS_DIR = process.env.BOOKS_DIR ?? "D:\\Code\\CoNovel\\novels";
+const DATA_DIR = process.env.DATA_DIR ?? "D:\\Code\\CoNovel\\backend\\data";
 
 function getProjectRoot(): string {
   const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -95,6 +97,34 @@ class CoNovelAgentEngine {
   }
 
   /**
+   * Load provider configurations from the backend's data/providers.json.
+   * Merges into (and can override) the default providers.
+   */
+  async loadProvidersFromBackend(): Promise<void> {
+    const providersPath = join(DATA_DIR, "providers.json");
+    if (!existsSync(providersPath)) return;
+    try {
+      const content = await readFile(providersPath, "utf-8");
+      const providers = JSON.parse(content);
+      if (!Array.isArray(providers)) return;
+      for (const p of providers) {
+        if (p.name) {
+          this.providers.set(p.name, {
+            name: p.name,
+            type: p.type ?? "openai",
+            base_url: p.baseUrl ?? p.base_url ?? "https://api.openai.com/v1",
+            api_key: p.apiKey ?? p.api_key ?? "",
+            models: p.models ?? [],
+          });
+        }
+      }
+      console.log(`[engine] Loaded ${providers.length} providers from backend`);
+    } catch (err) {
+      console.error(`[engine] Failed to load providers from backend:`, err);
+    }
+  }
+
+  /**
    * Load agent configurations from a JSON config file or env vars.
    */
   async loadAgentConfigs(configPath?: string): Promise<void> {
@@ -142,49 +172,60 @@ class CoNovelAgentEngine {
     console.log(`[engine] Loading book context from: ${bookPath}`);
     this.currentBookPath = bookPath;
 
-    // Read meta.json
-    const metaPath = join(bookPath, "meta.json");
-    let meta: BookMeta;
+    // Read state.json (backend format with camelCase fields)
+    const statePath = join(bookPath, "state.json");
+    let rawState: Record<string, unknown>;
     try {
-      const content = await readFile(metaPath, "utf-8");
-      meta = JSON.parse(content);
+      const content = await readFile(statePath, "utf-8");
+      rawState = JSON.parse(content);
     } catch {
-      meta = {
-        title: "未命名小说",
-        author: "未知",
-        genre: "玄幻",
-        synopsis: "",
-        target_word_count: 500000,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      rawState = {};
     }
 
-    // Read characters
+    // Map backend camelCase state.json to engine's BookMeta (snake_case)
+    const meta: BookMeta = {
+      title: (rawState.title as string) ?? "未命名小说",
+      genre: (rawState.genre as string) ?? "玄幻",
+      synopsis: (rawState.synopsis as string) ?? (rawState.premise as string) ?? "",
+      target_word_count: (rawState.target_word_count as number) ?? (rawState.targetWordCount as number) ?? 500000,
+      created_at: (rawState.created_at as string) ?? (rawState.createdAt as string) ?? new Date().toISOString(),
+      updated_at: (rawState.updated_at as string) ?? (rawState.updatedAt as string) ?? new Date().toISOString(),
+      author: (rawState.author as string) ?? "未知",
+      status: rawState.status as string | undefined,
+      id: rawState.id as string | undefined,
+    };
+
+    // Read characters from characters.json (backend flat list)
     const characters = await this.loadCharacters(bookPath);
 
     // Set existing names for naming tool
     setExistingNames(characters.map((c) => c.name));
 
-    // Read chapters index
+    // Read chapters from individual chapter_XXXX.json files (backend format)
     const chapters = await this.loadChapterIndex(bookPath);
 
-    // Read outline
-    const outline = await this.loadJSON(join(bookPath, "outline.json"), {
+    // Read outline from outline.json (backend format: { volumes: [...] })
+    const outlineData = await this.loadJSON(join(bookPath, "outline.json"), {
       act_outlines: [],
       chapter_outlines: [],
+      volumes: [],
     });
+    const outline = {
+      act_outlines: outlineData.act_outlines ?? [],
+      chapter_outlines: outlineData.chapter_outlines ?? [],
+    };
 
-    // Read world
-    const world = await this.loadJSON(join(bookPath, "world.json"), {
-      name: "",
-      era: "",
-      geography: [],
-      factions: [],
-      rules: [],
-      cultural_notes: [],
-      custom: {},
-    });
+    // Read world from world.json (backend format)
+    const worldData = await this.loadJSON<Record<string, any>>(join(bookPath, "world.json"), {});
+    const world = {
+      name: worldData.name ?? "",
+      era: worldData.era ?? "",
+      geography: worldData.geography ?? [],
+      factions: worldData.factions ?? [],
+      rules: worldData.rules ?? [],
+      cultural_notes: worldData.culturalNotes ?? worldData.cultural_notes ?? [],
+      custom: worldData.custom ?? {},
+    };
 
     // Read foreshadowing
     const foreshadowing = await this.loadJSON(join(bookPath, "foreshadowing.json"), []);
@@ -226,28 +267,52 @@ class CoNovelAgentEngine {
   }
 
   private async loadCharacters(bookPath: string): Promise<CharacterProfile[]> {
-    const charsDir = join(bookPath, "characters");
+    // Backend writes characters.json as a flat list
+    const charsPath = join(bookPath, "characters.json");
     try {
-      const files = await readdir(charsDir);
-      const characters: CharacterProfile[] = [];
-      for (const file of files) {
-        if (!file.endsWith(".json")) continue;
-        try {
-          const content = await readFile(join(charsDir, file), "utf-8");
-          characters.push(JSON.parse(content));
-        } catch (err) {
-          console.error(`[engine] Failed to load character ${file}:`, err);
-        }
+      const content = await readFile(charsPath, "utf-8");
+      const data = JSON.parse(content);
+      if (Array.isArray(data)) {
+        return data as CharacterProfile[];
       }
-      return characters;
+      return [];
     } catch {
       return [];
     }
   }
 
   private async loadChapterIndex(bookPath: string): Promise<any[]> {
-    const chaptersPath = join(bookPath, "chapters.json");
-    return this.loadJSON(chaptersPath, []);
+    // Backend writes individual chapter_XXXX.json files in chapters/ directory
+    const chaptersDir = join(bookPath, "chapters");
+    try {
+      const files = await readdir(chaptersDir);
+      const chapters: any[] = [];
+      for (const file of files) {
+        if (!file.endsWith(".json")) continue;
+        try {
+          const content = await readFile(join(chaptersDir, file), "utf-8");
+          const data = JSON.parse(content);
+          // Map backend camelCase fields to engine snake_case
+          chapters.push({
+            number: data.chapterNumber ?? data.number ?? parseInt(file.replace(/\D/g, ""), 10),
+            title: data.title ?? "",
+            word_count: data.wordCount ?? data.word_count ?? 0,
+            status: data.status ?? "draft",
+            created_at: data.createdAt ?? data.created_at ?? "",
+            updated_at: data.updatedAt ?? data.updated_at ?? "",
+            summary: data.summary ?? "",
+            pov_character: data.povCharacter ?? data.pov_character,
+            scenes: data.scenes ?? [],
+            content: data.content,
+          });
+        } catch (err) {
+          console.error(`[engine] Failed to load chapter ${file}:`, err);
+        }
+      }
+      return chapters.sort((a, b) => a.number - b.number);
+    } catch {
+      return [];
+    }
   }
 
   private async loadJSON<T>(filePath: string, defaultValue: T): Promise<T> {
@@ -869,6 +934,11 @@ await engine.loadAgentConfigs(
   process.env.AGENT_CONFIG_PATH ?? join(getProjectRoot(), "agent-configs.json")
 ).catch(() => {
   console.log("[engine] No agent config file found, using env vars / defaults");
+});
+
+// Load provider configs from backend data directory
+await engine.loadProvidersFromBackend().catch(() => {
+  console.log("[engine] No provider config file found, using defaults");
 });
 
 const server = Bun.serve({

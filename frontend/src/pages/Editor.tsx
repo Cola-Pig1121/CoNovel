@@ -369,10 +369,29 @@ export default function Editor() {
       return
     }
     fetchBook(bookId)
-    fetchChapters(bookId)
     fetchCharacters(bookId)
-    setBookContext(bookId, 1)
-  }, [bookId, navigate, fetchBook, fetchChapters, fetchCharacters, setBookContext])
+
+    // Fetch chapters then load the first chapter's content into the editor
+    fetchChapters(bookId).then(() => {
+      const { chapters } = useBookStore.getState()
+      if (chapters.length > 0 && chapters[0]) {
+        setContent(chapters[0].content ?? '')
+        setBookContext(bookId, chapters[0].chapterNumber)
+      } else {
+        setBookContext(bookId, 1)
+      }
+    })
+  }, [bookId, navigate, fetchBook, fetchChapters, fetchCharacters, setBookContext, setContent])
+
+  // ---- Load chapter content when chapter number changes ----
+  useEffect(() => {
+    if (!bookId || !chapterNumber) return
+    const { chapters } = useBookStore.getState()
+    const ch = chapters.find((c) => c.chapterNumber === chapterNumber)
+    if (ch) {
+      setContent(ch.content ?? '')
+    }
+  }, [bookId, chapterNumber, setContent])
 
   // ---- De-AI handler ----
   const handleDeAI = useCallback(async (selectedText: string) => {
@@ -432,6 +451,15 @@ export default function Editor() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleSave])
+
+  // ---- Auto-save after 30 seconds of inactivity ----
+  useEffect(() => {
+    if (!isDirty || !bookId || !chapterNumber) return
+    const timer = setTimeout(() => {
+      handleSave()
+    }, 30000)
+    return () => clearTimeout(timer)
+  }, [content, isDirty, bookId, chapterNumber, handleSave])
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">

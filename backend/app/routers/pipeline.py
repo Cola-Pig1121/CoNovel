@@ -15,7 +15,7 @@ from app.models import CancelPipelineRequest, StartPipelineRequest
 
 router = APIRouter(prefix="/api/pipeline", tags=["pipeline"])
 
-# Pipeline stages matching the TypeScript PipelineStage type
+# Pipeline stages matching the TypeScript PipelineStage type exactly
 PIPELINE_STAGES = [
     "context_assembly",
     "character_reasoning",
@@ -24,8 +24,10 @@ PIPELINE_STAGES = [
     "fact_check",
     "continuity_check",
     "pacing_check",
-    "character_intelligence",
-    "review",
+    "character_intelligence_review",
+    "review_round_1",
+    "review_round_2",
+    "review_round_3",
     "editing",
     "de_ai",
     "reflector",

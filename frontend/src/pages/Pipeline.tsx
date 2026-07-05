@@ -1,17 +1,22 @@
 import { useAgentStore } from '@/stores/agentStore'
 
+// Pipeline stages matching the TypeScript PipelineStage type exactly
 const STAGES = [
-  'Context Assembly',
-  'Character Reasoning',
-  'Writing',
-  'Event Recording',
-  'Quality Gate',
-  'Character Intelligence',
-  'Review',
-  'Editing',
-  'De-AI',
-  'Reflector',
-  'State Sync',
+  { id: 'context_assembly', label: 'Context Assembly' },
+  { id: 'character_reasoning', label: 'Character Reasoning' },
+  { id: 'writing', label: 'Writing' },
+  { id: 'event_recording', label: 'Event Recording' },
+  { id: 'fact_check', label: 'Fact Check' },
+  { id: 'continuity_check', label: 'Continuity Check' },
+  { id: 'pacing_check', label: 'Pacing Check' },
+  { id: 'character_intelligence_review', label: 'Character Intelligence' },
+  { id: 'review_round_1', label: 'Review R1' },
+  { id: 'review_round_2', label: 'Review R2' },
+  { id: 'review_round_3', label: 'Review R3' },
+  { id: 'editing', label: 'Editing' },
+  { id: 'de_ai', label: 'De-AI' },
+  { id: 'reflector', label: 'Reflector' },
+  { id: 'state_sync', label: 'State Sync' },
 ] as const
 
 type StageStatus = 'pending' | 'running' | 'completed' | 'failed'
@@ -33,11 +38,11 @@ const STATUS_LABELS: Record<StageStatus, string> = {
 export default function Pipeline() {
   const { pipelineState } = useAgentStore()
 
-  const findStage = (stageName: string) =>
-    pipelineState?.stages?.find((s) => s.stage === stageName)
+  const findStage = (stageId: string) =>
+    pipelineState?.stages?.find((s) => s.stage === stageId)
 
   const stageStatuses: StageStatus[] = STAGES.map((stage) => {
-    const state = findStage(stage)
+    const state = findStage(stage.id)
     if (!state) return 'pending'
     if (state.status === 'running') return 'running'
     if (state.status === 'completed') return 'completed'
@@ -63,7 +68,7 @@ export default function Pipeline() {
             {STAGES.map((stage, i) => {
               const status = stageStatuses[i] ?? 'pending'
               return (
-                <div key={stage} className="flex items-center">
+                <div key={stage.id} className="flex items-center">
                   {/* Stage Box */}
                   <div
                     className={`border p-4 rounded-none min-w-[140px] text-center transition-colors ${STATUS_STYLES[status]}`}
@@ -72,7 +77,7 @@ export default function Pipeline() {
                       {STATUS_LABELS[status]}
                     </div>
                     <div className="text-xs font-medium whitespace-nowrap">
-                      {stage}
+                      {stage.label}
                     </div>
                   </div>
 
@@ -106,14 +111,14 @@ export default function Pipeline() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {STAGES.map((stage, i) => {
               const status = stageStatuses[i] ?? 'pending'
-              const detail = findStage(stage)
+              const detail = findStage(stage.id)
               return (
                 <div
-                  key={stage}
+                  key={stage.id}
                   className="border border-border p-6 rounded-none hover:border-foreground transition-colors"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-serif text-sm">{stage}</h3>
+                    <h3 className="font-serif text-sm">{stage.label}</h3>
                     <span
                       className={`w-2 h-2 rounded-none ${
                         status === 'completed'

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useBookStore } from '@/stores/bookStore'
 import {
+  charactersApi,
   constraintsApi,
   memoryApi,
   pipelineApi,
@@ -48,8 +49,14 @@ type TabName = (typeof TAB_GROUPS)[number]['tabs'][number]
 // ---------------------------------------------------------------------------
 
 function OutlineTab() {
+  const [searchParams] = useSearchParams()
+  const bookId = searchParams.get('bookId') ?? ''
   const { currentBook } = useBookStore()
-  const [outlineText, setOutlineText] = useState('')
+  const [outlineText, setOutlineText] = useState(
+    JSON.stringify(currentBook?.outline ?? {}, null, 2),
+  )
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (currentBook?.outline?.volumes) {
@@ -65,6 +72,25 @@ function OutlineTab() {
       setOutlineText(lines.join('\n\n'))
     }
   }, [currentBook])
+
+  async function handleSave() {
+    if (!bookId) return
+    setSaving(true)
+    setSaveMsg(null)
+    try {
+      await fetch(`/api/books/${bookId}/constraints`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: outlineText }),
+      })
+      setSaveMsg('已保存')
+      setTimeout(() => setSaveMsg(null), 2000)
+    } catch (e) {
+      setSaveMsg('保存失败')
+      console.error('Save outline failed:', e)
+    }
+    setSaving(false)
+  }
 
   return (
     <div className="border border-border p-6 rounded-none">
@@ -88,9 +114,16 @@ function OutlineTab() {
         className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none leading-relaxed"
       />
 
-      <div className="flex justify-end mt-4">
-        <button className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
-          Save Outline
+      <div className="flex items-center justify-end gap-3 mt-4">
+        {saveMsg && (
+          <span className="text-xs text-muted">{saveMsg}</span>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
+        >
+          {saving ? 'Saving...' : 'Save Outline'}
         </button>
       </div>
     </div>
@@ -177,7 +210,14 @@ function ChaptersTab() {
 // ---------------------------------------------------------------------------
 
 function CharactersTab() {
-  const { characters } = useBookStore()
+  const [searchParams] = useSearchParams()
+  const bookId = searchParams.get('bookId') ?? ''
+  const { characters, fetchCharacters } = useBookStore()
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingChar, setEditingChar] = useState<{ id: string; name: string; role: string } | null>(null)
+  const [formName, setFormName] = useState('')
+  const [formRole, setFormRole] = useState('protagonist')
+  const [saving, setSaving] = useState(false)
 
   const roleLabels: Record<string, string> = {
     protagonist: '主角',
@@ -185,6 +225,61 @@ function CharactersTab() {
     supporting: '配角',
     minor: '龙套',
   }
+
+  async function handleAdd() {
+    if (!bookId || !formName.trim()) return
+    setSaving(true)
+    try {
+      await charactersApi.create(bookId, { name: formName.trim(), role: formRole } as any)
+      await fetchCharacters(bookId)
+      setShowAddModal(false)
+      setFormName('')
+      setFormRole('protagonist')
+    } catch (e) {
+      console.error('Add character failed:', e)
+    }
+    setSaving(false)
+  }
+
+  async function handleEdit() {
+    if (!bookId || !editingChar || !formName.trim()) return
+    setSaving(true)
+    try {
+      await charactersApi.update(bookId, editingChar.id, { name: formName.trim(), role: formRole } as any)
+      await fetchCharacters(bookId)
+      setEditingChar(null)
+      setFormName('')
+      setFormRole('protagonist')
+    } catch (e) {
+      console.error('Edit character failed:', e)
+    }
+    setSaving(false)
+  }
+
+  async function handleDelete(charId: string) {
+    if (!bookId) return
+    try {
+      await charactersApi.delete(bookId, charId)
+      await fetchCharacters(bookId)
+    } catch (e) {
+      console.error('Delete character failed:', e)
+    }
+  }
+
+  function openEditModal(c: { id: string; name: string; role: string }) {
+    setEditingChar(c)
+    setFormName(c.name)
+    setFormRole(c.role)
+  }
+
+  function closeModal() {
+    setShowAddModal(false)
+    setEditingChar(null)
+    setFormName('')
+    setFormRole('protagonist')
+  }
+
+  const modalOpen = showAddModal || editingChar !== null
 
   return (
     <div className="border border-border p-6 rounded-none">
@@ -195,7 +290,10 @@ function CharactersTab() {
             {characters.length} character{characters.length !== 1 && 's'}
           </p>
         </div>
-        <button className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
+        >
           + Add Character
         </button>
       </div>
@@ -230,10 +328,16 @@ function CharactersTab() {
             </div>
 
             <div className="flex gap-2 mt-4">
-              <button className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors">
+              <button
+                onClick={() => openEditModal(c)}
+                className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors"
+              >
                 Edit
               </button>
-              <button className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors text-muted">
+              <button
+                onClick={() => handleDelete(c.id)}
+                className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors text-muted"
+              >
                 Delete
               </button>
             </div>
@@ -245,6 +349,63 @@ function CharactersTab() {
         <p className="text-sm text-muted py-8 text-center">
           No characters defined yet.
         </p>
+      )}
+
+      {/* Add / Edit Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-foreground/10 backdrop-blur-sm" onClick={closeModal} />
+          <div className="relative bg-background border border-border w-full max-w-md p-8 rounded-none shadow-none">
+            <h2 className="font-serif text-2xl tracking-tight mb-1">
+              {editingChar ? 'Edit Character' : 'New Character'}
+            </h2>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
+              {editingChar ? 'Update character profile' : 'Add a character to your book'}
+            </p>
+
+            <label className="block mb-6">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">Name</span>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Character name"
+                className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
+              />
+            </label>
+
+            <label className="block mb-8">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">Role</span>
+              <select
+                value={formRole}
+                onChange={(e) => setFormRole(e.target.value)}
+                className="w-full border border-border bg-background px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
+              >
+                <option value="protagonist">主角</option>
+                <option value="antagonist">反派</option>
+                <option value="supporting">配角</option>
+                <option value="minor">龙套</option>
+              </select>
+            </label>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="flex-1 text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingChar ? handleEdit : handleAdd}
+                disabled={saving || !formName.trim()}
+                className="flex-1 text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Saving...' : editingChar ? 'Update' : 'Add Character'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -379,9 +540,33 @@ function TimelineTab() {
 // ---------------------------------------------------------------------------
 
 function StyleTab() {
+  const [searchParams] = useSearchParams()
+  const bookId = searchParams.get('bookId') ?? ''
   const [narrativeVoice, setNarrativeVoice] = useState('third-limited')
   const [tone, setTone] = useState('')
   const [bannedWords, setBannedWords] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
+
+  async function handleSave() {
+    if (!bookId) return
+    setSaving(true)
+    setSaveMsg(null)
+    try {
+      const styleData = { narrativeVoice, tone, bannedWords }
+      await fetch(`/api/books/${bookId}/constraints`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: JSON.stringify(styleData, null, 2) }),
+      })
+      setSaveMsg('已保存')
+      setTimeout(() => setSaveMsg(null), 2000)
+    } catch (e) {
+      setSaveMsg('保存失败')
+      console.error('Save style failed:', e)
+    }
+    setSaving(false)
+  }
 
   return (
     <div className="border border-border p-6 rounded-none">
@@ -430,9 +615,16 @@ function StyleTab() {
           />
         </label>
 
-        <div className="flex justify-end">
-          <button className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
-            Save Style
+        <div className="flex items-center justify-end gap-3">
+          {saveMsg && (
+            <span className="text-xs text-muted">{saveMsg}</span>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
+          >
+            {saving ? 'Saving...' : 'Save Style'}
           </button>
         </div>
       </div>
@@ -1189,12 +1381,29 @@ function ReferenceTab() {
 // ---------------------------------------------------------------------------
 
 function NamingTab() {
+  const { currentBook } = useBookStore()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
 
-  function handleGenerate() {
-    // For now, show that this connects to the agent engine
-    setResults([`（需要启动 Agent Engine 才能生成名字）`])
+  async function handleGenerate() {
+    if (!query) return
+    setLoading(true)
+    try {
+      const res = await fetch('http://127.0.0.1:3583/api/tools/naming', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'character',
+          genre: currentBook?.genre ?? 'fantasy',
+        }),
+      })
+      const data = await res.json()
+      setResults(data.names ?? [])
+    } catch (e) {
+      setResults(['生成失败: ' + String(e)])
+    }
+    setLoading(false)
   }
 
   return (
@@ -1209,9 +1418,10 @@ function NamingTab() {
         />
         <button
           onClick={handleGenerate}
-          className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors"
+          disabled={loading || !query}
+          className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-30"
         >
-          生成
+          {loading ? '生成中...' : '生成'}
         </button>
       </div>
       {results.length > 0 && (

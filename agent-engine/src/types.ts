@@ -9,12 +9,19 @@
 
 export interface BookMeta {
   title: string;
-  author: string;
+  author?: string;
   genre: string;
   synopsis: string;
-  target_word_count: number;
+  target_word_count?: number;
   created_at: string;
   updated_at: string;
+  // Also accept camelCase from backend state.json
+  premise?: string;
+  targetWordCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  status?: string;
+  id?: string;
 }
 
 export interface BookState {

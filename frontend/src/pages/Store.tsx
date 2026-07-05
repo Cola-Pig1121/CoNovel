@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { storeApi } from '@/lib/api'
 
 interface Template {
   name: string
@@ -49,6 +51,21 @@ const COMMUNITY_TEMPLATES: Template[] = [
 ]
 
 function TemplateCard({ template }: { template: Template }) {
+  const navigate = useNavigate()
+  const [applying, setApplying] = useState(false)
+
+  async function handleApply() {
+    setApplying(true)
+    try {
+      await storeApi.import(template.name)
+      // Navigate to dashboard after applying — the template is now local
+      navigate('/')
+    } catch (e) {
+      console.error('Apply template failed:', e)
+    }
+    setApplying(false)
+  }
+
   return (
     <div className="border border-border p-6 rounded-none hover:border-foreground transition-colors">
       <h3 className="font-serif text-lg mb-2">{template.name}</h3>
@@ -63,15 +80,39 @@ function TemplateCard({ template }: { template: Template }) {
           </span>
         ))}
       </div>
-      <button className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 rounded-none hover:bg-foreground hover:text-background transition-colors">
-        Apply
+      <button
+        onClick={handleApply}
+        disabled={applying}
+        className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 rounded-none hover:bg-foreground hover:text-background transition-colors disabled:opacity-40"
+      >
+        {applying ? 'Applying...' : 'Apply'}
       </button>
     </div>
   )
 }
 
 export default function Store() {
+  const navigate = useNavigate()
   const [repoUrl, setRepoUrl] = useState('')
+  const [cloning, setCloning] = useState(false)
+  const [cloneMsg, setCloneMsg] = useState<string | null>(null)
+
+  async function handleClone() {
+    const url = repoUrl.trim()
+    if (!url) return
+    setCloning(true)
+    setCloneMsg(null)
+    try {
+      const res = await storeApi.import(url)
+      setCloneMsg(`Imported: ${res.name}`)
+      setRepoUrl('')
+      // Navigate to dashboard after cloning
+      setTimeout(() => navigate('/'), 1000)
+    } catch (e) {
+      setCloneMsg('Clone failed: ' + String(e))
+    }
+    setCloning(false)
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -92,13 +133,21 @@ export default function Store() {
               type="text"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleClone()}
               placeholder="https://github.com/user/repo"
               className="flex-1 border border-border bg-transparent px-4 py-3 text-sm rounded-none outline-none placeholder:text-muted/50 focus:border-foreground transition-colors"
             />
-            <button className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 rounded-none hover:bg-foreground hover:text-background transition-colors whitespace-nowrap">
-              Clone
+            <button
+              onClick={handleClone}
+              disabled={cloning || !repoUrl.trim()}
+              className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 rounded-none hover:bg-foreground hover:text-background transition-colors whitespace-nowrap disabled:opacity-40"
+            >
+              {cloning ? 'Cloning...' : 'Clone'}
             </button>
           </div>
+          {cloneMsg && (
+            <p className="text-xs text-muted mt-2">{cloneMsg}</p>
+          )}
         </div>
 
         {/* Official Presets */}
