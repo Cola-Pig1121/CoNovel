@@ -43,6 +43,13 @@ interface SummaryRow {
   created_at: string;
 }
 
+interface EmbeddingRow {
+  fact_id: string;
+  content: string;
+  embedding: Buffer;
+  created_at: string;
+}
+
 interface CharacterStateRow {
   character_id: string;
   character_name: string;
@@ -196,6 +203,16 @@ export class SQLiteMemoryStore implements MemoryStoreInterface {
       )
     `);
 
+    // Embeddings table for vector search
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS fact_embeddings (
+        fact_id TEXT PRIMARY KEY,
+        content TEXT,
+        embedding BLOB,
+        created_at TEXT
+      )
+    `);
+
     // Long-term memory table (stored as a single JSON blob)
     this.db.run(`
       CREATE TABLE IF NOT EXISTS long_term_memory (
@@ -327,6 +344,64 @@ export class SQLiteMemoryStore implements MemoryStoreInterface {
       }
     });
     tx();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Embeddings CRUD
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Store an embedding as a Float32Array BLOB.
+   */
+  saveEmbedding(factId: string, content: string, embedding: number[]): void {
+    const float32 = new Float32Array(embedding);
+    const buffer = Buffer.from(float32.buffer);
+    this.db
+      .query(
+        `INSERT OR REPLACE INTO fact_embeddings (fact_id, content, embedding, created_at)
+        VALUES (?, ?, ?, ?)`
+      )
+      .run(factId, content, buffer, new Date().toISOString());
+  }
+
+  /**
+   * Retrieve an embedding by fact ID, or null if not found.
+   */
+  getEmbedding(factId: string): Float32Array | null {
+    const row = this.db
+      .query<EmbeddingRow, [string]>(
+        "SELECT * FROM fact_embeddings WHERE fact_id = ?"
+      )
+      .get(factId);
+    if (!row) return null;
+    return new Float32Array(row.embedding.buffer);
+  }
+
+  /**
+   * Retrieve all embeddings (for flat vector search).
+   */
+  getAllEmbeddings(): {
+    factId: string;
+    content: string;
+    embedding: Float32Array;
+  }[] {
+    const rows = this.db
+      .query<EmbeddingRow, []>("SELECT * FROM fact_embeddings")
+      .all();
+    return rows.map((row) => ({
+      factId: row.fact_id,
+      content: row.content,
+      embedding: new Float32Array(row.embedding.buffer),
+    }));
+  }
+
+  /**
+   * Delete an embedding by fact ID.
+   */
+  deleteEmbedding(factId: string): void {
+    this.db
+      .query("DELETE FROM fact_embeddings WHERE fact_id = ?")
+      .run(factId);
   }
 
   // ---------------------------------------------------------------------------

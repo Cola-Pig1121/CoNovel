@@ -14,6 +14,7 @@ import type {
   MemoryStoreInterface,
 } from "./types.js";
 import { SQLiteMemoryStore } from "./sqlite-store.js";
+import { cosineSimilarity, reciprocalRankFusion } from "./vector-utils.js";
 
 // ---------------------------------------------------------------------------
 // Chinese-aware tokenization (reused from bm25-search.ts pattern)
@@ -321,6 +322,113 @@ export class MemoryRetriever {
     results.sort((a, b) => b.score - a.score);
 
     return results.slice(0, maxResults);
+  }
+
+  // -------------------------------------------------------------------------
+  // Vector search
+  // -------------------------------------------------------------------------
+
+  /**
+   * Vector similarity search using embeddings stored in SQLite.
+   * Falls back gracefully if no embeddings are available.
+   */
+  private vectorSearch(
+    queryEmbedding: Float32Array,
+    topK: number
+  ): SearchResult[] {
+    if (!this.sqliteStore) return [];
+
+    const allEmbeddings = this.sqliteStore.getAllEmbeddings();
+    if (allEmbeddings.length === 0) return [];
+
+    // Build a fact lookup map
+    const factMap = new Map<string, FactEntry>();
+    for (const fact of this.store.getAllFacts()) {
+      factMap.set(fact.id, fact);
+    }
+
+    const scored = allEmbeddings
+      .map((e) => ({
+        factId: e.factId,
+        content: e.content,
+        score: cosineSimilarity(queryEmbedding, e.embedding),
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, topK).map((s) => ({
+      entry: factMap.get(s.factId)!,
+      score: s.score,
+      reason: "vector_similarity",
+    })).filter((r) => r.entry !== undefined);
+  }
+
+  // -------------------------------------------------------------------------
+  // Hybrid search
+  // -------------------------------------------------------------------------
+
+  /**
+   * Hybrid search: BM25 + Vector + RRF fusion.
+   *
+   * Merges keyword (BM25/FTS5) results with vector similarity results using
+   * Reciprocal Rank Fusion. If no queryEmbedding is provided or no embeddings
+   * exist in the store, falls back to pure BM25 search.
+   */
+  hybridSearch(
+    query: string,
+    queryEmbedding?: Float32Array,
+    options: SearchOptions = {}
+  ): SearchResult[] {
+    const { maxResults = 10 } = options;
+
+    // BM25 path (always available)
+    const bm25Results = this.search(query, {
+      ...options,
+      maxResults: 30,
+    });
+
+    // Vector path (optional)
+    const useVector =
+      options.useVector !== false &&
+      queryEmbedding !== undefined &&
+      this.sqliteStore !== null;
+    const vectorResults = useVector
+      ? this.vectorSearch(queryEmbedding!, 30)
+      : [];
+
+    // If no vector results, return pure BM25
+    if (vectorResults.length === 0) return bm25Results;
+
+    // RRF fusion
+    const bm25Ranked = bm25Results.map((r, i) => ({
+      id: r.entry.id,
+      score: 1 / (60 + i + 1),
+    }));
+    const vecRanked = vectorResults.map((r, i) => ({
+      id: r.entry.id,
+      score: 1 / (60 + i + 1),
+    }));
+
+    const fused = reciprocalRankFusion(bm25Ranked, vecRanked);
+
+    // Build lookup maps for both result sets
+    const resultMap = new Map<string, SearchResult>();
+    for (const r of bm25Results) resultMap.set(r.entry.id, r);
+    for (const r of vectorResults) {
+      if (!resultMap.has(r.entry.id)) resultMap.set(r.entry.id, r);
+    }
+
+    return fused
+      .slice(0, maxResults)
+      .map((f) => {
+        const existing = resultMap.get(f.id);
+        if (!existing) return null;
+        return {
+          entry: existing.entry,
+          score: f.rrfScore,
+          reason: "hybrid_rrf",
+        };
+      })
+      .filter((r): r is SearchResult => r !== null);
   }
 
   // -------------------------------------------------------------------------

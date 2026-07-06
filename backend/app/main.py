@@ -16,6 +16,7 @@ import httpx
 
 from app import agent_lifecycle, file_manager
 from app.config import AGENT_ENGINE_URL, FRONTEND_DIR, SERVER_HOST, SERVER_PORT, ensure_data_dirs
+from app.model_manager import get_download_progress, is_model_ready, start_background_download
 from app.models import DeAIRequest, StyleAnalyzeRequest
 from app.routers import agents, books, chapters, goals, memory, pipeline, questions, settings, store
 
@@ -46,6 +47,13 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Agent engine not started: %s", result.get("message", "unknown reason"))
         logger.info("Pipeline features will be unavailable without the agent engine")
+
+    # Start silent model download in background
+    if not is_model_ready():
+        logger.info("Model not found locally, starting background download...")
+        await start_background_download()
+    else:
+        logger.info("Model already available locally")
 
     yield
 
@@ -148,6 +156,19 @@ async def de_ai_text(req: DeAIRequest):
             return {"error": "Agent engine is not running", "status_code": 503}
         except Exception as e:
             return {"error": str(e), "status_code": 500}
+
+
+@app.get("/api/model/status")
+def model_status():
+    """Get embedding model download status."""
+    return get_download_progress()
+
+
+@app.post("/api/model/download")
+async def trigger_download():
+    """Manually trigger model download."""
+    await start_background_download()
+    return {"status": "started"}
 
 
 # ── Frontend Static Files & SPA Fallback ──────────────────────────────────

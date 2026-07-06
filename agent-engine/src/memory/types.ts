@@ -90,6 +90,14 @@ export interface SearchResult {
   reason: string;
 }
 
+export interface RerankConfig {
+  provider: "local" | "openai" | "jina" | "cohere" | "custom";
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+  enabled: boolean;
+}
+
 export interface SearchOptions {
   category?: string;
   subject?: string;
@@ -97,6 +105,9 @@ export interface SearchOptions {
   timeDecay?: boolean;
   currentChapter?: number;
   tier?: FactTier;
+  useVector?: boolean;
+  useRerank?: boolean;
+  rerankConfig?: RerankConfig;
 }
 
 // ---------------------------------------------------------------------------
