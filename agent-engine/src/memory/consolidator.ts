@@ -1,18 +1,62 @@
 // ============================================================================
-// Memory Consolidator — Compress old facts into long-term memory
+// Memory Consolidator — 3-tier memory funnel + long-term compression
+//
+// Tier 1 (active):  Current + last 3 chapters — fast retrieval, always in memory
+// Tier 2 (indexed): Chapters 4–30 — FTS5 searchable, time-decay weighted
+// Tier 3 (core):    Chapters 30+ — permanent facts, highest priority
+//   Only essential facts survive: character deaths, world rules, major plot points.
+//
 // Deterministic consolidation (no LLM needed) that groups, deduplicates,
-// and summarizes facts into a compact long-term memory representation.
+// and promotes facts through tiers as the novel grows.
 // ============================================================================
 
-import { MemoryStore } from "./store.js";
-import type { LongTermMemory, FactEntry, ChapterSummary } from "./types.js";
+import type {
+  FactEntry,
+  FactTier,
+  LongTermMemory,
+  MemoryStoreInterface,
+  ChapterSummary,
+} from "./types.js";
+
+// ---------------------------------------------------------------------------
+// Tuning constants
+// ---------------------------------------------------------------------------
+
+/** How many recent chapters stay in tier "active" */
+const ACTIVE_WINDOW = 4; // current chapter + previous 3
+
+/** Promotion threshold: every N chapters, promote active → indexed */
+const PROMOTE_TO_INDEXED_INTERVAL = 5;
+
+/** Promotion threshold: every N chapters, promote indexed → core */
+const PROMOTE_TO_CORE_INTERVAL = 30;
+
+/** Minimum confidence for a fact to survive into core tier */
+const CORE_CONFIDENCE_THRESHOLD = 0.7;
+
+/** Categories that are always eligible for core tier */
+const CORE_CATEGORIES = new Set([
+  "character",
+  "location",
+  "state",
+  "information",
+  "relationship",
+]);
+
+// ---------------------------------------------------------------------------
+// MemoryConsolidator
+// ---------------------------------------------------------------------------
 
 export class MemoryConsolidator {
-  private store: MemoryStore;
+  private store: MemoryStoreInterface;
 
-  constructor(store: MemoryStore) {
+  constructor(store: MemoryStoreInterface) {
     this.store = store;
   }
+
+  // -------------------------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------------------------
 
   /**
    * Check if consolidation is needed (every N chapters).
@@ -25,59 +69,32 @@ export class MemoryConsolidator {
 
     // Check how many chapters since last consolidation
     const allSummaries = this.store.getAllSummaries();
-    const lastConsolidatedChapter = allSummaries
-      .filter(
-        (s) => s.createdAt <= longTerm.lastConsolidatedAt
-      )
-      .sort((a, b) => b.chapterNumber - a.chapterNumber)[0]?.chapterNumber ?? 0;
+    const lastConsolidatedChapter =
+      allSummaries
+        .filter((s) => s.createdAt <= longTerm.lastConsolidatedAt)
+        .sort((a, b) => b.chapterNumber - a.chapterNumber)[0]
+        ?.chapterNumber ?? 0;
 
     return currentChapter - lastConsolidatedChapter >= interval;
   }
 
   /**
-   * Run consolidation: compress facts older than threshold into long-term memory.
-   * This is a deterministic process (no LLM needed):
-   * - Group facts by category
-   * - Keep the most recent/confident facts per subject
-   * - Mark resolved plot threads
-   * - Update world facts list
+   * Run the full consolidation pipeline:
+   *   1. Promote tiers (active → indexed → core)
+   *   2. Compress old facts into long-term memory
+   *   3. Update the index
    */
   consolidate(currentChapter: number): LongTermMemory {
-    const longTerm = this.store.getLongTermMemory();
-    const allFacts = this.store.getAllFacts();
+    // Step 1: Tier promotion
+    this.promoteTiers(currentChapter);
 
-    // Separate old facts (pre-consolidation threshold) from recent ones
-    const threshold = Math.max(1, currentChapter - 10);
-    const oldFacts = allFacts.filter((f) => f.chapterNumber < threshold);
-    const recentFacts = allFacts.filter((f) => f.chapterNumber >= threshold);
+    // Step 2: Existing compression logic
+    const longTerm = this.compressIntoLongTerm(currentChapter);
 
-    // --- Consolidate world facts from 'state' and 'location' categories ---
-    const worldFacts = this.consolidateWorldFacts(
-      longTerm.worldFacts,
-      oldFacts
-    );
-
-    // --- Consolidate plot threads from 'hook' category ---
-    const activePlotThreads = this.consolidatePlotThreads(
-      longTerm.activePlotThreads,
-      oldFacts,
-      recentFacts
-    );
-
-    // --- Consolidate style evolution (preserved as-is, append new) ---
-    const styleEvolution = longTerm.styleEvolution;
-
-    const consolidated: LongTermMemory = {
-      worldFacts,
-      activePlotThreads,
-      styleEvolution,
-      lastConsolidatedAt: new Date().toISOString(),
-    };
-
-    this.store.saveLongTermMemory(consolidated);
+    // Step 3: Update index
     this.store.updateIndex();
 
-    return consolidated;
+    return longTerm;
   }
 
   /**
@@ -132,9 +149,139 @@ export class MemoryConsolidator {
     return sections.join("\n\n");
   }
 
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Tier promotion
+  // -------------------------------------------------------------------------
+
+  /**
+   * Promote facts through the 3-tier funnel:
+   *   active (current+3) → indexed (4–30) → core (30+, high-confidence only)
+   *
+   * Also ensures PERMANENT-tagged facts are always pinned to core.
+   */
+  private promoteTiers(currentChapter: number): void {
+    const allFacts = this.store.getAllFacts();
+    if (allFacts.length === 0) return;
+
+    const updates: Array<{ id: string; tier: FactTier }> = [];
+
+    for (const fact of allFacts) {
+      const newTier = this.computeTier(fact, currentChapter);
+      if (fact.tier !== newTier) {
+        updates.push({ id: fact.id, tier: newTier });
+      }
+    }
+
+    // Apply all tier updates in bulk (SQLite) or one-by-one (JSON)
+    if (updates.length > 0) {
+      if ("bulkUpdateFactTiers" in this.store) {
+        (this.store as any).bulkUpdateFactTiers(updates);
+      } else {
+        // JSON fallback: rewrite all facts with updated tiers
+        this.applyTierUpdatesToJSON(allFacts, updates);
+      }
+    }
+  }
+
+  /**
+   * Compute the correct tier for a single fact based on its position
+   * relative to the current chapter.
+   */
+  private computeTier(fact: FactEntry, currentChapter: number): FactTier {
+    // PERMANENT-tagged facts are always core
+    if (fact.tags?.includes("PERMANENT")) {
+      return "core";
+    }
+
+    const distance = currentChapter - fact.chapterNumber;
+
+    // Tier 1: Active context (current + last 3 chapters)
+    if (distance < ACTIVE_WINDOW) {
+      return "active";
+    }
+
+    // Tier 3: Core (chapters 30+ ago, high confidence, relevant categories)
+    if (distance >= PROMOTE_TO_CORE_INTERVAL) {
+      if (
+        fact.confidence >= CORE_CONFIDENCE_THRESHOLD &&
+        CORE_CATEGORIES.has(fact.category)
+      ) {
+        return "core";
+      }
+    }
+
+    // Tier 2: Indexed (everything between active and core)
+    return "indexed";
+  }
+
+  /**
+   * Apply tier updates when the store is the JSON backend (no bulk update).
+   * Re-saves each chapter's facts with the updated tier.
+   */
+  private applyTierUpdatesToJSON(
+    allFacts: FactEntry[],
+    updates: Array<{ id: string; tier: FactTier }>
+  ): void {
+    const tierMap = new Map(updates.map((u) => [u.id, u.tier]));
+
+    // Group by chapter for batch saves
+    const byChapter = new Map<number, FactEntry[]>();
+    for (const fact of allFacts) {
+      const newTier = tierMap.get(fact.id);
+      const updatedFact = newTier
+        ? { ...fact, tier: newTier }
+        : fact;
+
+      const group = byChapter.get(updatedFact.chapterNumber) ?? [];
+      group.push(updatedFact);
+      byChapter.set(updatedFact.chapterNumber, group);
+    }
+
+    for (const [ch, facts] of byChapter) {
+      this.store.saveFacts(ch, facts);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Long-term compression (existing logic, cleaned up)
+  // -------------------------------------------------------------------------
+
+  private compressIntoLongTerm(currentChapter: number): LongTermMemory {
+    const longTerm = this.store.getLongTermMemory();
+    const allFacts = this.store.getAllFacts();
+
+    // Separate old facts (pre-consolidation threshold) from recent ones
+    const threshold = Math.max(1, currentChapter - ACTIVE_WINDOW);
+    const oldFacts = allFacts.filter((f) => f.chapterNumber < threshold);
+    const recentFacts = allFacts.filter((f) => f.chapterNumber >= threshold);
+
+    // --- Consolidate world facts from 'state' and 'location' categories ---
+    const worldFacts = this.consolidateWorldFacts(
+      longTerm.worldFacts,
+      oldFacts
+    );
+
+    // --- Consolidate plot threads from 'hook' category ---
+    const activePlotThreads = this.consolidatePlotThreads(
+      longTerm.activePlotThreads,
+      oldFacts,
+      recentFacts
+    );
+
+    // --- Consolidate style evolution (preserved as-is, append new) ---
+    const styleEvolution = longTerm.styleEvolution;
+
+    const consolidated: LongTermMemory = {
+      worldFacts,
+      activePlotThreads,
+      styleEvolution,
+      lastConsolidatedAt: new Date().toISOString(),
+    };
+
+    this.store.saveLongTermMemory(consolidated);
+
+    return consolidated;
+  }
 
   /**
    * Consolidate world facts: keep unique state/location facts.

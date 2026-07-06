@@ -13,6 +13,7 @@ import type {
   CharacterProfile,
   ChapterMeta,
 } from "../types.js";
+import type { FactEntry } from "../memory/types.js";
 import { AGENT_NAMES, getAgentPrompt, buildWritingPrompt } from "./prompts.js";
 import { detectAILayers, sanitizeText } from "../utils/de-ai.js";
 import {
@@ -58,30 +59,27 @@ export type LLMCallFunction = (
 // BM25-based fact retrieval for context pruning
 // ---------------------------------------------------------------------------
 
-interface MemoryFact {
-  category: string;
-  subject: string;
-  content: string;
-  evidence?: string;
-  confidence?: number;
-  chapter?: number;
-}
-
 /**
- * Retrieve the top-N most relevant memory facts for a given chapter using BM25 scoring.
- * Builds a query from the chapter outline and POV character, then scores all facts
- * in memory/facts/ against that query.
+ * Retrieve the top-K most relevant memory facts for a given chapter using BM25 scoring.
+ *
+ * Reads all fact JSON files from `memory/facts/`, tokenizes using Chinese bigrams
+ * (same pattern as bm25-search.ts), and scores each fact against the query built
+ * from the chapter outline title, POV character name, and key events.
+ *
+ * @param bookPath - Root path of the book project
+ * @param chapterContent - Query text built from chapter outline (title + POV + key events)
+ * @param topK - Number of most relevant facts to return (default 10)
+ * @returns Top-K facts sorted by BM25 relevance score
  */
 async function retrieveRelevantFacts(
   bookPath: string,
-  chapterNumber: number,
-  chapterOutline?: ChapterOutline,
-  topN: number = 10
-): Promise<MemoryFact[]> {
+  chapterContent: string,
+  topK: number = 10
+): Promise<FactEntry[]> {
   const factsDir = join(bookPath, "memory", "facts");
-  let allFacts: MemoryFact[] = [];
+  let allFacts: FactEntry[] = [];
 
-  // Load all fact files
+  // Read all fact JSON files from memory/facts/ directory
   try {
     const factFiles = await readdir(factsDir);
     for (const file of factFiles) {
@@ -97,39 +95,32 @@ async function retrieveRelevantFacts(
       }
     }
   } catch {
-    // No facts directory
+    // No facts directory — return empty
   }
 
   if (allFacts.length === 0) return [];
-  if (allFacts.length <= topN) return allFacts;
+  if (allFacts.length <= topK) return allFacts;
 
-  // Build query from chapter outline + character names
-  const queryParts: string[] = [];
-  if (chapterOutline) {
-    queryParts.push(chapterOutline.title ?? "");
-    queryParts.push(chapterOutline.summary ?? "");
-    queryParts.push(chapterOutline.pov_character ?? "");
-    queryParts.push(chapterOutline.characters_present.join(" "));
-    queryParts.push(chapterOutline.key_events.join(" "));
-  }
-  queryParts.push(`chapter_${chapterNumber}`);
+  // Tokenize the query (chapter outline title + POV character + key events)
+  const queryTokens = tokenize(chapterContent);
+  if (queryTokens.length === 0) return allFacts.slice(0, topK);
 
-  const query = queryParts.join(" ");
-  const queryTokens = tokenize(query);
+  // Compute tokenized fact documents and average doc length for BM25
+  const docTokenLists = allFacts.map((fact) => {
+    const factText = `${fact.category} ${fact.subject} ${fact.content}`;
+    return tokenize(factText);
+  });
+  const totalDocLen = docTokenLists.reduce((sum, t) => sum + t.length, 0);
+  const avgDocLen = totalDocLen / docTokenLists.length;
 
-  if (queryTokens.length === 0) return allFacts.slice(0, topN);
-
-  // Score each fact using BM25
-  const scoredFacts = allFacts.map((fact) => {
-    const factText = `${fact.category} ${fact.subject} ${fact.content} ${fact.evidence ?? ""}`;
-    const factTokens = tokenize(factText);
-    const score = bm25Score(queryTokens, factTokens, 30);
+  // Score each fact with BM25 and return top K most relevant
+  const scoredFacts = allFacts.map((fact, i) => {
+    const score = bm25Score(queryTokens, docTokenLists[i], avgDocLen);
     return { fact, score };
   });
 
-  // Sort by score descending, return top N
   scoredFacts.sort((a, b) => b.score - a.score);
-  return scoredFacts.slice(0, topN).map((sf) => sf.fact);
+  return scoredFacts.slice(0, topK).map((sf) => sf.fact);
 }
 
 // ---------------------------------------------------------------------------
@@ -209,7 +200,14 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
       }
 
       // ── 4. BM25-based fact retrieval: top 10 most relevant facts ──
-      const relevantFacts = await retrieveRelevantFacts(bookPath, chapterNumber, chapterOutline);
+      // Build query from chapter outline title + POV character name + key events
+      const outlineQueryText = [
+        chapterOutline?.title ?? "",
+        chapterOutline?.pov_character ?? "",
+        chapterOutline?.key_events.join(" ") ?? "",
+        chapterOutline?.summary ?? "",
+      ].join(" ");
+      const relevantFacts = await retrieveRelevantFacts(bookPath, outlineQueryText);
 
       // ── 5. Build compact world context (summary instead of full dump) ──
       const worldContext = [

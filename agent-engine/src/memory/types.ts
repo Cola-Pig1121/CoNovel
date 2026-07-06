@@ -2,6 +2,8 @@
 // Memory System Types — Mem0-inspired fact extraction + InkOS-style observer categories
 // ============================================================================
 
+export type FactTier = "active" | "indexed" | "core";
+
 export interface FactEntry {
   id: string;
   chapterNumber: number;
@@ -20,6 +22,8 @@ export interface FactEntry {
   confidence: number; // 0-1
   createdAt: string;
   expiresAt?: string; // for facts that become outdated
+  tier?: FactTier; // memory tier: active / indexed / core
+  tags?: string[]; // e.g. ['PERMANENT'] to pin to core tier
 }
 
 export interface ChapterSummary {
@@ -70,4 +74,44 @@ export interface SearchResult {
   entry: FactEntry;
   score: number;
   reason: string;
+}
+
+export interface SearchOptions {
+  category?: string;
+  subject?: string;
+  maxResults?: number;
+  timeDecay?: boolean;
+  currentChapter?: number;
+  tier?: FactTier;
+}
+
+// ---------------------------------------------------------------------------
+// MemoryStoreInterface — common contract for JSON and SQLite backends
+// ---------------------------------------------------------------------------
+
+export interface MemoryStoreInterface {
+  // Facts
+  saveFacts(chapterNumber: number, facts: FactEntry[]): void;
+  getFacts(chapterNumber: number): FactEntry[];
+  getAllFacts(): FactEntry[];
+  getFactsByCategory(category: string): FactEntry[];
+  getFactsBySubject(subject: string): FactEntry[];
+
+  // Summaries
+  saveSummary(summary: ChapterSummary): void;
+  getSummary(chapterNumber: number): ChapterSummary | null;
+  getAllSummaries(): ChapterSummary[];
+
+  // Character states
+  saveCharacterState(state: CharacterMemoryState): void;
+  getCharacterState(charId: string): CharacterMemoryState | null;
+  getAllCharacterStates(): CharacterMemoryState[];
+
+  // Long-term memory
+  getLongTermMemory(): LongTermMemory;
+  saveLongTermMemory(memory: LongTermMemory): void;
+
+  // Index
+  getIndex(): MemoryIndex;
+  updateIndex(): void;
 }

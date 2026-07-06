@@ -11,9 +11,11 @@ import type {
   CharacterMemoryState,
   LongTermMemory,
   MemoryIndex,
+  MemoryStoreInterface,
 } from "./types.js";
+import { SQLiteMemoryStore } from "./sqlite-store.js";
 
-export class MemoryStore {
+export class MemoryStore implements MemoryStoreInterface {
   private memoryDir: string;
   private factsDir: string;
   private summariesDir: string;
@@ -245,4 +247,33 @@ export class MemoryStore {
   private writeJson(path: string, data: unknown): void {
     writeFileSync(path, JSON.stringify(data, null, 2), "utf-8");
   }
+}
+
+// ---------------------------------------------------------------------------
+// Factory — create the appropriate memory backend
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a MemoryStoreInterface backed by either JSON files or SQLite.
+ *
+ * @param bookPath  Root directory of the book project.
+ * @param backend   'json' for filesystem-first, 'sqlite' for FTS5-powered search.
+ * @returns         A MemoryStoreInterface instance. Falls back to JSON on error.
+ */
+export function createMemoryStore(
+  bookPath: string,
+  backend: "json" | "sqlite" = "json"
+): MemoryStoreInterface {
+  if (backend === "sqlite") {
+    try {
+      return new SQLiteMemoryStore(bookPath);
+    } catch (err) {
+      console.warn(
+        "[memory] SQLite unavailable, falling back to JSON backend:",
+        err instanceof Error ? err.message : err
+      );
+      return new MemoryStore(bookPath);
+    }
+  }
+  return new MemoryStore(bookPath);
 }

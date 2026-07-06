@@ -1,10 +1,19 @@
 // ============================================================================
-// Memory Retriever — BM25 scoring + exponential time decay
+// Memory Retriever — BM25 scoring + exponential time decay + SQLite FTS5
 // Retrieves relevant memories from the store for LLM context injection.
+//
+// When a SQLiteMemoryStore is available, search() delegates to FTS5 for
+// blazing-fast full-text search on million-character novels. Otherwise it
+// falls back to the built-in BM25 scoring on the JSON backend.
 // ============================================================================
 
-import type { FactEntry, SearchResult } from "./types.js";
-import { MemoryStore } from "./store.js";
+import type {
+  FactEntry,
+  SearchResult,
+  SearchOptions,
+  MemoryStoreInterface,
+} from "./types.js";
+import { SQLiteMemoryStore } from "./sqlite-store.js";
 
 // ---------------------------------------------------------------------------
 // Chinese-aware tokenization (reused from bm25-search.ts pattern)
@@ -173,24 +182,79 @@ function timeDecay(
 // ---------------------------------------------------------------------------
 
 export class MemoryRetriever {
-  private store: MemoryStore;
+  private store: MemoryStoreInterface;
+  private sqliteStore: SQLiteMemoryStore | null;
 
-  constructor(store: MemoryStore) {
+  constructor(store: MemoryStoreInterface) {
     this.store = store;
+    // Detect if the underlying store is SQLite-backed
+    this.sqliteStore =
+      store instanceof SQLiteMemoryStore ? store : null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Search
+  // -------------------------------------------------------------------------
+
+  /**
+   * Search memories by query.
+   *
+   * When a SQLiteMemoryStore is available, delegates to FTS5 for fast
+   * full-text search. Otherwise falls back to in-memory BM25 scoring.
+   */
+  search(query: string, options: SearchOptions = {}): SearchResult[] {
+    if (this.sqliteStore) {
+      return this.sqliteSearch(query, options);
+    }
+    return this.jsonSearch(query, options);
   }
 
   /**
-   * Search memories by query with BM25 scoring + time decay.
+   * SQLite FTS5 search path — fast full-text search.
    */
-  search(
+  private sqliteSearch(
     query: string,
-    options: {
-      category?: string;
-      subject?: string;
-      maxResults?: number;
-      timeDecay?: boolean;
-      currentChapter?: number;
-    } = {}
+    options: SearchOptions
+  ): SearchResult[] {
+    const {
+      maxResults = 10,
+      category,
+      tier,
+    } = options;
+
+    const ftsResults = this.sqliteStore!.fullTextSearch(query, {
+      topK: maxResults * 3, // over-fetch, then refine with time-decay
+      category,
+      tier,
+    });
+
+    // Apply time-decay and confidence boost on top of FTS5 ranking
+    const results: SearchResult[] = ftsResults.map(({ entry, score }) => {
+      let finalScore = score;
+
+      if (options.timeDecay !== false && options.currentChapter !== undefined) {
+        const decay = timeDecay(entry.chapterNumber, options.currentChapter);
+        finalScore *= decay;
+      }
+
+      // Boost by confidence
+      finalScore *= 0.5 + 0.5 * entry.confidence;
+
+      const reason = buildReason(entry, finalScore, options.timeDecay !== false, options.currentChapter);
+
+      return { entry, score: finalScore, reason };
+    });
+
+    results.sort((a, b) => b.score - a.score);
+    return results.slice(0, maxResults);
+  }
+
+  /**
+   * JSON / in-memory BM25 search path — fallback.
+   */
+  private jsonSearch(
+    query: string,
+    options: SearchOptions
   ): SearchResult[] {
     const {
       category,
@@ -258,6 +322,10 @@ export class MemoryRetriever {
 
     return results.slice(0, maxResults);
   }
+
+  // -------------------------------------------------------------------------
+  // Convenience methods
+  // -------------------------------------------------------------------------
 
   /**
    * Get recent memories (last N chapters).
@@ -348,9 +416,7 @@ export class MemoryRetriever {
     if (activeHooks.length > 0) {
       sections.push("## 未解决的伏笔");
       for (const h of activeHooks) {
-        sections.push(
-          `- [第${h.chapterNumber}章] ${h.content}`
-        );
+        sections.push(`- [第${h.chapterNumber}章] ${h.content}`);
       }
     }
 
@@ -386,6 +452,10 @@ function buildReason(
   const parts: string[] = [];
   parts.push(`类别: ${entry.category}`);
   parts.push(`主题: ${entry.subject}`);
+
+  if (entry.tier) {
+    parts.push(`层级: ${entry.tier}`);
+  }
 
   if (useDecay && currentChapter !== undefined) {
     const distance = currentChapter - entry.chapterNumber;
