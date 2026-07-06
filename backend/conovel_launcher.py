@@ -109,12 +109,25 @@ def start_backend(engine_port):
     from app.main import app
     import uvicorn
 
+    # Fix PyInstaller: redirect stderr/stdout to avoid 'NoneType isatty' error
+    # Use a log file instead of devnull so we can debug issues
+    log_dir = Path.home() / ".config" / "conovel"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "conovel.log"
+    
+    if sys.stderr is None or sys.stderr is None:
+        sys.stderr = open(str(log_file), "a", encoding="utf-8")
+    if sys.stdout is None:
+        sys.stdout = open(str(log_file), "a", encoding="utf-8")
+
+    print(f"[CoNovel] Log file: {log_file}", flush=True)
+
     # Run in a way that allows cleanup
     config = uvicorn.Config(
         app,
         host="127.0.0.1",
         port=backend_port,
-        log_level="info",
+        log_level="warning",
     )
     server = uvicorn.Server(config)
 

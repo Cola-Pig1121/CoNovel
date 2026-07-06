@@ -441,23 +441,27 @@ def write_memory_index(book_id: str, data: dict) -> None:
 # ── .eve Template ──────────────────────────────────────────────────────────
 
 DEFAULT_AGENT_CONFIG = {
-    "executive_editor": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.3, "maxTokens": 4096},
-    "story_architect": {"provider": "openai", "model": "gpt-4o", "temperature": 0.7, "maxTokens": 4096},
-    "narrative_writer": {"provider": "openai", "model": "gpt-4o", "temperature": 0.8, "maxTokens": 8192},
-    "character_designer": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.6, "maxTokens": 4096},
-    "character_intelligence": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 4096},
-    "reviewer": {"provider": "openai", "model": "gpt-4o", "temperature": 0.3, "maxTokens": 4096},
-    "editor": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 4096},
-    "de_ai_editor": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.4, "maxTokens": 4096},
-    "fact_checker": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.1, "maxTokens": 2048},
-    "continuity_checker": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.1, "maxTokens": 2048},
-    "pacing_controller": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.3, "maxTokens": 2048},
-    "foreshadowing_tracker": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.2, "maxTokens": 2048},
-    "style_analyzer": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 4096},
-    "observer": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.2, "maxTokens": 2048},
-    "radar": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 2048},
-    "reflector": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.6, "maxTokens": 4096},
-    "default": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 2048},
+    # ── Strong tier: core writing agents ──
+    "story_architect": {"provider": "openai", "model": "gpt-4o", "temperature": 0.7, "maxTokens": 4096, "tier": "strong"},
+    "narrative_writer": {"provider": "openai", "model": "gpt-4o", "temperature": 0.8, "maxTokens": 8192, "tier": "strong"},
+    "reviewer": {"provider": "openai", "model": "gpt-4o", "temperature": 0.3, "maxTokens": 4096, "tier": "strong"},
+    "character_intelligence": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 4096, "tier": "strong"},
+    # ── Medium tier: standard task agents ──
+    "executive_editor": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.3, "maxTokens": 4096, "tier": "medium"},
+    "character_designer": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.6, "maxTokens": 4096, "tier": "medium"},
+    "editor": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 4096, "tier": "medium"},
+    "de_ai_editor": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.4, "maxTokens": 4096, "tier": "medium"},
+    "style_analyzer": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 4096, "tier": "medium"},
+    "reflector": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.6, "maxTokens": 4096, "tier": "medium"},
+    # ── Light tier: auxiliary agents ──
+    "fact_checker": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.1, "maxTokens": 2048, "tier": "light"},
+    "continuity_checker": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.1, "maxTokens": 2048, "tier": "light"},
+    "pacing_controller": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.3, "maxTokens": 2048, "tier": "light"},
+    "foreshadowing_tracker": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.2, "maxTokens": 2048, "tier": "light"},
+    "observer": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.2, "maxTokens": 2048, "tier": "light"},
+    "radar": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 2048, "tier": "light"},
+    # ── Fallback ──
+    "default": {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.5, "maxTokens": 2048, "tier": "medium"},
 }
 
 DEFAULT_STYLE_CONSTRAINTS = """# Style Constraints

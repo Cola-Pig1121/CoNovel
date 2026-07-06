@@ -96,6 +96,7 @@ interface LexicalEditorProps {
   placeholder?: string
   fontSize?: number
   lineHeight?: number
+  readOnly?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +118,7 @@ export default function LexicalEditor({
   placeholder = 'Begin writing your chapter here...\n\nThe agents will assist you in crafting compelling prose, maintaining character consistency, and tracking narrative threads.',
   fontSize = 16,
   lineHeight = 1.8,
+  readOnly = false,
 }: LexicalEditorProps) {
   const handleChange = useCallback(
     (_state: EditorState, text: string) => {
@@ -134,6 +136,7 @@ export default function LexicalEditor({
         <RichTextPlugin
           contentEditable={
             <ContentEditable
+              readOnly={readOnly}
               className="outline-none min-h-[60vh] w-full font-sans text-foreground caret-foreground"
               aria-label="Editor"
               // Chinese IME support — no composing guard needed for Lexical

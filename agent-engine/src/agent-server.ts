@@ -15,7 +15,7 @@ import { reviewCharacterConsistency } from "./utils/character-intelligence.js";
 import { analyzeReference } from "./style/style-learner.js";
 import { getAgentPrompt, AGENT_NAMES } from "./pipeline/prompts.js";
 import { executeStage } from "./pipeline/stages.js";
-import { PipelineOrchestrator } from "./pipeline/orchestrator.js";
+import { PipelineOrchestrator, SYNC_STAGES } from "./pipeline/orchestrator.js";
 import type {
   BookState,
   BookMeta,
@@ -533,11 +533,14 @@ class CoNovelAgentEngine {
     const modelId = config?.model_id ?? process.env.DEFAULT_MODEL ?? "gpt-4o";
     const temperature = options.temperature ?? config?.temperature ?? 0.3;
     const maxTokens = options.max_tokens ?? config?.max_tokens ?? 4096;
+    const tier = config?.tier ?? "medium";
 
     const provider = this.providers.get(providerName);
     if (!provider) {
       throw new Error(`Provider "${providerName}" not configured`);
     }
+
+    console.log(`[engine] executeAgent "${agentName}" tier=${tier} provider=${providerName} model=${modelId}`);
 
     const url = provider.type === "anthropic"
       ? `${provider.base_url}/v1/messages`
@@ -890,6 +893,76 @@ async function handlePipelineExecute(req: Request): Promise<Response> {
   }
 }
 
+async function handlePipelineExecuteSyncOnly(req: Request): Promise<Response> {
+  try {
+    const body = await req.json() as {
+      book_path: string;
+      chapter_number: number;
+      chapter_content?: string;
+      stages?: PipelineStage[];
+    };
+
+    if (!body.book_path) {
+      return Response.json({ error: "book_path is required" }, { status: 400 });
+    }
+
+    // Load book context if different
+    if (body.book_path !== engine["currentBookPath"]) {
+      await engine.loadBookContext(body.book_path);
+    }
+
+    const orchestrator = new PipelineOrchestrator(engine as any);
+    const result = await orchestrator.executeSyncOnly({
+      bookPath: body.book_path,
+      chapterNumber: body.chapter_number,
+      chapterContent: body.chapter_content,
+      stages: body.stages,
+    });
+
+    return Response.json(result);
+  } catch (err) {
+    console.error("[server] Pipeline sync-only error:", err);
+    return Response.json(
+      { error: `Pipeline sync execution failed: ${(err as Error).message}` },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePipelineExecuteAsyncRemaining(req: Request): Promise<Response> {
+  try {
+    const body = await req.json() as {
+      book_path: string;
+      chapter_number: number;
+      chapter_content?: string;
+    };
+
+    if (!body.book_path) {
+      return Response.json({ error: "book_path is required" }, { status: 400 });
+    }
+
+    // Load book context if different
+    if (body.book_path !== engine["currentBookPath"]) {
+      await engine.loadBookContext(body.book_path);
+    }
+
+    const orchestrator = new PipelineOrchestrator(engine as any);
+    const result = await orchestrator.executeAsyncRemaining({
+      bookPath: body.book_path,
+      chapterNumber: body.chapter_number,
+      chapterContent: body.chapter_content,
+    });
+
+    return Response.json(result);
+  } catch (err) {
+    console.error("[server] Pipeline async-remaining error:", err);
+    return Response.json(
+      { error: `Pipeline async execution failed: ${(err as Error).message}` },
+      { status: 500 }
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
@@ -921,6 +994,12 @@ function route(path: string, method: string): ((req: Request) => Promise<Respons
 
   // Pipeline execution
   if (path === "/api/pipeline/execute" && method === "POST") return handlePipelineExecute;
+
+  // Pipeline sync-only execution
+  if (path === "/api/pipeline/execute-sync" && method === "POST") return handlePipelineExecuteSyncOnly;
+
+  // Pipeline async-remaining execution
+  if (path === "/api/pipeline/execute-async" && method === "POST") return handlePipelineExecuteAsyncRemaining;
 
   return null;
 }
@@ -1003,6 +1082,8 @@ console.log(`
 ║  POST /api/style/analyze                         ║
 ║  POST /api/knowledge/search                      ║
 ║  POST /api/pipeline/execute                      ║
+║  POST /api/pipeline/execute-sync   (sync only)   ║
+║  POST /api/pipeline/execute-async  (async bg)    ║
 ╚══════════════════════════════════════════════════╝
 `);
 

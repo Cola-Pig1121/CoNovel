@@ -20,6 +20,7 @@ import {
   prepareCharacterReviewLLMCall,
   parseReviewResponse,
 } from "../utils/character-intelligence.js";
+import { tokenize, bm25Score } from "../knowledge/bm25-search.js";
 
 // ---------------------------------------------------------------------------
 // Stage context: passed between stages
@@ -54,6 +55,84 @@ export type LLMCallFunction = (
 ) => Promise<string>;
 
 // ---------------------------------------------------------------------------
+// BM25-based fact retrieval for context pruning
+// ---------------------------------------------------------------------------
+
+interface MemoryFact {
+  category: string;
+  subject: string;
+  content: string;
+  evidence?: string;
+  confidence?: number;
+  chapter?: number;
+}
+
+/**
+ * Retrieve the top-N most relevant memory facts for a given chapter using BM25 scoring.
+ * Builds a query from the chapter outline and POV character, then scores all facts
+ * in memory/facts/ against that query.
+ */
+async function retrieveRelevantFacts(
+  bookPath: string,
+  chapterNumber: number,
+  chapterOutline?: ChapterOutline,
+  topN: number = 10
+): Promise<MemoryFact[]> {
+  const factsDir = join(bookPath, "memory", "facts");
+  let allFacts: MemoryFact[] = [];
+
+  // Load all fact files
+  try {
+    const factFiles = await readdir(factsDir);
+    for (const file of factFiles) {
+      if (!file.endsWith(".json")) continue;
+      try {
+        const content = await readFile(join(factsDir, file), "utf-8");
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          allFacts.push(...parsed);
+        }
+      } catch {
+        // Skip unreadable files
+      }
+    }
+  } catch {
+    // No facts directory
+  }
+
+  if (allFacts.length === 0) return [];
+  if (allFacts.length <= topN) return allFacts;
+
+  // Build query from chapter outline + character names
+  const queryParts: string[] = [];
+  if (chapterOutline) {
+    queryParts.push(chapterOutline.title ?? "");
+    queryParts.push(chapterOutline.summary ?? "");
+    queryParts.push(chapterOutline.pov_character ?? "");
+    queryParts.push(chapterOutline.characters_present.join(" "));
+    queryParts.push(chapterOutline.key_events.join(" "));
+  }
+  queryParts.push(`chapter_${chapterNumber}`);
+
+  const query = queryParts.join(" ");
+  const queryTokens = tokenize(query);
+
+  if (queryTokens.length === 0) return allFacts.slice(0, topN);
+
+  // Score each fact using BM25
+  const scoredFacts = allFacts.map((fact) => {
+    const factText = `${fact.category} ${fact.subject} ${fact.content} ${fact.evidence ?? ""}`;
+    const factTokens = tokenize(factText);
+    const score = bm25Score(queryTokens, factTokens, 30);
+    return { fact, score };
+  });
+
+  // Sort by score descending, return top N
+  scoredFacts.sort((a, b) => b.score - a.score);
+  return scoredFacts.slice(0, topN).map((sf) => sf.fact);
+}
+
+// ---------------------------------------------------------------------------
 // Stage definitions
 // ---------------------------------------------------------------------------
 
@@ -68,69 +147,119 @@ export interface StageDefinition {
  * All pipeline stage definitions, in execution order.
  */
 export const STAGE_DEFINITIONS: StageDefinition[] = [
-  // ===== Stage 1: Context Assembly =====
+  // ===== Stage 1: Context Assembly (BM25-optimized) =====
   {
     stage: "context_assembly",
     agentName: AGENT_NAMES.CHAPTER_PLANNER,
-    description: "组装上下文：加载书籍状态、角色档案、大纲，构建写作上下文",
+    description: "组装上下文：加载书籍状态、角色档案、大纲，构建写作上下文（上下文裁剪优化）",
     execute: async (ctx) => {
       const { bookState, chapterNumber, bookPath } = ctx;
 
-      // Find chapter outline
+      // ── 1. Find chapter outline (scoped to current act/volume) ──
       const chapterOutline = bookState.outline.chapter_outlines.find(
         (o) => o.chapter_number === chapterNumber
       );
 
-      // Load previous chapter summary
-      let previousSummary = "";
-      if (chapterNumber > 1) {
-        const prevChapter = bookState.chapters.find(
-          (c) => c.number === chapterNumber - 1
+      // Determine current act/volume to scope the outline
+      const currentAct = bookState.outline.act_outlines.find(
+        (a) => chapterNumber >= a.chapter_range[0] && chapterNumber <= a.chapter_range[1]
+      );
+
+      // Only load chapter outlines within the current act's range
+      let scopedChapterOutlines = bookState.outline.chapter_outlines;
+      if (currentAct) {
+        scopedChapterOutlines = bookState.outline.chapter_outlines.filter(
+          (o) => o.chapter_number >= currentAct.chapter_range[0] &&
+                 o.chapter_number <= currentAct.chapter_range[1]
         );
-        if (prevChapter?.summary) {
-          previousSummary = prevChapter.summary;
+      }
+
+      // ── 2. Load only the last 2 chapters' summaries (not all chapters) ──
+      const recentChapters = bookState.chapters
+        .filter((c) => c.number < chapterNumber)
+        .sort((a, b) => b.number - a.number)
+        .slice(0, 2);
+
+      // Build previous chapter content (last 1-2 chapters' text, capped at 500 chars each)
+      const recentChapterTexts: string[] = [];
+      for (const ch of recentChapters) {
+        if (ch.summary) {
+          recentChapterTexts.push(`第${ch.number}章概要：${ch.summary}`);
         } else {
-          // Read previous chapter file
           try {
-            const prevPath = join(bookPath, "chapters", `chapter_${String(chapterNumber - 1).padStart(4, "0")}.txt`);
-            const content = await readFile(prevPath, "utf-8");
-            // Take first 500 chars as summary
-            previousSummary = content.slice(0, 500) + "...";
+            const chPath = join(bookPath, "chapters", `chapter_${String(ch.number).padStart(4, "0")}.txt`);
+            const content = await readFile(chPath, "utf-8");
+            recentChapterTexts.push(`第${ch.number}章（节选）：${content.slice(0, 500)}...`);
           } catch {
-            // No previous chapter
+            // No chapter file
           }
         }
       }
 
-      // Build character context for POV character
+      // ── 3. Load only the current POV character's full profile ──
       let characterContext = "";
-      if (chapterOutline?.pov_character) {
+      const povCharacterName = chapterOutline?.pov_character;
+      if (povCharacterName) {
         const povChar = bookState.characters.find(
-          (c) => c.id === chapterOutline.pov_character || c.name === chapterOutline.pov_character
+          (c) => c.id === povCharacterName || c.name === povCharacterName
         );
         if (povChar) {
           characterContext = JSON.stringify(povChar, null, 2);
         }
       }
 
-      // Build world context
-      const worldContext = JSON.stringify(bookState.world, null, 2);
+      // ── 4. BM25-based fact retrieval: top 10 most relevant facts ──
+      const relevantFacts = await retrieveRelevantFacts(bookPath, chapterNumber, chapterOutline);
 
-      // Assemble full context
+      // ── 5. Build compact world context (summary instead of full dump) ──
+      const worldContext = [
+        `世界名：${bookState.world.name}`,
+        `时代：${bookState.world.era}`,
+        bookState.world.factions.length > 0
+          ? `势力：${bookState.world.factions.map((f) => f.name).join("、")}`
+          : "",
+        bookState.world.power_system ? `力量体系：${bookState.world.power_system}` : "",
+      ].filter(Boolean).join("\n");
+
+      // ── Assemble optimized context ──
       const contextParts: string[] = [];
-      if (previousSummary) contextParts.push(`前文概要：${previousSummary}`);
-      if (chapterOutline) contextParts.push(`章节大纲：${JSON.stringify(chapterOutline, null, 2)}`);
-      if (characterContext) contextParts.push(`POV角色档案：${characterContext}`);
-      if (worldContext) contextParts.push(`世界设定：${worldContext}`);
+
+      if (currentAct) {
+        contextParts.push(`当前卷/幕：第${currentAct.act_number}幕「${currentAct.title}」（第${currentAct.chapter_range[0]}-${currentAct.chapter_range[1]}章）`);
+      }
+
+      if (recentChapterTexts.length > 0) {
+        contextParts.push(`近期章节：\n${recentChapterTexts.join("\n\n")}`);
+      }
+
+      if (chapterOutline) {
+        contextParts.push(`章节大纲：${JSON.stringify(chapterOutline, null, 2)}`);
+      }
+
+      if (characterContext) {
+        contextParts.push(`POV角色档案：${characterContext}`);
+      }
+
+      if (worldContext) {
+        contextParts.push(`世界设定：\n${worldContext}`);
+      }
+
+      if (relevantFacts.length > 0) {
+        contextParts.push(`相关记忆事实（BM25检索，共${relevantFacts.length}条）：\n${relevantFacts.map((f) => `- [${f.category}] ${f.subject}: ${f.content}`).join("\n")}`);
+      }
+
+      const output = contextParts.join("\n\n");
 
       return {
         stage: "context_assembly",
-        output: contextParts.join("\n\n"),
+        output,
         metadata: {
           chapterOutline,
-          previousSummary,
-          characterContext,
-          worldContext,
+          recentChaptersLoaded: recentChapters.length,
+          characterContextLength: characterContext.length,
+          worldContextLength: worldContext.length,
+          factsRetrieved: relevantFacts.length,
+          actScope: currentAct ? currentAct.title : "all",
         },
       };
     },

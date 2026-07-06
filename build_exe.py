@@ -41,10 +41,24 @@ def main():
 
     # Step 3: Run PyInstaller
     print("\n[3/4] Running PyInstaller...")
+    hidden_imports = [
+        "app", "app.main", "app.config", "app.models", "app.file_manager",
+        "app.git_manager", "app.agent_lifecycle",
+        "app.routers", "app.routers.books", "app.routers.chapters",
+        "app.routers.agents", "app.routers.pipeline", "app.routers.settings",
+        "app.routers.store", "app.routers.questions", "app.routers.goals",
+        "app.routers.memory",
+        "uvicorn", "uvicorn.logging", "uvicorn.config",
+        "fastapi", "pydantic", "httpx",
+    ]
+    hi_args = []
+    for hi in hidden_imports:
+        hi_args.extend(["--hidden-import", hi])
+
     subprocess.run([
         sys.executable, "-m", "PyInstaller",
         "--onefile",
-        "--noconsole",
+        "--console",
         "--name", "CoNovel",
         "--distpath", str(build_dir / "dist"),
         "--workpath", str(build_dir / "build"),
@@ -53,6 +67,7 @@ def main():
         "--add-data", f"{build_dir / 'data'};data",
         "--add-data", f"{build_dir / 'store-presets'};store-presets",
         "--add-data", f"{build_dir / 'agent-engine'};agent-engine",
+    ] + hi_args + [
         str(BACKEND_DIR / "conovel_launcher.py"),
     ], check=True)
 

@@ -246,6 +246,7 @@ export interface AgentConfigEntry {
   top_p?: number;
   frequency_penalty?: number;
   presence_penalty?: number;
+  tier?: "strong" | "medium" | "light";
   custom_params?: Record<string, unknown>;
 }
 

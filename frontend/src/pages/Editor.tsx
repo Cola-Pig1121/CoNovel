@@ -4,6 +4,7 @@ import { useEditorStore } from '@/stores/editorStore'
 import { useBookStore } from '@/stores/bookStore'
 import FloatingToolbar from '@/components/editor/FloatingToolbar'
 import LexicalEditor from '@/components/editor/LexicalEditor'
+import DiffView from '@/components/editor/DiffView'
 import Skeleton from '@/components/ui/Skeleton'
 import { chaptersApi, toolsApi } from '@/lib/api'
 import type { Volume } from '@/lib/types'
@@ -371,10 +372,17 @@ export default function Editor() {
     chapterNumber,
     fontSize,
     lineHeight,
+    reviewMode,
+    originalContent,
+    aiDraft,
+    reviewStatus,
+    enterReviewMode,
+    discardAllChanges,
+    exitReviewMode,
   } = useEditorStore()
   const { fetchBook, fetchChapters, fetchCharacters, currentBook, loading: bookLoading, error: bookError } = useBookStore()
 
-  const [deAILoading, setDeAILoading] = useState(false)
+  const [aiProcessing, setAiProcessing] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   // ---- Load book data ----
@@ -408,33 +416,65 @@ export default function Editor() {
     }
   }, [bookId, chapterNumber, setContent])
 
-  // ---- De-AI handler ----
-  const handleDeAI = useCallback(async (selectedText: string) => {
-    if (!selectedText.trim()) return
-    setDeAILoading(true)
-    try {
-      const res = await toolsApi.deAI(selectedText)
-      if (res.error) {
-        setToast(`De-AI failed: ${res.error}`)
-        return
+  // ---- AI action handler (polish / de-AI) — enters review mode ----
+  const runAiAction = useCallback(
+    async (action: 'polish' | 'deai', selectedText: string) => {
+      if (!selectedText.trim()) return
+      setAiProcessing(true)
+      enterReviewMode(content, '') // show processing state
+      try {
+        const res =
+          action === 'polish'
+            ? await toolsApi.polish(selectedText)
+            : await toolsApi.deAI(selectedText)
+        if (res.error) {
+          setToast(`${action === 'polish' ? '润色' : 'De-AI'} failed: ${res.error}`)
+          exitReviewMode()
+          return
+        }
+        const result = res.result ?? ''
+        if (!result) {
+          setToast('AI returned empty result')
+          exitReviewMode()
+          return
+        }
+        const newContent = content.replace(selectedText, result)
+        enterReviewMode(content, newContent)
+      } catch (err) {
+        console.error('AI action error:', err)
+        setToast(`AI error: ${err instanceof Error ? err.message : 'unknown'}`)
+        exitReviewMode()
+      } finally {
+        setAiProcessing(false)
       }
-      const result = res.result ?? ''
-      if (!result) {
-        setToast('De-AI returned empty result')
-        return
-      }
-      // Replace selected text in the content string instead of using
-      // document.execCommand which bypasses Lexical's internal state.
-      const newContent = content.replace(selectedText, result)
-      setContent(newContent)
-      setToast('De-AI applied successfully')
-    } catch (err) {
-      console.error('De-AI error:', err)
-      setToast(`De-AI error: ${err instanceof Error ? err.message : 'unknown'}`)
-    } finally {
-      setDeAILoading(false)
-    }
-  }, [content, setContent])
+    },
+    [content, enterReviewMode, exitReviewMode],
+  )
+
+  const handlePolish = useCallback(
+    (selectedText: string) => runAiAction('polish', selectedText),
+    [runAiAction],
+  )
+
+  const handleDeAI = useCallback(
+    (selectedText: string) => runAiAction('deai', selectedText),
+    [runAiAction],
+  )
+
+  // ---- Review mode handlers ----
+  const handleReviewAcceptAll = useCallback(
+    (mergedText: string) => {
+      setContent(mergedText)
+      exitReviewMode()
+      setToast('Changes applied successfully')
+    },
+    [setContent, exitReviewMode],
+  )
+
+  const handleReviewDiscardAll = useCallback(() => {
+    discardAllChanges()
+    setToast('Changes discarded')
+  }, [discardAllChanges])
 
   // ---- Save handler ----
   const handleSave = useCallback(async () => {
@@ -544,6 +584,50 @@ export default function Editor() {
                 </button>
               </div>
             </div>
+          ) : reviewMode ? (
+            /* ---- Review Mode ---- */
+            <div className="flex-1 overflow-y-auto px-8 py-10">
+              {/* Review Mode Banner */}
+              <div className="diff-review-banner mb-6">
+                <span className="flex items-center gap-2">
+                  <span className="text-base">📐</span>
+                  Review Mode: AI 已完成润色。绿色区域可编辑。确认后点击应用合并。
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleReviewDiscardAll}
+                    className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors rounded-none"
+                  >
+                    丢弃更改
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Compute merged text from current accepted state and apply
+                      const merged = content // fallback; DiffView will call onAcceptAll
+                      handleReviewAcceptAll(merged)
+                    }}
+                    className="text-[10px] uppercase tracking-widest border border-foreground px-3 py-1.5 hover:bg-foreground hover:text-background transition-colors rounded-none"
+                  >
+                    应用合并
+                  </button>
+                </div>
+              </div>
+
+              {reviewStatus === 'diffing' && originalContent ? (
+                <DiffView
+                  original={originalContent}
+                  modified={aiDraft}
+                  onAcceptAll={handleReviewAcceptAll}
+                  onDiscardAll={handleReviewDiscardAll}
+                />
+              ) : (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-sm text-muted animate-pulse tracking-wider">
+                    AI 正在处理中...
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex-1 overflow-y-auto px-8 py-10">
               <LexicalEditor
@@ -562,7 +646,10 @@ export default function Editor() {
       </div>
 
       {/* ---- Floating toolbar (on text selection) ---- */}
-      <FloatingToolbar onDeAI={handleDeAI} loading={deAILoading} />
+      <FloatingToolbar onAction={(action, text) => {
+        if (action === '润色') handlePolish(text)
+        else if (action === '去AI味') handleDeAI(text)
+      }} onDeAI={handleDeAI} loading={aiProcessing} />
 
       {/* ---- Toast ---- */}
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}

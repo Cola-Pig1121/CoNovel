@@ -34,6 +34,97 @@ export interface PipelineExecutionOptions {
   resumeFrom?: PipelineStage; // Resume from this stage
   maxRetries?: number;
   timeoutMs?: number;
+  /** If true, only run async (background) stages */
+  asyncOnly?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Sync / Async stage split
+// ---------------------------------------------------------------------------
+
+/** Stages that run synchronously (user waits for result). */
+export const SYNC_STAGES: PipelineStage[] = [
+  "context_assembly",
+  "character_reasoning",
+  "writing",
+  "editing",
+  "de_ai",
+];
+
+/** Stages that run asynchronously in the background after sync completes. */
+export const ASYNC_STAGES: PipelineStage[] = [
+  "event_recording",
+  "fact_check",
+  "continuity_check",
+  "pacing_check",
+  "character_intelligence_review",
+  "review_round_1",
+  "review_round_2",
+  "review_round_3",
+  "reflector",
+  "state_sync",
+];
+
+// ---------------------------------------------------------------------------
+// Review early-exit configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * Thresholds for early-exiting review rounds after round 1.
+ * If the review output matches these criteria, rounds 2 and 3 are skipped.
+ */
+const REVIEW_EARLY_EXIT = {
+  /** Maximum number of critical issues allowed to consider review passed */
+  maxCriticalIssues: 0,
+  /** Maximum number of total issues allowed to consider review passed */
+  maxTotalIssues: 3,
+  /** Keywords in review output that indicate the review found no problems */
+  passKeywords: ["没有发现", "无问题", "质量良好", "无需修改", "质量较高", "no issues", "no critical"],
+};
+
+/**
+ * Parse review output to determine if it indicates high quality.
+ * Returns true if the review found no critical issues (early exit candidate).
+ */
+function shouldSkipRemainingReviews(reviewOutput: string): boolean {
+  if (!reviewOutput) return false;
+
+  // Check for pass keywords
+  const lowerOutput = reviewOutput.toLowerCase();
+  const hasPassKeyword = REVIEW_EARLY_EXIT.passKeywords.some((kw) =>
+    lowerOutput.includes(kw.toLowerCase())
+  );
+  if (hasPassKeyword) return true;
+
+  // Count critical issues by looking for common patterns in review output
+  const criticalPatterns = [
+    /严重问题[：:]\s*(\d+)/,
+    /critical\s*(?:issues?|problems?)\s*[：:]\s*(\d+)/i,
+    /重大问题[：:]\s*(\d+)/,
+  ];
+
+  for (const pattern of criticalPatterns) {
+    const match = reviewOutput.match(pattern);
+    if (match) {
+      const count = parseInt(match[1], 10);
+      if (count <= REVIEW_EARLY_EXIT.maxCriticalIssues) return true;
+    }
+  }
+
+  // If the review explicitly says quality is high or no problems
+  const qualityPatterns = [
+    /整体质量[：:]?\s*(高|良好|优秀|较好)/,
+    /overall\s*quality[：:]?\s*(high|good|excellent)/i,
+    /总分[：:]?\s*(\d+)/,
+  ];
+
+  for (const pattern of qualityPatterns) {
+    const match = reviewOutput.match(pattern);
+    if (match) return true;
+  }
+
+  // Default: don't skip — run all review rounds to be safe
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +195,7 @@ export class PipelineOrchestrator {
       stages: requestedStages,
       resumeFrom,
       maxRetries = 2,
+      asyncOnly,
     } = options;
 
     console.log(`[orchestrator] Starting pipeline for chapter ${chapterNumber} from ${bookPath}`);
@@ -139,6 +231,9 @@ export class PipelineOrchestrator {
 
     if (requestedStages) {
       stagesToRun = requestedStages;
+    } else if (asyncOnly) {
+      // Only run async (background) stages
+      stagesToRun = ASYNC_STAGES;
     } else if (resumeFrom) {
       const resumeIdx = allStages.findIndex((s) => s.stage === resumeFrom);
       stagesToRun = allStages.slice(resumeIdx).map((s) => s.stage);
@@ -164,8 +259,9 @@ export class PipelineOrchestrator {
       this.currentState.status = "running";
     }
 
-    // Build the LLM call function
+    // Build the LLM call function — reads tier from agent config for routing
     const llmCall: LLMCallFunction = async (agentName, messages, opts) => {
+      console.log(`[orchestrator] LLM call → agent="${agentName}" tier read from agent-config.json`);
       return this.engine.executeAgent(agentName, messages, opts);
     };
 
@@ -291,6 +387,43 @@ export class PipelineOrchestrator {
           }
         }
 
+        // ── Early exit: skip review_round_2 and review_round_3 if round 1 passed ──
+        if (
+          stageName === "review_round_1" &&
+          success &&
+          stageState.output &&
+          shouldSkipRemainingReviews(stageState.output)
+        ) {
+          console.log(`[orchestrator] Review round 1 passed — skipping rounds 2 and 3`);
+
+          for (const skipStage of ["review_round_2", "review_round_3"] as PipelineStage[]) {
+            const skipIdx = stagesToRun.indexOf(skipStage);
+            if (skipIdx === -1) continue;
+
+            // Mark as skipped in pipeline state
+            const skipState = this.currentState!.stages.find((s) => s.stage === skipStage);
+            if (skipState) {
+              skipState.status = "skipped";
+              skipState.completed_at = new Date().toISOString();
+              skipState.output = "Skipped: review round 1 passed quality threshold";
+            }
+
+            // Record a synthetic stage result so downstream stages (editing) can find it
+            this.stageResults.set(skipStage, {
+              stage: skipStage,
+              output: "Skipped: review round 1 passed quality threshold",
+              metadata: { skipped: true, reason: "early_exit" },
+            });
+          }
+
+          // Advance i past review_round_3
+          while (i < stagesToRun.length && stagesToRun[i] !== "editing") {
+            i++;
+          }
+          // Don't increment i further — the next iteration will pick up "editing"
+          continue;
+        }
+
         i++;
       }
     }
@@ -317,6 +450,39 @@ export class PipelineOrchestrator {
     }
 
     return this.currentState;
+  }
+
+  /**
+   * Execute only the synchronous stages (context_assembly → character_reasoning → writing → editing → de_ai).
+   * Returns immediately with the result. The caller should invoke `executeAsyncRemaining()`
+   * in the background to run the remaining stages.
+   */
+  async executeSyncOnly(options: PipelineExecutionOptions): Promise<PipelineState> {
+    console.log(`[orchestrator] Running SYNC-only pipeline for chapter ${options.chapterNumber}`);
+
+    const syncState = await this.execute({
+      ...options,
+      stages: SYNC_STAGES,
+    });
+
+    console.log(`[orchestrator] Sync pipeline completed — ${syncState.status}`);
+    return syncState;
+  }
+
+  /**
+   * Execute only the async (background) stages.
+   * Typically called after `executeSyncOnly()` has completed successfully.
+   */
+  async executeAsyncRemaining(options: PipelineExecutionOptions): Promise<PipelineState> {
+    console.log(`[orchestrator] Running ASYNC pipeline for chapter ${options.chapterNumber}`);
+
+    const asyncState = await this.execute({
+      ...options,
+      asyncOnly: true,
+    });
+
+    console.log(`[orchestrator] Async pipeline completed — ${asyncState.status}`);
+    return asyncState;
   }
 
   /**

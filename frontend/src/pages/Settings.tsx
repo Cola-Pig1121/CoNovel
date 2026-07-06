@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useProviderStore } from '@/stores/providerStore'
-import { useAgentConfigStore } from '@/stores/agentConfigStore'
+import { useAgentConfigStore, TIER_AGENT_MAP, TIER_LABELS } from '@/stores/agentConfigStore'
+import type { TierLevel } from '@/stores/agentConfigStore'
 import type { Provider, ModelEntry } from '@/lib/types'
 
 type SettingsTab = 'providers' | 'agentConfig'
@@ -408,26 +409,9 @@ function EditProviderForm({
 // Agent Config Panel
 // =============================================================================
 
-const TIER_PRESETS = [
-  {
-    label: 'Strong',
-    description: '核心写作 Agent (Strong 模型)',
-    roles: ['story_architect', 'narrative_writer', 'reviewer', 'character_intelligence'],
-  },
-  {
-    label: 'Medium',
-    description: '标准任务 Agent (Medium 模型)',
-    roles: ['executive_editor', 'character_designer', 'editor', 'de_ai_editor', 'style_analyzer', 'reflector'],
-  },
-  {
-    label: 'Light',
-    description: '辅助 Agent (Light 模型)',
-    roles: ['fact_checker', 'continuity_checker', 'pacing_controller', 'foreshadowing_tracker', 'observer', 'radar'],
-  },
-] as const
-
 function AgentConfigPanel() {
-  const { agents, updateAgent, batchAssign, resetToDefaults } = useAgentConfigStore()
+  const { agents, tierPresets, updateAgent, setTierPreset, batchAssignByTier, resetToDefaults } =
+    useAgentConfigStore()
   const providers = useProviderStore((s) => s.providers)
   const enabledProviders = providers.filter((p) => p.enabled)
 
@@ -435,6 +419,8 @@ function AgentConfigPanel() {
     const p = providers.find((pp) => pp.id === providerId)
     return p?.models ?? []
   }
+
+  const tierLevels: TierLevel[] = ['strong', 'medium', 'light']
 
   return (
     <div className="space-y-8">
@@ -453,40 +439,100 @@ function AgentConfigPanel() {
         </button>
       </div>
 
-      {/* 批量分配 */}
-      <div className="flex gap-3">
-        {TIER_PRESETS.map((tier) => (
-          <div key={tier.label} className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted">{tier.label}:</span>
-            <select
-              onChange={(e) => {
-                const [providerId, modelId] = e.target.value.split('::')
-                if (providerId && modelId) {
-                  batchAssign(providerId, modelId, [...tier.roles])
-                }
-              }}
-              className="border border-border bg-background text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors"
-              defaultValue=""
+      {/* ── Tier Configuration Cards ── */}
+      <div className="grid grid-cols-3 gap-4">
+        {tierLevels.map((tier) => {
+          const meta = TIER_LABELS[tier]
+          const preset = tierPresets.find((p) => p.tier === tier)
+          const agentCount = TIER_AGENT_MAP[tier].length
+          return (
+            <div
+              key={tier}
+              className="border border-border p-5 space-y-4 hover:border-foreground/30 transition-colors"
             >
-              <option value="" disabled>选择模型</option>
-              {enabledProviders.map((p) =>
-                p.models.map((m) => (
-                  <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
-                    {p.name} / {m.name}
-                  </option>
-                )),
-              )}
-            </select>
-          </div>
-        ))}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif text-base">{meta.name}</h3>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+                    {meta.nameZh}
+                  </span>
+                </div>
+                <p className="text-xs text-muted mt-1">{meta.description}</p>
+                <p className="text-[10px] text-muted mt-0.5">
+                  {agentCount} 个 Agent
+                </p>
+              </div>
+
+              {/* Provider dropdown */}
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">Provider</span>
+                <select
+                  value={preset?.providerId ?? ''}
+                  onChange={(e) => {
+                    const newProviderId = e.target.value
+                    const models = getModelsForProvider(newProviderId)
+                    const currentModelId = preset?.modelId ?? ''
+                    const newModelId = models.some((m) => m.id === currentModelId)
+                      ? currentModelId
+                      : models[0]?.id ?? ''
+                    setTierPreset(tier, newProviderId, newModelId)
+                  }}
+                  className="w-full border border-border bg-background text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors"
+                >
+                  {enabledProviders.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Model dropdown */}
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">Model</span>
+                <select
+                  value={preset?.modelId ?? ''}
+                  onChange={(e) => {
+                    setTierPreset(tier, preset?.providerId ?? enabledProviders[0]?.id ?? '', e.target.value)
+                  }}
+                  className="w-full border border-border bg-background text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors"
+                >
+                  {getModelsForProvider(preset?.providerId ?? '').map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Assign All button */}
+              <button
+                onClick={() => batchAssignByTier(tier)}
+                className="w-full text-xs uppercase tracking-widest border border-foreground px-4 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
+              >
+                Assign All
+              </button>
+
+              {/* Agent list preview */}
+              <div className="text-[10px] text-muted font-mono leading-relaxed">
+                {TIER_AGENT_MAP[tier].map((role) => {
+                  const agent = agents.find((a) => a.role === role)
+                  return (
+                    <div key={role} className="flex justify-between">
+                      <span>{agent?.nameZh ?? role}</span>
+                      <span className="text-foreground/40">{agent?.modelId ?? '—'}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Agent 表格 */}
+      {/* ── Agent Table ── */}
       <div className="border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
               <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Agent</th>
+              <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Tier</th>
               <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Provider</th>
               <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Model</th>
               <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-muted font-normal">Temperature</th>
@@ -505,6 +551,17 @@ function AgentConfigPanel() {
                   <td className="px-6 py-4">
                     <div className="font-serif text-sm">{agent.nameZh}</div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-muted mt-0.5">{agent.role}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={agent.reasoningEffort ?? 'medium'}
+                      onChange={(e) => updateAgent(agent.role, { reasoningEffort: e.target.value as TierLevel })}
+                      className="border border-border bg-transparent text-xs px-3 py-2 focus:outline-none focus:border-foreground transition-colors"
+                    >
+                      {tierLevels.map((t) => (
+                        <option key={t} value={t}>{TIER_LABELS[t].name}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-6 py-4">
                     <select

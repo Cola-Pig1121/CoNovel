@@ -117,6 +117,8 @@ export const storeApi = {
 export const toolsApi = {
   deAI: (text: string) =>
     request<{ result?: string; error?: string }>('POST', '/tools/de-ai', { text }),
+  polish: (text: string) =>
+    request<{ result?: string; error?: string }>('POST', '/tools/polish', { text }),
 }
 
 // --- Constraints ---

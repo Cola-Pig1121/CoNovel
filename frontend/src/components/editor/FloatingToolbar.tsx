@@ -103,7 +103,7 @@ export default function FloatingToolbar({ onAction, onDeAI, loading }: FloatingT
           className="px-3 py-2 text-[10px] uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors border-r border-border last:border-r-0 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span className="mr-1">{action.icon}</span>
-          {loading && action.label === '去AI味' ? '处理中...' : action.label}
+          {loading ? '处理中...' : action.label}
         </button>
       ))}
     </div>
