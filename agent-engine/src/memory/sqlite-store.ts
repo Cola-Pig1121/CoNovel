@@ -13,6 +13,7 @@ import type {
   CharacterMemoryState,
   LongTermMemory,
   MemoryIndex,
+  VolumeLore,
   MemoryStoreInterface,
 } from "./types.js";
 
@@ -199,6 +200,14 @@ export class SQLiteMemoryStore implements MemoryStoreInterface {
     this.db.run(`
       CREATE TABLE IF NOT EXISTS long_term_memory (
         id INTEGER PRIMARY KEY CHECK (id = 1),
+        data TEXT NOT NULL
+      )
+    `);
+
+    // VolumeLore table (one row per volume)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS volume_lore (
+        volume_number INTEGER PRIMARY KEY,
         data TEXT NOT NULL
       )
     `);
@@ -601,6 +610,40 @@ export class SQLiteMemoryStore implements MemoryStoreInterface {
         return [];
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // VolumeLore
+  // ---------------------------------------------------------------------------
+
+  saveVolumeLore(volumeLore: VolumeLore): void {
+    this.db
+      .query(
+        `INSERT OR REPLACE INTO volume_lore (volume_number, data)
+        VALUES (?, ?)`
+      )
+      .run(volumeLore.volumeNumber, JSON.stringify(volumeLore));
+  }
+
+  getVolumeLore(volumeNumber: number): VolumeLore | null {
+    const row = this.db
+      .query<{ data: string }, [number]>(
+        "SELECT data FROM volume_lore WHERE volume_number = ?"
+      )
+      .get(volumeNumber);
+    if (!row) return null;
+    return jsonToObject(row.data, null as VolumeLore | null);
+  }
+
+  getAllVolumeLore(): VolumeLore[] {
+    const rows = this.db
+      .query<{ data: string }, []>(
+        "SELECT data FROM volume_lore ORDER BY volume_number"
+      )
+      .all();
+    return rows
+      .map((r) => jsonToObject<VolumeLore | null>(r.data, null))
+      .filter((v): v is VolumeLore => v !== null);
   }
 
   // ---------------------------------------------------------------------------

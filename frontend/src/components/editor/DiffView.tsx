@@ -215,6 +215,12 @@ function HunkChangeIndicator({
 // ---------------------------------------------------------------------------
 // DiffView Component
 // ---------------------------------------------------------------------------
+// Note: The .tmp file concept from Gemini's plan is implemented server-side.
+// The agent engine writes AI output to chapters/chapter_XXXX_edited.txt
+// before the user reviews it. This DiffView shows the in-memory diff
+// between the original content and the AI draft for interactive review.
+// When the user clicks "Apply All", the final merged content is saved
+// to the main chapter file via the chapters API.
 
 export default function DiffView({
   original,

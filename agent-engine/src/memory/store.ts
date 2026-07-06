@@ -11,6 +11,7 @@ import type {
   CharacterMemoryState,
   LongTermMemory,
   MemoryIndex,
+  VolumeLore,
   MemoryStoreInterface,
 } from "./types.js";
 import { SQLiteMemoryStore } from "./sqlite-store.js";
@@ -179,6 +180,42 @@ export class MemoryStore implements MemoryStoreInterface {
   saveLongTermMemory(memory: LongTermMemory): void {
     const filePath = join(this.longTermDir, "long_term_memory.json");
     this.writeJson(filePath, memory);
+  }
+
+  // ---------------------------------------------------------------------------
+  // VolumeLore
+  // ---------------------------------------------------------------------------
+
+  saveVolumeLore(volumeLore: VolumeLore): void {
+    const filePath = join(
+      this.longTermDir,
+      `volume_${volumeLore.volumeNumber}.json`
+    );
+    this.writeJson(filePath, volumeLore);
+  }
+
+  getVolumeLore(volumeNumber: number): VolumeLore | null {
+    const filePath = join(this.longTermDir, `volume_${volumeNumber}.json`);
+    if (!existsSync(filePath)) return null;
+    return this.readJson<VolumeLore | null>(filePath, null);
+  }
+
+  getAllVolumeLore(): VolumeLore[] {
+    const lore: VolumeLore[] = [];
+    const files = readdirSync(this.longTermDir).filter((f) =>
+      f.startsWith("volume_") && f.endsWith(".json")
+    );
+
+    for (const file of files) {
+      const filePath = join(this.longTermDir, file);
+      const entry = this.readJson<VolumeLore | null>(filePath, null);
+      if (entry) {
+        lore.push(entry);
+      }
+    }
+
+    lore.sort((a, b) => a.volumeNumber - b.volumeNumber);
+    return lore;
   }
 
   // ---------------------------------------------------------------------------

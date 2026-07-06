@@ -70,6 +70,20 @@ export interface MemoryIndex {
   categories: Record<string, number>; // count per category
 }
 
+export interface VolumeLore {
+  volumeNumber: number;
+  volumeTitle: string;
+  chapterRange: [number, number];
+  summary: string; // LLM-generated volume summary
+  keyTurningPoints: string[]; // Major plot twists
+  characterGrowth: Record<string, string>; // characterId → growth description
+  worldChanges: string[]; // World setting changes in this volume
+  resolvedForeshadowing: string[]; // Foreshadows resolved in this volume
+  activeForeshadowing: string[]; // Foreshadows still active
+  factCount: number; // Total facts compressed
+  createdAt: string;
+}
+
 export interface SearchResult {
   entry: FactEntry;
   score: number;
@@ -110,6 +124,11 @@ export interface MemoryStoreInterface {
   // Long-term memory
   getLongTermMemory(): LongTermMemory;
   saveLongTermMemory(memory: LongTermMemory): void;
+
+  // VolumeLore
+  saveVolumeLore(volumeLore: VolumeLore): void;
+  getVolumeLore(volumeNumber: number): VolumeLore | null;
+  getAllVolumeLore(): VolumeLore[];
 
   // Index
   getIndex(): MemoryIndex;

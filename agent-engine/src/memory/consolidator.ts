@@ -16,6 +16,7 @@ import type {
   LongTermMemory,
   MemoryStoreInterface,
   ChapterSummary,
+  VolumeLore,
 } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -147,6 +148,134 @@ export class MemoryConsolidator {
     }
 
     return sections.join("\n\n");
+  }
+
+  // -------------------------------------------------------------------------
+  // VolumeLore generation
+  // -------------------------------------------------------------------------
+
+  /**
+   * Generate VolumeLore data when the last chapter of a volume is completed.
+   * This compresses all indexed facts from that volume into a core-tier summary.
+   *
+   * Note: The LLM call is NOT made here. Instead, this method:
+   * 1. Gathers all facts from the volume's chapter range
+   * 2. Groups them by category
+   * 3. Extracts key turning points, character growth, world changes
+   * 4. Returns the data needed for LLM summary generation
+   *
+   * The actual LLM call happens in the pipeline orchestrator.
+   */
+  generateVolumeLoreData(
+    volumeNumber: number,
+    volumeTitle: string,
+    chapterRange: [number, number]
+  ): {
+    facts: FactEntry[];
+    summaries: ChapterSummary[];
+    keyTurningPoints: string[];
+    characterGrowth: Record<string, string>;
+    worldChanges: string[];
+    resolvedForeshadowing: string[];
+    activeForeshadowing: string[];
+  } {
+    // Gather all facts from this volume's chapter range
+    const allFacts = this.store.getAllFacts();
+    const volumeFacts = allFacts.filter(
+      (f) =>
+        f.chapterNumber >= chapterRange[0] &&
+        f.chapterNumber <= chapterRange[1]
+    );
+
+    // Gather all summaries from this volume's chapter range
+    const allSummaries = this.store.getAllSummaries();
+    const volumeSummaries = allSummaries.filter(
+      (s) =>
+        s.chapterNumber >= chapterRange[0] &&
+        s.chapterNumber <= chapterRange[1]
+    );
+
+    // Extract key turning points from hook-category facts with high confidence
+    const keyTurningPoints = volumeFacts
+      .filter((f) => f.category === "hook" && f.confidence >= 0.7)
+      .map((f) => `[Ch.${f.chapterNumber}] ${f.content}`);
+
+    // Extract character growth from character-category facts
+    const characterGrowth: Record<string, string> = {};
+    const characterFacts = volumeFacts.filter(
+      (f) => f.category === "character"
+    );
+    for (const fact of characterFacts) {
+      const existing = characterGrowth[fact.subject] ?? "";
+      characterGrowth[fact.subject] = existing
+        ? `${existing} | [Ch.${fact.chapterNumber}] ${fact.content}`
+        : `[Ch.${fact.chapterNumber}] ${fact.content}`;
+    }
+
+    // Extract world changes from state/location facts
+    const worldChanges = volumeFacts
+      .filter(
+        (f) =>
+          (f.category === "state" || f.category === "location") &&
+          f.confidence >= 0.6
+      )
+      .map((f) => f.content);
+
+    // Extract foreshadowing from hook-category facts
+    const allHooks = volumeFacts.filter((f) => f.category === "hook");
+    const resolvedForeshadowing = allHooks
+      .filter((f) => f.tags?.includes("resolved") || f.confidence >= 0.9)
+      .map((f) => f.content);
+    const activeForeshadowing = allHooks
+      .filter(
+        (f) => !f.tags?.includes("resolved") && f.confidence < 0.9
+      )
+      .map((f) => f.content);
+
+    return {
+      facts: volumeFacts,
+      summaries: volumeSummaries,
+      keyTurningPoints,
+      characterGrowth,
+      worldChanges,
+      resolvedForeshadowing,
+      activeForeshadowing,
+    };
+  }
+
+  /**
+   * Save a completed VolumeLore and promote all facts from that volume to core tier.
+   */
+  saveVolumeLore(volumeLore: VolumeLore): void {
+    this.store.saveVolumeLore(volumeLore);
+
+    // Also promote all facts from this volume to core tier
+    const allFacts = this.store.getAllFacts();
+    const volumeFacts = allFacts.filter(
+      (f) =>
+        f.chapterNumber >= volumeLore.chapterRange[0] &&
+        f.chapterNumber <= volumeLore.chapterRange[1]
+    );
+
+    // Promote high-confidence facts to core
+    const updates: Array<{ id: string; tier: FactTier }> = [];
+    for (const fact of volumeFacts) {
+      if (fact.confidence >= 0.5) {
+        updates.push({ id: fact.id, tier: "core" });
+        fact.tier = "core";
+        fact.tags = [...(fact.tags || []), "PERMANENT"];
+      }
+    }
+
+    // Apply tier updates
+    if (updates.length > 0) {
+      if ("bulkUpdateFactTiers" in this.store) {
+        (this.store as any).bulkUpdateFactTiers(updates);
+      } else {
+        // JSON fallback: re-save facts with updated tiers
+        this.applyTierUpdatesToJSON(allFacts, updates);
+      }
+    }
   }
 
   // -------------------------------------------------------------------------
