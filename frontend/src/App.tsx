@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import Sidebar from './components/layout/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Editor from './pages/Editor'
 import BookDetail from './pages/BookDetail'
@@ -23,6 +24,21 @@ function LoadingScreen() {
       <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
         Loading...
       </p>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// App layout — Sidebar + main content area
+// ---------------------------------------------------------------------------
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen bg-background text-foreground">
+      <Sidebar />
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
     </div>
   )
 }
@@ -62,16 +78,16 @@ export default function App() {
   // Everything ready — normal routing
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
+      <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
       <Route path="/editor/:bookId" element={<Editor />} />
-      <Route path="/book" element={<BookDetail />} />
-      <Route path="/agents" element={<Agents />} />
-      <Route path="/pipeline" element={<Pipeline />} />
-      <Route path="/workflow" element={<Workflow />} />
-      <Route path="/store" element={<Store />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/import" element={<ImportPage />} />
-      <Route path="/evolution" element={<Evolution />} />
+      <Route path="/book" element={<AppLayout><BookDetail /></AppLayout>} />
+      <Route path="/agents" element={<AppLayout><Agents /></AppLayout>} />
+      <Route path="/pipeline" element={<AppLayout><Pipeline /></AppLayout>} />
+      <Route path="/workflow" element={<AppLayout><Workflow /></AppLayout>} />
+      <Route path="/store" element={<AppLayout><Store /></AppLayout>} />
+      <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+      <Route path="/import" element={<AppLayout><ImportPage /></AppLayout>} />
+      <Route path="/evolution" element={<AppLayout><Evolution /></AppLayout>} />
     </Routes>
   )
 }

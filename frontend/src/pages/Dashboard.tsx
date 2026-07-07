@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useBookStore } from '@/stores/bookStore'
 import { useUIStore } from '@/stores/uiStore'
-import { storeApi } from '@/lib/api'
+import { booksApi, storeApi } from '@/lib/api'
 import GoalPanel from '@/components/dashboard/GoalPanel'
 import Skeleton from '@/components/ui/Skeleton'
 import type { BookMeta } from '@/lib/types'
@@ -11,7 +11,7 @@ import type { BookMeta } from '@/lib/types'
 // BookCard
 // ---------------------------------------------------------------------------
 
-function BookCard({ book }: { book: BookMeta }) {
+function BookCard({ book, onDelete }: { book: BookMeta; onDelete: (id: string) => void }) {
   const navigate = useNavigate()
 
   const wordProgress =
@@ -26,9 +26,22 @@ function BookCard({ book }: { book: BookMeta }) {
         <span className="text-[10px] uppercase tracking-widest bg-foreground text-background px-2 py-0.5">
           {book.genre}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          {book.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (confirm(`确定删除"${book.title}"？此操作不可恢复。`)) {
+                onDelete(book.id)
+              }
+            }}
+            className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
+          >
+            删除
+          </button>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+            {book.status}
+          </span>
+        </div>
       </div>
 
       {/* Title */}
@@ -255,6 +268,15 @@ export default function Dashboard() {
     fetchBooks()
   }, [fetchBooks])
 
+  async function handleDeleteBook(bookId: string) {
+    try {
+      await booksApi.delete(bookId)
+      fetchBooks()
+    } catch (err) {
+      console.error('Failed to delete book:', err)
+    }
+  }
+
   // ---- Fetch templates from backend ----
   useEffect(() => {
     storeApi.listLocal().then(data => setTemplates(data)).catch(() => {})
@@ -387,7 +409,7 @@ export default function Dashboard() {
             {!loading && books.length > 0 && (
               <div className="grid grid-cols-2 gap-6">
                 {books.map((book) => (
-                  <BookCard key={book.id} book={book} />
+                  <BookCard key={book.id} book={book} onDelete={handleDeleteBook} />
                 ))}
               </div>
             )}
