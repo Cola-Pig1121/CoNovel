@@ -31,10 +31,10 @@ const STATUS_STYLES: Record<StageStatus, string> = {
 }
 
 const STATUS_LABELS: Record<StageStatus, string> = {
-  pending: 'Pending',
-  running: 'Running',
-  completed: 'Done',
-  failed: 'Failed',
+  pending: '等待中',
+  running: '运行中',
+  completed: '完成',
+  failed: '失败',
 }
 
 export default function Pipeline() {
@@ -100,16 +100,16 @@ export default function Pipeline() {
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
         <div className="flex items-center gap-3">
-          <h1 className="font-serif text-3xl">Pipeline Monitor</h1>
+          <h1 className="font-serif text-3xl">流水线监控</h1>
           {polling && (
             <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted">
               <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
-              Polling every 3s
+              每 3 秒轮询
             </span>
           )}
         </div>
         <p className="text-muted text-sm mt-1">
-          Real-time view of the chapter generation pipeline
+          章节生成流水线的实时视图
         </p>
       </header>
 
@@ -160,7 +160,7 @@ export default function Pipeline() {
 
         {/* Stage detail cards */}
         <div className="mt-10">
-          <h2 className="font-serif text-xl mb-4">Stage Details</h2>
+          <h2 className="font-serif text-xl mb-4">阶段详情</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {STAGES.map((stage, i) => {
               const status = stageStatuses[i] ?? 'pending'
@@ -192,7 +192,7 @@ export default function Pipeline() {
                   )}
                   {detail?.duration != null && (
                     <p className="text-xs text-muted mt-1">
-                      Duration: {(detail.duration / 1000).toFixed(1)}s
+                      耗时: {(detail.duration / 1000).toFixed(1)}s
                     </p>
                   )}
                 </div>

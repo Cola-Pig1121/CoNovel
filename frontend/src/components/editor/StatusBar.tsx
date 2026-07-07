@@ -22,18 +22,18 @@ export default function StatusBar() {
   const charCount = content.replace(/\s/g, '').length
 
   const gitLabels = {
-    clean: { text: 'Git: clean', dotClass: 'bg-foreground' },
-    dirty: { text: 'Git: dirty', dotClass: 'bg-foreground/50' },
-    syncing: { text: 'Git: syncing', dotClass: 'bg-border animate-pulse' },
+    clean: { text: 'Git: 已同步', dotClass: 'bg-foreground' },
+    dirty: { text: 'Git: 未同步', dotClass: 'bg-foreground/50' },
+    syncing: { text: 'Git: 同步中', dotClass: 'bg-border animate-pulse' },
   }
 
   const saveStatusText = isSaving
-    ? 'Saving...'
+    ? '保存中...'
     : isDirty
-      ? 'Unsaved changes'
+      ? '未保存'
       : lastSavedAt
-        ? `Saved ${new Date(lastSavedAt).toLocaleTimeString()}`
-        : 'Saved'
+        ? `已保存 ${new Date(lastSavedAt).toLocaleTimeString()}`
+        : '已保存'
 
   const git = gitLabels[gitStatus]
 
@@ -46,7 +46,7 @@ export default function StatusBar() {
 
       {/* Chapter number */}
       <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-        Ch. {chapterNumber ?? '—'}
+        第 {chapterNumber ?? '—'} 章
       </span>
 
       {/* Save status */}
@@ -66,7 +66,7 @@ export default function StatusBar() {
             mode === 'co-write' ? 'bg-foreground' : 'bg-border'
           }`}
         />
-        {mode === 'solo' ? 'Solo' : 'Co-Write'}
+        {mode === 'solo' ? '独立写作' : '协作写作'}
       </button>
 
       {/* Divider */}

@@ -203,7 +203,7 @@ function HunkChangeIndicator({
             ? 'border-foreground/20 text-foreground/60 hover:border-foreground hover:text-foreground'
             : 'border-border text-muted hover:text-foreground hover:border-foreground/40'
         }`}
-        title={accepted ? 'Reject this change' : 'Accept this change'}
+        title={accepted ? '拒绝此更改' : '接受此更改'}
       >
         {accepted ? '✓' : '✗'}
       </button>
@@ -313,8 +313,8 @@ export default function DiffView({
         <div className="flex items-center gap-3">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
             {changeCount === 0
-              ? 'No changes'
-              : `${acceptedCount}/${changeCount} change${changeCount !== 1 ? 's' : ''} accepted`}
+              ? '无更改'
+              : `${acceptedCount}/${changeCount} 个更改已接受`}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -322,13 +322,13 @@ export default function DiffView({
             onClick={handleDiscardAll}
             className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground hover:text-foreground transition-colors rounded-none"
           >
-            Discard All
+            全部丢弃
           </button>
           <button
             onClick={changeCount > 0 ? handleApplyCurrent : handleAcceptAll}
             className="text-[10px] uppercase tracking-widest border border-foreground px-3 py-1.5 hover:bg-foreground hover:text-background transition-colors rounded-none"
           >
-            Apply All
+            全部应用
           </button>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function DiffView({
 
           if (hunk.type === 'delete') {
             return (
-              <span key={`del-${idx}`} className="diff-delete" title="Deleted text (click ✗ to keep)">
+              <span key={`del-${idx}`} className="diff-delete" title="已删除文本（点击 ✗ 保留）">
                 {hunk.text}
                 {isLastInGroup && (
                   <HunkChangeIndicator
@@ -372,7 +372,7 @@ export default function DiffView({
             <span
               key={`ins-${idx}`}
               className={`diff-insert ${isAccepted ? '' : 'diff-insert-rejected'}`}
-              title="Inserted text — editable"
+              title="插入文本 — 可编辑"
             >
               <span
                 contentEditable
@@ -396,7 +396,7 @@ export default function DiffView({
         })}
 
         {changeCount === 0 && (
-          <p className="text-muted text-sm italic">No differences found between the original and modified text.</p>
+          <p className="text-muted text-sm italic">未发现原始文本与修改文本之间的差异。</p>
         )}
       </div>
     </div>

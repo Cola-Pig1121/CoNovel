@@ -19,7 +19,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border px-8 py-6">
-        <h1 className="font-serif text-3xl">Settings</h1>
+        <h1 className="font-serif text-3xl">设置</h1>
         <p className="text-muted text-sm mt-1">
           配置 LLM Provider 和 Agent 模型分配（数据存储在浏览器本地）
         </p>
@@ -198,7 +198,7 @@ function AddProviderForm({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="My Provider"
+            placeholder="我的 Provider"
             className="w-full border border-border bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
             required
           />
@@ -384,13 +384,13 @@ function EditProviderForm({
           <input
             value={newModelContext}
             onChange={(e) => setNewModelContext(e.target.value)}
-            placeholder="Context"
+            placeholder="上下文"
             className="w-20 border border-border bg-transparent px-3 py-2 text-xs font-mono focus:outline-none focus:border-foreground transition-colors"
           />
           <input
             value={newModelOutput}
             onChange={(e) => setNewModelOutput(e.target.value)}
-            placeholder="Output"
+            placeholder="输出"
             className="w-20 border border-border bg-transparent px-3 py-2 text-xs font-mono focus:outline-none focus:border-foreground transition-colors"
           />
           <button
@@ -506,7 +506,7 @@ function AgentConfigPanel() {
                 onClick={() => batchAssignByTier(tier)}
                 className="w-full text-xs uppercase tracking-widest border border-foreground px-4 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
               >
-                Assign All
+                全部分配
               </button>
 
               {/* Agent list preview */}

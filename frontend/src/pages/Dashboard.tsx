@@ -43,7 +43,7 @@ function BookCard({ book }: { book: BookMeta }) {
       <div className="mb-4">
         <div className="flex items-baseline justify-between mb-1">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            Words
+            字数
           </span>
           <span className="text-xs font-sans tabular-nums">
             {book.currentWordCount.toLocaleString()}
@@ -72,7 +72,7 @@ function BookCard({ book }: { book: BookMeta }) {
         onClick={() => navigate(`/editor/${book.id}`)}
         className="w-full text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
       >
-        Open Workspace
+        打开工作区
       </button>
     </div>
   )
@@ -136,21 +136,21 @@ function CreateBookModal() {
         onSubmit={handleSubmit}
         className="relative bg-background border border-border w-full max-w-lg p-8 rounded-none shadow-none"
       >
-        <h2 className="font-serif text-2xl tracking-tight mb-1">New Manuscript</h2>
+        <h2 className="font-serif text-2xl tracking-tight mb-1">新建手稿</h2>
         <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-          Configure your project before writing begins
+          在开始写作前配置你的项目
         </p>
 
         {/* Title */}
         <label className="block mb-6">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Title
+            标题
           </span>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled Manuscript"
+            placeholder="未命名手稿"
             required
             className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
           />
@@ -159,7 +159,7 @@ function CreateBookModal() {
         {/* Genre */}
         <label className="block mb-6">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Genre
+            类型
           </span>
           <select
             value={genre}
@@ -177,12 +177,12 @@ function CreateBookModal() {
         {/* Premise */}
         <label className="block mb-8">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Premise
+            故事前提
           </span>
           <textarea
             value={premise}
             onChange={(e) => setPremise(e.target.value)}
-            placeholder="A brief summary of the story you want to tell..."
+            placeholder="简要描述你想讲述的故事..."
             rows={4}
             className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
           />
@@ -195,14 +195,14 @@ function CreateBookModal() {
             onClick={closeModal}
             className="flex-1 text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
           >
-            Cancel
+            取消
           </button>
           <button
             type="submit"
             disabled={submitting || !title.trim()}
             className="flex-1 text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Creating...' : 'Create Manuscript'}
+            {submitting ? '创建中...' : '创建手稿'}
           </button>
         </div>
       </form>
@@ -268,7 +268,7 @@ export default function Dashboard() {
               CoNovel Studio
             </h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-3">
-              Autonomous Multi-Agent Narrative System // v0.1.0
+              自主多智能体叙事系统 // v0.1.0
             </p>
           </div>
 
@@ -277,13 +277,13 @@ export default function Dashboard() {
               to="/import"
               className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors"
             >
-              Import Book
+              导入书籍
             </Link>
             <button
               onClick={() => openModal('createBook')}
               className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
             >
-              Create Book
+              创建书籍
             </button>
           </div>
         </div>
@@ -296,7 +296,7 @@ export default function Dashboard() {
           <section className="col-span-8">
             <div className="flex items-baseline justify-between mb-6">
               <h2 className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                Active Manuscripts
+                活跃手稿
               </h2>
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
                 {books.length} project{books.length !== 1 && 's'}
@@ -324,7 +324,7 @@ export default function Dashboard() {
             {!loading && error && (
               <div className="border border-border p-12 text-center rounded-none">
                 <p className="font-serif text-xl tracking-tight mb-2">
-                  Failed to load manuscripts
+                  加载手稿失败
                 </p>
                 <p className="text-sm text-muted mb-6">
                   {error}
@@ -333,7 +333,7 @@ export default function Dashboard() {
                   onClick={() => fetchBooks()}
                   className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
                 >
-                  Retry
+                  重试
                 </button>
               </div>
             )}
@@ -341,16 +341,16 @@ export default function Dashboard() {
             {!loading && books.length === 0 && (
               <div className="border border-border p-12 text-center rounded-none">
                 <p className="font-serif text-2xl tracking-tight mb-2">
-                  No manuscripts yet
+                  暂无手稿
                 </p>
                 <p className="text-sm text-muted mb-6">
-                  Create your first book to begin writing with AI agents.
+                  创建你的第一本书，开始使用 AI 智能体进行创作。
                 </p>
                 <button
                   onClick={() => openModal('createBook')}
                   className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
                 >
-                  Create Book
+                  创建书籍
                 </button>
               </div>
             )}
@@ -376,7 +376,7 @@ export default function Dashboard() {
             {/* Template Store */}
             <div className="border border-border p-6 rounded-none mb-6">
               <h2 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-                Template Store
+                模板商店
               </h2>
 
               {/* Import input */}
@@ -386,7 +386,7 @@ export default function Dashboard() {
                   value={templateInput}
                   onChange={(e) => setTemplateInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleImport()}
-                  placeholder="Import template URL..."
+                  placeholder="导入模板 URL..."
                   className="flex-1 border border-border bg-transparent px-3 py-2 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
                 />
                 <button
@@ -394,13 +394,13 @@ export default function Dashboard() {
                   disabled={importing || !templateInput.trim()}
                   className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {importing ? 'Importing...' : 'Import'}
+                  {importing ? '导入中...' : '导入'}
                 </button>
               </div>
 
               {/* Template list */}
               {templates.length === 0 && (
-                <p className="text-xs text-muted py-4 text-center">No local templates yet</p>
+                <p className="text-xs text-muted py-4 text-center">暂无本地模板</p>
               )}
               <ul className="space-y-0">
                 {templates.map((tpl) => (
@@ -413,7 +413,7 @@ export default function Dashboard() {
                   >
                     <span className="text-sm font-sans">{tpl}</span>
                     <span className="text-[10px] uppercase tracking-widest text-muted group-hover:text-foreground transition-colors">
-                      Use
+                      使用
                     </span>
                   </li>
                 ))}
@@ -423,13 +423,13 @@ export default function Dashboard() {
             {/* System Status */}
             <div className="border border-border p-6 rounded-none">
               <h2 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-                System Status
+                系统状态
               </h2>
 
               <ul className="space-y-3">
                 {[
-                  { label: 'Backend API', status: status.backend },
-                  { label: 'Agent Engine', status: status.engine },
+                  { label: '后端 API', status: status.backend },
+                  { label: '智能体引擎', status: status.engine },
                 ].map((item) => (
                   <li
                     key={item.label}

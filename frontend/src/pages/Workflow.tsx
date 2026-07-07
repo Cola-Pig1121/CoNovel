@@ -228,9 +228,9 @@ export default function Workflow() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header className="border-b border-border px-8 py-6 shrink-0">
-        <h1 className="font-serif text-3xl">Workflow Board</h1>
+        <h1 className="font-serif text-3xl">工作流面板</h1>
         <p className="text-muted text-sm mt-1">
-          Visual workflow orchestration and monitoring
+          可视化工作流编排与监控
         </p>
       </header>
 
@@ -262,14 +262,14 @@ export default function Workflow() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                      {totalStages} stages
+                      {totalStages} 个阶段
                     </div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-muted">
                       agent: {activeWorkflow.defaults.agent}
                     </div>
                     {activeWorkflow.defaults.readOnly && (
                       <span className="border border-border px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted">
-                        read-only
+                        只读
                       </span>
                     )}
                   </div>
@@ -284,7 +284,7 @@ export default function Workflow() {
                   />
                 ) : (
                   <div className="border border-border p-8 text-center">
-                    <p className="text-muted text-sm">No stages defined</p>
+                    <p className="text-muted text-sm">未定义阶段</p>
                   </div>
                 )}
 
@@ -307,7 +307,7 @@ export default function Workflow() {
                   <div className="flex items-center gap-6">
                     <div>
                       <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-                        Progress
+                        进度
                       </div>
                       <div className="text-sm font-medium">
                         {completedCount} / {totalStages}
@@ -329,7 +329,7 @@ export default function Workflow() {
                     {currentRun?.startedAt && (
                       <div>
                         <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-                          Elapsed
+                          已用时
                         </div>
                         <div className="text-sm font-mono">{elapsedTime}</div>
                       </div>
@@ -339,7 +339,7 @@ export default function Workflow() {
                     {currentRun && (
                       <div>
                         <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-                          Status
+                          状态
                         </div>
                         <div className="flex items-center gap-2">
                           <span
@@ -370,7 +370,7 @@ export default function Workflow() {
                         onClick={handlePause}
                         className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
                       >
-                        Pause
+                        暂停
                       </button>
                     )}
                     {isPaused && (
@@ -378,7 +378,7 @@ export default function Workflow() {
                         onClick={handleResume}
                         className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
                       >
-                        Resume
+                        恢复
                       </button>
                     )}
                     {isActive && (
@@ -386,22 +386,22 @@ export default function Workflow() {
                         onClick={handleCancel}
                         className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground hover:text-foreground text-muted transition-colors"
                       >
-                        Cancel
+                        取消
                       </button>
                     )}
                     {!currentRun && (
                       <span className="text-xs text-muted">
-                        Select a workflow and click Run to begin
+                        选择一个工作流并点击运行开始
                       </span>
                     )}
                     {currentRun && !isActive && currentRun.status !== 'completed' && (
                       <span className="text-xs text-muted">
-                        Run finished
+                        运行结束
                       </span>
                     )}
                     {currentRun?.status === 'completed' && (
                       <span className="text-xs text-foreground">
-                        Completed
+                        已完成
                       </span>
                     )}
                   </div>
@@ -413,9 +413,9 @@ export default function Workflow() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-4xl text-muted/20 mb-4">⬡</div>
-                <h3 className="font-serif text-xl mb-2">No Workflow Selected</h3>
+                <h3 className="font-serif text-xl mb-2">未选择工作流</h3>
                 <p className="text-sm text-muted max-w-xs mx-auto">
-                  Choose a workflow from the sidebar to view its graph and run it against a book.
+                  从侧边栏选择一个工作流，查看其图表并对某本书运行。
                 </p>
               </div>
             </div>

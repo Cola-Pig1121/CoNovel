@@ -6,14 +6,14 @@ import { useUIStore } from '@/stores/uiStore'
 // ---------------------------------------------------------------------------
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: '□' },
-  { path: '/editor', label: 'Editor', icon: '▤' },
-  { path: '/pipeline', label: 'Pipeline', icon: '▷' },
-  { path: '/workflow', label: 'Workflow', icon: '⬡' },
-  { path: '/agents', label: 'Agents', icon: '◎' },
-  { path: '/store', label: 'Store', icon: '◫' },
-  { path: '/settings', label: 'Settings', icon: '⚙' },
-  { path: '/evolution', label: 'Evolution', icon: '⟡' },
+  { path: '/', label: '仪表盘', icon: '□' },
+  { path: '/editor', label: '编辑器', icon: '▤' },
+  { path: '/pipeline', label: '流水线', icon: '▷' },
+  { path: '/workflow', label: '工作流', icon: '⬡' },
+  { path: '/agents', label: '智能体', icon: '◎' },
+  { path: '/store', label: '商店', icon: '◫' },
+  { path: '/settings', label: '设置', icon: '⚙' },
+  { path: '/evolution', label: '演化', icon: '⟡' },
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export default function Sidebar() {
         <button
           onClick={toggleSidebar}
           className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors w-full h-full"
-          title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          title={sidebarExpanded ? '收起侧边栏' : '展开侧边栏'}
         >
           {sidebarExpanded ? '◁' : '▷'}
         </button>
@@ -87,7 +87,7 @@ export default function Sidebar() {
       {sidebarExpanded && (
         <div className="px-4 py-3 border-t border-border">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            Multi-Agent Narrative
+            多智能体叙事
           </p>
         </div>
       )}

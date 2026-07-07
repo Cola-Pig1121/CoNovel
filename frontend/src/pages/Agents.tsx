@@ -4,16 +4,16 @@ type AgentCategory = 'core' | 'quality' | 'auxiliary'
 
 const CATEGORY_META: Record<AgentCategory, { label: string; description: string }> = {
   core: {
-    label: 'Core Agents',
-    description: 'Primary writing and reasoning agents',
+    label: '核心智能体',
+    description: '主要写作和推理智能体',
   },
   quality: {
-    label: 'Quality Agents',
-    description: 'Review, editing, and quality control',
+    label: '质量智能体',
+    description: '审阅、编辑和质量控制',
   },
   auxiliary: {
-    label: 'Auxiliary Agents',
-    description: 'Support and system-level agents',
+    label: '辅助智能体',
+    description: '支持和系统级智能体',
   },
 }
 
@@ -34,9 +34,9 @@ export default function Agents() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
-        <h1 className="font-serif text-3xl">Agent Matrix</h1>
+        <h1 className="font-serif text-3xl">智能体矩阵</h1>
         <p className="text-muted text-sm mt-1">
-          Monitor and configure all writing agents
+          监控和配置所有写作智能体
         </p>
       </header>
 
@@ -79,13 +79,13 @@ export default function Agents() {
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                        Model
+                        模型
                       </span>
                       <span className="text-foreground">{agent.modelId ?? '—'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                        Temperature
+                        温度
                       </span>
                       <span className="text-foreground">
                         {agent.temperature?.toFixed(1) ?? '—'}

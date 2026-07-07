@@ -85,7 +85,7 @@ function TemplateCard({ template }: { template: Template }) {
         disabled={applying}
         className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 rounded-none hover:bg-foreground hover:text-background transition-colors disabled:opacity-40"
       >
-        {applying ? 'Applying...' : 'Apply'}
+        {applying ? '应用中...' : '应用'}
       </button>
     </div>
   )
@@ -118,16 +118,16 @@ export default function Store() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
-        <h1 className="font-serif text-3xl">Template Store</h1>
+        <h1 className="font-serif text-3xl">模板商店</h1>
         <p className="text-muted text-sm mt-1">
-          Presets and community templates for your projects
+          项目预设和社区模板
         </p>
       </header>
 
       <main className="px-8 py-8 space-y-12">
         {/* GitHub Import */}
         <div className="border border-border p-6 rounded-none">
-          <h2 className="font-serif text-lg mb-3">Import from GitHub</h2>
+          <h2 className="font-serif text-lg mb-3">从 GitHub 导入</h2>
           <div className="flex gap-3">
             <input
               type="text"
@@ -142,7 +142,7 @@ export default function Store() {
               disabled={cloning || !repoUrl.trim()}
               className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 rounded-none hover:bg-foreground hover:text-background transition-colors whitespace-nowrap disabled:opacity-40"
             >
-              {cloning ? 'Cloning...' : 'Clone'}
+              {cloning ? '克隆中...' : '克隆'}
             </button>
           </div>
           {cloneMsg && (
@@ -153,9 +153,9 @@ export default function Store() {
         {/* Official Presets */}
         <section>
           <div className="mb-4">
-            <h2 className="font-serif text-xl">Official Presets</h2>
+            <h2 className="font-serif text-xl">官方预设</h2>
             <p className="text-muted text-sm mt-1">
-              Curated templates maintained by the CoNovel team
+              由 CoNovel 团队维护的精选模板
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
@@ -168,9 +168,9 @@ export default function Store() {
         {/* Community Templates */}
         <section>
           <div className="mb-4">
-            <h2 className="font-serif text-xl">Community Templates</h2>
+            <h2 className="font-serif text-xl">社区模板</h2>
             <p className="text-muted text-sm mt-1">
-              Templates shared by the community
+              由社区分享的模板
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">

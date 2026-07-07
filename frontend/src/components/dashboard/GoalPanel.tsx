@@ -117,7 +117,7 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
   if (loading) {
     return (
       <div className="border border-border p-6 rounded-none">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-muted">Loading goals...</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted">加载目标中...</div>
       </div>
     )
   }
@@ -127,14 +127,14 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
       {/* Header */}
       <div className="border-b border-border px-6 py-4 flex items-baseline justify-between">
         <h2 className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          Writing Goal
+          写作目标
         </h2>
         {!activeGoal && !showNew && (
           <button
             onClick={() => setShowNew(true)}
             className="text-[10px] uppercase tracking-widest border border-foreground px-3 py-1 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
           >
-            New Goal
+            新建目标
           </button>
         )}
       </div>
@@ -144,24 +144,24 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
         <div className="p-6 border-b border-border">
           <label className="block mb-4">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-              Objective
+              目标
             </span>
             <textarea
               value={newObjective}
               onChange={(e) => setNewObjective(e.target.value)}
-              placeholder="e.g. Complete first draft of Act I"
+              placeholder="例如：完成第一幕初稿"
               rows={2}
               className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
             />
           </label>
           <label className="block mb-4">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-              Milestones (one per line)
+              里程碑（每行一个）
             </span>
             <textarea
               value={newMilestones}
               onChange={(e) => setNewMilestones(e.target.value)}
-              placeholder="Outline Act I&#10;Write chapters 1-3&#10;Revise and polish"
+              placeholder="撰写第一幕大纲&#10;写作第1-3章&#10;修改润色"
               rows={3}
               className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
             />
@@ -171,14 +171,14 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
               onClick={() => { setShowNew(false); setNewObjective(''); setNewMilestones('') }}
               className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
             >
-              Cancel
+              取消
             </button>
             <button
               onClick={handleCreate}
               disabled={submitting || !newObjective.trim()}
               className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Creating...' : 'Create Goal'}
+              {submitting ? '创建中...' : '创建目标'}
             </button>
           </div>
         </div>
@@ -187,9 +187,9 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
       {/* Empty state */}
       {!activeGoal && !showNew && (
         <div className="p-12 text-center">
-          <p className="font-serif text-xl tracking-tight mb-2">No active goal</p>
+          <p className="font-serif text-xl tracking-tight mb-2">暂无活跃目标</p>
           <p className="text-sm text-muted">
-            Set a writing goal to track your progress.
+            设置写作目标以追踪你的进度。
           </p>
         </div>
       )}
@@ -219,7 +219,7 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
           <div className="mb-6">
             <div className="flex items-baseline justify-between mb-1">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                Progress
+                进度
               </span>
               <span className="text-xs font-sans tabular-nums">
                 {activeGoal.progress}%
@@ -250,7 +250,7 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
           {activeGoal.milestones.length > 0 && (
             <div className="mb-6">
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
-                Milestones
+                里程碑
               </h3>
               <ul className="space-y-0">
                 {activeGoal.milestones.map((ms) => (
@@ -292,7 +292,7 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
           {activeGoal.history.length > 0 && (
             <div className="mb-6">
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
-                History
+                历史
               </h3>
               <div className="space-y-0">
                 {activeGoal.history.map((ev: GoalEvent, i: number) => (
@@ -321,19 +321,19 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
               onClick={handlePauseResume}
               className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
             >
-              {activeGoal.status === 'paused' ? 'Resume' : 'Pause'}
+              {activeGoal.status === 'paused' ? '恢复' : '暂停'}
             </button>
             <button
               onClick={handleComplete}
               className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
             >
-              Clear
+              清除
             </button>
             <button
               onClick={handleDelete}
               className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-red-500 hover:text-red-500 transition-colors rounded-none shadow-none text-muted"
             >
-              Delete
+              删除
             </button>
           </div>
         </div>

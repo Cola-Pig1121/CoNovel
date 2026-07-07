@@ -76,7 +76,7 @@ export default function Setup() {
 
       {/* Subtitle */}
       <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-16">
-        Autonomous Multi-Agent Narrative System
+        自主多智能体叙事系统
       </p>
 
       {/* Status text */}

@@ -52,7 +52,7 @@ def main():
         "fastapi", "pydantic", "httpx",
     ]
     
-    # Icon path
+    # Icon path — use .ico (PyInstaller requires .ico for Windows exe icon)
     icon_path = ROOT / "frontend" / "public" / "favicon.ico"
     hi_args = []
     for hi in hidden_imports:

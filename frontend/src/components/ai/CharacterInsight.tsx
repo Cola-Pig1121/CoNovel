@@ -8,9 +8,9 @@ import type { CharacterInsightReport, CharacterViolation } from '@/lib/types'
 // ---------------------------------------------------------------------------
 
 const SEVERITY_CONFIG = {
-  critical: { label: 'Critical', style: 'border-foreground bg-foreground text-background' },
-  major: { label: 'Major', style: 'border-foreground bg-transparent text-foreground' },
-  minor: { label: 'Minor', style: 'border-border text-muted' },
+  critical: { label: '严重', style: 'border-foreground bg-foreground text-background' },
+  major: { label: '主要', style: 'border-foreground bg-transparent text-foreground' },
+  minor: { label: '轻微', style: 'border-border text-muted' },
 } as const
 
 const TYPE_LABELS: Record<CharacterViolation['type'], string> = {
@@ -72,7 +72,7 @@ function ReportCard({ report }: { report: CharacterInsightReport }) {
         <div>
           <h3 className="font-serif text-lg tracking-tight">{report.characterName}</h3>
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            Chapter {report.chapterNumber}
+            第 {report.chapterNumber} 章
           </span>
         </div>
         <div className="text-right">
@@ -81,7 +81,7 @@ function ReportCard({ report }: { report: CharacterInsightReport }) {
             <span className="text-sm text-muted">%</span>
           </div>
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            Consistency
+            一致性
           </span>
         </div>
       </div>
@@ -98,7 +98,7 @@ function ReportCard({ report }: { report: CharacterInsightReport }) {
       {report.suggestions.length > 0 && (
         <div className="mb-4">
           <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-2">
-            Suggestions
+            建议
           </h4>
           <ul className="space-y-1">
             {report.suggestions.map((s, i) => (
@@ -114,7 +114,7 @@ function ReportCard({ report }: { report: CharacterInsightReport }) {
       {report.violations.length > 0 && (
         <div>
           <h4 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
-            Violations ({report.violations.length})
+            违规 ({report.violations.length})
           </h4>
           <div className="space-y-3">
             {report.violations.map((v, i) => (
@@ -126,7 +126,7 @@ function ReportCard({ report }: { report: CharacterInsightReport }) {
 
       {report.violations.length === 0 && (
         <p className="text-sm text-muted italic">
-          No violations detected — character is consistent.
+          未检测到违规 — 角色一致性良好。
         </p>
       )}
     </div>
@@ -171,15 +171,15 @@ export default function CharacterInsight({ chapterNumber }: { chapterNumber: num
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted">
-              ★ Character Intelligence
+              ★ 角色洞察
             </h3>
             {reports.length > 0 && (
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-xs tabular-nums">
-                  Consistency: <strong>{avgConsistency}%</strong>
+                  一致性: <strong>{avgConsistency}%</strong>
                 </span>
                 <span className="text-xs text-muted tabular-nums">
-                  {totalViolations} violation{totalViolations !== 1 && 's'}
+                  {totalViolations} 个违规
                 </span>
               </div>
             )}
@@ -189,7 +189,7 @@ export default function CharacterInsight({ chapterNumber }: { chapterNumber: num
             disabled={loading || !currentBook}
             className="text-[10px] uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30 shrink-0"
           >
-            {loading ? 'Running...' : 'Run Review'}
+            {loading ? '运行中...' : '运行审查'}
           </button>
         </div>
       </div>
@@ -198,16 +198,16 @@ export default function CharacterInsight({ chapterNumber }: { chapterNumber: num
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
         {error && (
           <div className="border border-border p-4 rounded-none">
-            <p className="text-sm text-muted">Error: {error}</p>
+            <p className="text-sm text-muted">错误: {error}</p>
           </div>
         )}
 
         {!loading && reports.length === 0 && !error && (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
-              <p className="font-serif text-lg mb-2">No reviews yet</p>
+              <p className="font-serif text-lg mb-2">暂无审查</p>
               <p className="text-xs text-muted">
-                Click "Run Review" to analyze character consistency
+                点击"运行审查"分析角色一致性
               </p>
             </div>
           </div>
@@ -218,7 +218,7 @@ export default function CharacterInsight({ chapterNumber }: { chapterNumber: num
             <div className="text-center">
               <div className="w-4 h-4 border border-foreground border-t-transparent animate-spin mx-auto mb-3" />
               <p className="text-xs text-muted uppercase tracking-[0.2em]">
-                Analyzing characters...
+                分析角色中...
               </p>
             </div>
           </div>

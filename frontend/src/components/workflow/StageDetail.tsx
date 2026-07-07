@@ -82,7 +82,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
           <button
             onClick={onClose}
             className="text-muted hover:text-foreground transition-colors text-lg leading-none"
-            title="Close details"
+            title="关闭详情"
           >
             ×
           </button>
@@ -93,7 +93,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stageRun?.startedAt && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Duration
+            耗时
           </div>
           <div className="text-sm font-mono">
             {formatDuration(stageRun.startedAt, stageRun.completedAt)}
@@ -104,7 +104,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {/* Prompt */}
       <div className="mb-4">
         <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-          Prompt
+          提示词
         </div>
         <div className="text-xs text-muted border border-border p-3 rounded-none bg-foreground/[0.02] font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
           {truncate(stage.prompt, 300)}
@@ -115,7 +115,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stage.tools && stage.tools.length > 0 && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Tools
+            工具
           </div>
           <div className="flex flex-wrap gap-1">
             {stage.tools.map((tool) => (
@@ -134,7 +134,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stage.from && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Depends On
+            依赖
           </div>
           <div className="text-xs font-mono text-muted">
             {Array.isArray(stage.from) ? stage.from.join(', ') : stage.from}
@@ -146,7 +146,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stageRun?.error && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Error
+            错误
           </div>
           <div className="text-xs border border-border p-3 rounded-none bg-foreground/10 text-foreground whitespace-pre-wrap max-h-24 overflow-y-auto">
             {stageRun.error}
@@ -158,7 +158,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stageRun?.output && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Output
+            输出
           </div>
           <div className="text-xs text-muted border border-border p-3 rounded-none bg-foreground/[0.02] font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
             {truncate(formatJson(stageRun.output), 500)}
@@ -170,7 +170,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stageRun?.tasks && stageRun.tasks.length > 0 && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-2">
-            Tasks ({stageRun.tasks.length})
+            任务 ({stageRun.tasks.length})
           </div>
           <div className="space-y-2">
             {stageRun.tasks.map((task) => (
@@ -189,7 +189,7 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
                 </div>
                 {task.error && (
                   <div className="mt-1 text-[10px] text-muted">
-                    Error: {truncate(task.error, 120)}
+                    错误: {truncate(task.error, 120)}
                   </div>
                 )}
               </div>
@@ -202,10 +202,10 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stage.type === 'loop' && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Loop Condition
+            循环条件
           </div>
           <div className="text-xs font-mono text-muted">
-            {stage.until ? `until: ${stage.until}` : 'No condition'}
+            {stage.until ? `until: ${stage.until}` : '无条件'}
             {stage.maxRounds != null && ` (max: ${stage.maxRounds} rounds)`}
           </div>
         </div>
@@ -215,10 +215,10 @@ export default function StageDetail({ stage, stageRun, onClose }: StageDetailPro
       {stage.type === 'foreach' && (
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
-            Iterates Over
+            遍历对象
           </div>
           <div className="text-xs font-mono text-muted">
-            {stage.fromPath ?? stage.from ?? 'N/A'}
+            {stage.fromPath ?? stage.from ?? '无'}
           </div>
           {stage.each && (
             <div className="mt-1 text-xs text-muted border border-border p-2 rounded-none font-mono whitespace-pre-wrap max-h-20 overflow-y-auto">

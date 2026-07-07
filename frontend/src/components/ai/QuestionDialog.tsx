@@ -144,7 +144,7 @@ export default function QuestionDialog({
                 : 'text-muted hover:text-foreground'
             }`}
           >
-            Submit
+            提交
           </button>
         </div>
 
@@ -154,7 +154,7 @@ export default function QuestionDialog({
             /* ===== Submit Review ===== */
             <div className="p-6">
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-6">
-                Review Answers
+                审阅答案
               </h3>
               <div className="space-y-4">
                 {tabs.map((tab, i) => {
@@ -178,7 +178,7 @@ export default function QuestionDialog({
                       <div className="text-sm font-serif">{display}</div>
                       {tab.notes && (
                         <div className="text-xs text-muted mt-2 italic">
-                          Notes: {tab.notes}
+                          备注: {tab.notes}
                         </div>
                       )}
                     </div>
@@ -298,14 +298,14 @@ export default function QuestionDialog({
                   }`}
                 >
                   <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                    Other
+                    其他
                   </span>
                 </button>
                 {currentTab.kind === 'custom' && (
                   <textarea
                     value={currentTab.customText}
                     onChange={(e) => updateTab(activeTab, { customText: e.target.value })}
-                    placeholder="Type your answer..."
+                    placeholder="输入你的回答..."
                     rows={3}
                     className="w-full mt-2 border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
                   />
@@ -316,12 +316,12 @@ export default function QuestionDialog({
               {currentTab.showNotes && (
                 <div className="mb-4">
                   <label className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                    Notes
+                    备注
                   </label>
                   <textarea
                     value={currentTab.notes}
                     onChange={(e) => updateTab(activeTab, { notes: e.target.value })}
-                    placeholder="Optional notes..."
+                    placeholder="可选备注..."
                     rows={2}
                     className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
                   />
@@ -330,7 +330,7 @@ export default function QuestionDialog({
 
               {/* Keyboard hint */}
               <p className="text-[10px] text-muted/60 uppercase tracking-[0.2em]">
-                Press <kbd className="border border-border px-1">N</kbd> to toggle notes
+                按 <kbd className="border border-border px-1">N</kbd> 切换备注
               </p>
             </div>
           ) : null}
@@ -342,7 +342,7 @@ export default function QuestionDialog({
             onClick={onCancel}
             className="text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
           >
-            Cancel
+            取消
           </button>
 
           <div className="flex gap-2">
@@ -351,7 +351,7 @@ export default function QuestionDialog({
                 onClick={() => setActiveTab((p) => Math.max(0, p - 1))}
                 className="text-xs uppercase tracking-widest border border-border px-4 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
               >
-                Prev
+                上一步
               </button>
             )}
             {!showSubmitReview && activeTab < questions.length - 1 && (
@@ -359,7 +359,7 @@ export default function QuestionDialog({
                 onClick={() => setActiveTab((p) => p + 1)}
                 className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
               >
-                Next
+                下一步
               </button>
             )}
             {!showSubmitReview && activeTab === questions.length - 1 && (
@@ -367,7 +367,7 @@ export default function QuestionDialog({
                 onClick={() => setShowSubmitReview(true)}
                 className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
               >
-                Review
+                审阅
               </button>
             )}
             {showSubmitReview && (
@@ -375,7 +375,7 @@ export default function QuestionDialog({
                 onClick={() => onSubmit(buildAnswers())}
                 className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
               >
-                Submit Answers
+                提交回答
               </button>
             )}
           </div>

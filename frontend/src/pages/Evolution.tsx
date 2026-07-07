@@ -61,9 +61,9 @@ export default function Evolution() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
-        <h1 className="font-serif text-3xl">Evolution Tracking</h1>
+        <h1 className="font-serif text-3xl">演化追踪</h1>
         <p className="text-muted text-sm mt-1">
-          Track performance, style drift, and learning progress over time
+          追踪性能、风格漂移和学习进展
         </p>
       </header>
 
@@ -71,32 +71,32 @@ export default function Evolution() {
         {/* Book Overview */}
         <section>
           <div className="border border-border p-6 rounded-none">
-            <h2 className="font-serif text-xl mb-2">Book Overview</h2>
+            <h2 className="font-serif text-xl mb-2">书籍概览</h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-6">
-              Current manuscript statistics
+              当前手稿统计
             </p>
 
             {!currentBook ? (
               <p className="text-sm text-muted">
-                No book selected. Open a manuscript from the Dashboard to view evolution data.
+                未选择书籍。从仪表盘打开手稿以查看演化数据。
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-6">
                 <div className="border border-border/50 p-5 rounded-none">
                   <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                    Title
+                    标题
                   </span>
                   <span className="font-serif text-lg">{currentBook.title}</span>
                 </div>
                 <div className="border border-border/50 p-5 rounded-none">
                   <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                    Created
+                    创建时间
                   </span>
                   <span className="text-sm">{createdDate ?? 'Unknown'}</span>
                 </div>
                 <div className="border border-border/50 p-5 rounded-none">
                   <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                    Chapters Written
+                    已写章节
                   </span>
                   <span className="text-sm tabular-nums">
                     {totalChaptersWritten}
@@ -107,7 +107,7 @@ export default function Evolution() {
                 </div>
                 <div className="border border-border/50 p-5 rounded-none">
                   <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                    Word Count
+                    字数
                   </span>
                   <span className="text-sm tabular-nums">
                     {currentBook.currentWordCount.toLocaleString()}
@@ -124,23 +124,23 @@ export default function Evolution() {
         {/* Pipeline Runs */}
         <section>
           <div className="border border-border p-6 rounded-none">
-            <h2 className="font-serif text-xl mb-2">Pipeline Runs</h2>
+            <h2 className="font-serif text-xl mb-2">流水线运行</h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-6">
-              Agent pipeline execution history
+              智能体流水线执行历史
             </p>
 
             <div className="border border-border/50 p-5 rounded-none">
               <div className="flex items-baseline justify-between mb-2">
-                <span className="text-sm">Stages completed</span>
+                <span className="text-sm">已完成阶段</span>
                 <span className="text-sm tabular-nums font-sans">{completedRuns}</span>
               </div>
               {pipelineState && (
                 <div className="flex items-baseline justify-between">
-                  <span className="text-sm">Last run</span>
+                  <span className="text-sm">上次运行</span>
                   <span className="text-sm text-muted">
                     {pipelineState.startedAt
                       ? new Date(pipelineState.startedAt).toLocaleString()
-                      : 'No runs yet'}
+                      : '暂无运行记录'}
                   </span>
                 </div>
               )}
@@ -151,9 +151,9 @@ export default function Evolution() {
         {/* Style Evolution */}
         <section>
           <div className="border border-border p-6 rounded-none">
-            <h2 className="font-serif text-xl mb-2">Style Evolution</h2>
+            <h2 className="font-serif text-xl mb-2">风格演变</h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-              Prose quality & consistency
+              文学性与一致性
             </p>
             <div className="border border-border/50 p-6 rounded-none">
               {styleProfile ? (
@@ -163,7 +163,7 @@ export default function Evolution() {
                       {styleProfile.constraints.dialogueStyle && (
                         <div>
                           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                            Dialogue Style
+                            对话风格
                           </span>
                           <p className="text-sm">{styleProfile.constraints.dialogueStyle}</p>
                         </div>
@@ -171,7 +171,7 @@ export default function Evolution() {
                       {styleProfile.constraints.paragraphLength && (
                         <div>
                           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                            Paragraph Length
+                            段落长度
                           </span>
                           <p className="text-sm">{styleProfile.constraints.paragraphLength}</p>
                         </div>
@@ -179,7 +179,7 @@ export default function Evolution() {
                       {styleProfile.constraints.tonePattern && (
                         <div>
                           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                            Tone Pattern
+                            基调模式
                           </span>
                           <p className="text-sm">{styleProfile.constraints.tonePattern}</p>
                         </div>
@@ -187,7 +187,7 @@ export default function Evolution() {
                       {styleProfile.constraints.avgSentenceLength !== undefined && (
                         <div className="flex items-baseline gap-2">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                            Avg Sentence Length:
+                            平均句长:
                           </span>
                           <span className="text-sm tabular-nums">
                             {styleProfile.constraints.avgSentenceLength} chars
@@ -197,7 +197,7 @@ export default function Evolution() {
                       {styleProfile.constraints.dialogueRatio !== undefined && (
                         <div className="flex items-baseline gap-2">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-                            Dialogue Ratio:
+                            对话比例:
                           </span>
                           <span className="text-sm tabular-nums">
                             {(styleProfile.constraints.dialogueRatio * 100).toFixed(0)}%
@@ -207,7 +207,7 @@ export default function Evolution() {
                       {longTerm?.style_evolution && (
                         <div className="mt-4 pt-4 border-t border-border">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                            Style Evolution Data
+                            风格演变数据
                           </span>
                           <pre className="text-xs text-muted whitespace-pre-wrap font-mono leading-relaxed border border-border p-4 rounded-none">
                             {typeof longTerm.style_evolution === 'string'
@@ -220,19 +220,18 @@ export default function Evolution() {
                   )}
                   {!styleProfile.constraints && (
                     <p className="text-sm text-muted">
-                      Style profile loaded but no constraint data available.
+                      风格档案已加载但无约束数据。
                     </p>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-sm text-muted leading-relaxed max-w-lg mx-auto">
-                    Run the style-learning workflow first to generate a style profile. The profile
-                    captures dialogue style, paragraph length, tone patterns, and vocabulary
-                    characteristics from your reference novel.
+                    请先运行风格学习工作流以生成风格档案。该档案
+                    捕获参考小说的对话风格、段落长度、基调模式和词汇特征。
                   </p>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-4">
-                    Use the Reference tab in Book Detail to analyze a reference novel
+                    使用书籍详情中的参考标签页分析参考小说
                   </p>
                 </div>
               )}
@@ -243,22 +242,22 @@ export default function Evolution() {
         {/* Performance Metrics — word count growth */}
         <section>
           <div className="border border-border p-6 rounded-none">
-            <h2 className="font-serif text-xl mb-2">Performance Metrics</h2>
+            <h2 className="font-serif text-xl mb-2">性能指标</h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-              Quantitative measurements
+              量化测量
             </p>
             {chapters.length === 0 ? (
               <div className="border border-border/50 p-8 rounded-none text-center">
-                <p className="text-sm text-muted leading-relaxed max-w-lg mx-auto">
-                  No chapter data available yet. Metrics will appear once chapters are written.
-                </p>
+                  <p className="text-sm text-muted leading-relaxed max-w-lg mx-auto">
+                    暂无章节数据。写作章节后将显示指标。
+                  </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {/* Word count growth chart (text-based) */}
                 <div>
                   <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-3">
-                    Word Count Growth
+                    字数增长
                   </span>
                   <div className="space-y-2">
                     {chapters.map((ch) => {
@@ -288,7 +287,7 @@ export default function Evolution() {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                   <div>
                     <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                      Total Words
+                      总字数
                     </span>
                     <span className="text-sm tabular-nums font-sans">
                       {chapters.reduce((s, c) => s + c.wordCount, 0).toLocaleString()}
@@ -296,7 +295,7 @@ export default function Evolution() {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                      Avg per Chapter
+                      章均字数
                     </span>
                     <span className="text-sm tabular-nums font-sans">
                       {Math.round(
@@ -306,7 +305,7 @@ export default function Evolution() {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
-                      Completion
+                      完成度
                     </span>
                     <span className="text-sm tabular-nums font-sans">
                       {currentBook
@@ -323,9 +322,9 @@ export default function Evolution() {
         {/* Learning History */}
         <section>
           <div className="border border-border p-6 rounded-none">
-            <h2 className="font-serif text-xl mb-2">Learning History</h2>
+            <h2 className="font-serif text-xl mb-2">学习历史</h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-              Prompt & memory evolution
+              提示词与记忆演变
             </p>
             <div className="border border-border/50 p-6 rounded-none">
               {evolutionLog ? (
@@ -337,20 +336,20 @@ export default function Evolution() {
                   {longTerm.world_facts && longTerm.world_facts.length > 0 && (
                     <div>
                       <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                        World Facts Accumulated ({longTerm.world_facts.length})
+                        已积累世界观事实 ({longTerm.world_facts.length})
                       </span>
                       <div className="text-sm text-muted">
-                        {longTerm.world_facts.length} world facts tracked across chapters
+                        {longTerm.world_facts.length} 条世界观事实跨章节追踪
                       </div>
                     </div>
                   )}
                   {longTerm.active_threads && longTerm.active_threads.length > 0 && (
                     <div>
                       <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                        Active Plot Threads ({longTerm.active_threads.length})
+                        活跃情节线索 ({longTerm.active_threads.length})
                       </span>
                       <div className="text-sm text-muted">
-                        {longTerm.active_threads.length} plot threads being tracked
+                        {longTerm.active_threads.length} 条情节线索正在追踪
                       </div>
                     </div>
                   )}
@@ -358,12 +357,12 @@ export default function Evolution() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-sm text-muted leading-relaxed max-w-lg mx-auto">
-                    Learning history will accumulate as the pipeline runs. It tracks memory
-                    updates, prompt refinements, and constraint adjustments over time.
+                    学习历史将随着流水线运行而积累。它追踪记忆更新、
+                    提示词优化和约束调整。
                   </p>
                   {completedRuns < 2 && (
                     <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-4">
-                      Requires at least 2 completed pipeline runs ({completedRuns} so far)
+                      需要至少 2 次完成的流水线运行（目前 {completedRuns} 次）
                     </p>
                   )}
                 </div>

@@ -182,10 +182,10 @@ export default function ChatPanel() {
       {/* Header */}
       <div className="border-b border-border px-4 py-3 shrink-0">
         <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          AI Assistant
+          AI 助手
         </h3>
         <p className="text-[10px] text-muted mt-1">
-          Ch. {chapterNumber ?? '—'} · {currentBook?.genre ?? ''}
+          第 {chapterNumber ?? '—'} 章 · {currentBook?.genre ?? ''}
         </p>
       </div>
 
@@ -210,7 +210,7 @@ export default function ChatPanel() {
             <p className="text-sm text-muted/60 italic text-center">
               与AI对话，获取写作建议<br />
               <span className="text-[10px] uppercase tracking-[0.2em]">
-                Ctrl+Enter to send
+                按 Ctrl+Enter 发送
               </span>
             </p>
           </div>
@@ -256,7 +256,7 @@ export default function ChatPanel() {
             disabled={isStreaming || !input.trim()}
             className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {isStreaming ? '...' : 'Send'}
+            {isStreaming ? '...' : '发送'}
           </button>
         </div>
       </div>

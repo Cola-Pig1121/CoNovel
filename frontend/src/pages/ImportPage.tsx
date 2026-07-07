@@ -8,7 +8,7 @@ import type { DetectResult, ImportResult } from '@/lib/api'
 // ---------------------------------------------------------------------------
 
 function StepIndicator({ current }: { current: number }) {
-  const steps = ['Directory', 'Preview', 'Import']
+  const steps = ['目录', '预览', '导入']
 
   return (
     <div className="flex items-center gap-0 mb-12">
@@ -76,7 +76,7 @@ function StepDirectory({
       const result = await importApi.detect(path.trim())
       onDetected(result)
     } catch (err: any) {
-      setError(err?.message || 'Detection failed')
+      setError(err?.message || '检测失败')
     } finally {
       setDetecting(false)
     }
@@ -84,40 +84,40 @@ function StepDirectory({
 
   return (
     <div className="max-w-2xl">
-      <h2 className="font-serif text-3xl tracking-tight mb-2">Select Directory</h2>
+      <h2 className="font-serif text-3xl tracking-tight mb-2">选择目录</h2>
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-        Point to the folder containing your manuscript or CoNovel project
+        指向包含你的手稿或 CoNovel 项目的文件夹
       </p>
 
       {/* Path input */}
       <label className="block mb-6">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-          Directory Path
-        </span>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleDetect()}
-            placeholder="/path/to/your/novel..."
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
+            目录路径
+          </span>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={path}
+              onChange={(e) => setPath(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDetect()}
+              placeholder="你的小说目录路径..."
             className="flex-1 border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
           />
           <button
             type="button"
             onClick={() => {
               alert(
-                'How to find your directory path:\n\n' +
-                  '• Windows: Open File Explorer, navigate to the folder, ' +
-                  'click the address bar, and copy the path\n' +
-                  '  (e.g. D:\\Novels\\MyBook)\n\n' +
-                  '• macOS / Linux: Open Terminal, navigate to the folder with cd, ' +
-                  'then type pwd to print the full path.',
+                '如何找到你的目录路径：\n\n' +
+                  '• Windows：打开文件资源管理器，导航到该文件夹，' +
+                  '点击地址栏并复制路径\n' +
+                  '  （例如 D:\\Novels\\MyBook）\n\n' +
+                  '• macOS / Linux：打开终端，使用 cd 导航到该文件夹，' +
+                  '然后输入 pwd 打印完整路径。',
               )
             }}
             className="text-xs uppercase tracking-widest border border-border px-5 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted shrink-0"
           >
-            Browse
+            浏览
           </button>
         </div>
       </label>
@@ -135,7 +135,7 @@ function StepDirectory({
         disabled={!path.trim() || detecting}
         className="text-xs uppercase tracking-widest border border-foreground px-8 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {detecting ? 'Detecting\u2026' : 'Detect Format'}
+        {detecting ? '检测中\u2026' : '检测格式'}
       </button>
     </div>
   )
@@ -205,9 +205,9 @@ function StepPreview({
 
   return (
     <div className="max-w-2xl">
-      <h2 className="font-serif text-3xl tracking-tight mb-2">Format Preview</h2>
+      <h2 className="font-serif text-3xl tracking-tight mb-2">格式预览</h2>
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-        Review detection results before importing
+        导入前检查检测结果
       </p>
 
       {/* Detection summary card */}
@@ -218,7 +218,7 @@ function StepPreview({
               isCoNovel ? 'bg-green-500' : isUnknown ? 'bg-red-500' : 'bg-yellow-500'
             }`}
           />
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">Format Detected</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">已检测格式</span>
         </div>
 
         <h3 className="font-serif text-xl tracking-tight mb-1">{detectResult.format}</h3>
@@ -226,19 +226,19 @@ function StepPreview({
 
         <div className="grid grid-cols-3 gap-4 text-[10px] uppercase tracking-[0.2em] text-muted">
           <div>
-            <span className="block mb-1">Confidence</span>
+            <span className="block mb-1">置信度</span>
             <span className="text-sm font-sans text-foreground normal-case tracking-normal">
               {Math.round(detectResult.confidence * 100)}%
             </span>
           </div>
           <div>
-            <span className="block mb-1">Files Found</span>
+            <span className="block mb-1">文件数量</span>
             <span className="text-sm font-sans text-foreground normal-case tracking-normal">
               {detectResult.files.length}
             </span>
           </div>
           <div>
-            <span className="block mb-1">Est. Chapters</span>
+            <span className="block mb-1">预计章节</span>
             <span className="text-sm font-sans text-foreground normal-case tracking-normal">
               {detectResult.estimatedChapters}
             </span>
@@ -247,12 +247,12 @@ function StepPreview({
 
         {detectResult.hasMetadata && (
           <div className="mt-4 pt-4 border-t border-border text-[10px] uppercase tracking-[0.2em] text-green-600">
-            \u2713 Metadata file found
+            \u2713 已找到元数据文件
           </div>
         )}
         {detectResult.hasGit && (
           <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-green-600">
-            \u2713 Git history detected
+            \u2713 已检测到 Git 历史
           </div>
         )}
       </div>
@@ -267,8 +267,8 @@ function StepPreview({
             </span>
           </div>
           <p className="text-xs text-muted ml-5">
-            This directory is a CoNovel project. All chapters, characters, and metadata will be
-            imported as-is.
+            此目录是一个 CoNovel 项目。所有章节、角色和元数据将
+            原样导入。
           </p>
         </div>
       )}
@@ -280,13 +280,13 @@ function StepPreview({
             <span className="text-sm font-sans">将自动转换为 CoNovel 格式</span>
           </div>
           <p className="text-xs text-muted ml-5 mb-4">
-            Text / Markdown files will be parsed and converted into CoNovel chapter format. You can
-            optionally set a title, genre, and premise below.
+            文本/Markdown 文件将被解析并转换为 CoNovel 章节格式。你可以在
+            下方可选地设置标题、类型和故事前提。
           </p>
 
           <div className="ml-5 text-[10px] uppercase tracking-[0.2em] text-muted space-y-1 mb-6">
             <p>
-              Estimated chapters: {detectResult.estimatedChapters}
+              预计章节: {detectResult.estimatedChapters}
             </p>
           </div>
 
@@ -294,32 +294,32 @@ function StepPreview({
           <div className="ml-5 space-y-5">
             <label className="block">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                Title <span className="normal-case tracking-normal">(optional)</span>
+                标题 <span className="normal-case tracking-normal">（可选）</span>
               </span>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Untitled Manuscript"
+                placeholder="未命名手稿"
                 className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
               />
             </label>
 
             <label className="block">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                Genre
+                类型
               </span>
               <GenreSelect value={genre} onChange={setGenre} />
             </label>
 
             <label className="block">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                Premise <span className="normal-case tracking-normal">(optional)</span>
+                故事前提 <span className="normal-case tracking-normal">（可选）</span>
               </span>
               <textarea
                 value={premise}
                 onChange={(e) => setPremise(e.target.value)}
-                placeholder="A brief summary of the story..."
+                placeholder="简要描述故事内容..."
                 rows={3}
                 className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
               />
@@ -335,8 +335,8 @@ function StepPreview({
             <span className="text-sm font-sans">无法识别的格式</span>
           </div>
           <p className="text-xs text-muted ml-5">
-            The files in this directory could not be matched to a known format. Import may fail or
-            produce incomplete results.
+            此目录中的文件无法匹配到已知格式。导入可能会失败或
+            产生不完整的结果。
           </p>
         </div>
       )}
@@ -347,13 +347,13 @@ function StepPreview({
           onClick={onBack}
           className="text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
         >
-          Back
+          返回
         </button>
         <button
           onClick={onNext}
           className="text-xs uppercase tracking-widest border border-foreground px-8 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
         >
-          Continue
+          继续
         </button>
       </div>
     </div>
@@ -396,7 +396,7 @@ function StepConfirm({
       )
       setResult(res)
     } catch (err: any) {
-      setError(err?.message || 'Import failed')
+      setError(err?.message || '导入失败')
     } finally {
       setImporting(false)
     }
@@ -406,35 +406,35 @@ function StepConfirm({
   if (result) {
     return (
       <div className="max-w-2xl">
-        <h2 className="font-serif text-3xl tracking-tight mb-2">Import Complete</h2>
+        <h2 className="font-serif text-3xl tracking-tight mb-2">导入完成</h2>
         <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-          Your manuscript is ready
+          你的手稿已准备就绪
         </p>
 
         <div className="border border-border p-6 mb-8">
           <div className="flex items-center gap-3 mb-4">
             <span className="w-2 h-2 rounded-full inline-block bg-green-500" />
-            <span className="text-sm font-sans">\u2713 Import successful</span>
+            <span className="text-sm font-sans">\u2713 导入成功</span>
           </div>
 
           <h3 className="font-serif text-xl tracking-tight mb-1">{result.title}</h3>
 
           <div className="grid grid-cols-3 gap-4 mt-4 text-[10px] uppercase tracking-[0.2em] text-muted">
             <div>
-              <span className="block mb-1">Format</span>
+              <span className="block mb-1">格式</span>
               <span className="text-sm font-sans text-foreground normal-case tracking-normal">
                 {result.format}
               </span>
             </div>
             <div>
-              <span className="block mb-1">Chapters</span>
+              <span className="block mb-1">章节</span>
               <span className="text-sm font-sans text-foreground normal-case tracking-normal">
                 {result.chapters}
               </span>
             </div>
             {result.totalWords != null && (
               <div>
-                <span className="block mb-1">Words</span>
+                <span className="block mb-1">字数</span>
                 <span className="text-sm font-sans text-foreground normal-case tracking-normal">
                   {result.totalWords.toLocaleString()}
                 </span>
@@ -448,13 +448,13 @@ function StepConfirm({
             to="/"
             className="text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted inline-block"
           >
-            Dashboard
+            仪表盘
           </Link>
           <button
             onClick={() => navigate(`/editor/${result.bookId}`)}
             className="text-xs uppercase tracking-widest border border-foreground px-8 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
           >
-            Open Editor
+            打开编辑器
           </button>
         </div>
       </div>
@@ -465,9 +465,9 @@ function StepConfirm({
   if (error) {
     return (
       <div className="max-w-2xl">
-        <h2 className="font-serif text-3xl tracking-tight mb-2">Import Failed</h2>
+        <h2 className="font-serif text-3xl tracking-tight mb-2">导入失败</h2>
         <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-          Something went wrong during the import
+          导入过程中出现问题
         </p>
 
         <div className="border border-red-400/40 bg-red-400/5 p-6 mb-8">
@@ -479,13 +479,13 @@ function StepConfirm({
             onClick={onBack}
             className="text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
           >
-            Back
+            返回
           </button>
           <button
             onClick={handleImport}
             className="text-xs uppercase tracking-widest border border-foreground px-8 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
           >
-            Retry
+            重试
           </button>
         </div>
       </div>
@@ -495,40 +495,40 @@ function StepConfirm({
   // Confirm state
   return (
     <div className="max-w-2xl">
-      <h2 className="font-serif text-3xl tracking-tight mb-2">Confirm Import</h2>
+      <h2 className="font-serif text-3xl tracking-tight mb-2">确认导入</h2>
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-        Review and start the import process
+        检查并开始导入流程
       </p>
 
       <div className="border border-border p-6 mb-8">
-        <h3 className="font-serif text-xl tracking-tight mb-4">Import Summary</h3>
+        <h3 className="font-serif text-xl tracking-tight mb-4">导入摘要</h3>
 
         <div className="space-y-3 text-sm">
           <div className="flex justify-between border-b border-border pb-3">
-            <span className="text-muted">Format</span>
+            <span className="text-muted">格式</span>
             <span className="font-sans">{detectResult.format}</span>
           </div>
           <div className="flex justify-between border-b border-border pb-3">
-            <span className="text-muted">Files</span>
+            <span className="text-muted">文件</span>
             <span className="font-sans">{detectResult.files.length}</span>
           </div>
           <div className="flex justify-between border-b border-border pb-3">
-            <span className="text-muted">Est. Chapters</span>
+            <span className="text-muted">预计章节</span>
             <span className="font-sans">{detectResult.estimatedChapters}</span>
           </div>
           {title && (
             <div className="flex justify-between border-b border-border pb-3">
-              <span className="text-muted">Title</span>
+              <span className="text-muted">标题</span>
               <span className="font-sans">{title}</span>
             </div>
           )}
           <div className="flex justify-between border-b border-border pb-3">
-            <span className="text-muted">Genre</span>
+            <span className="text-muted">类型</span>
             <span className="font-sans capitalize">{genre}</span>
           </div>
           {premise && (
             <div className="flex justify-between pb-1">
-              <span className="text-muted">Premise</span>
+              <span className="text-muted">故事前提</span>
               <span className="font-sans text-right max-w-xs line-clamp-2">{premise}</span>
             </div>
           )}
@@ -541,7 +541,7 @@ function StepConfirm({
           <div className="flex items-center gap-3 mb-3">
             <span className="w-2 h-2 rounded-full inline-block bg-yellow-500 animate-pulse" />
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-              Importing\u2026
+              导入中\u2026
             </span>
           </div>
           <div className="w-full h-px bg-border">
@@ -556,14 +556,14 @@ function StepConfirm({
           disabled={importing}
           className="text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted disabled:opacity-40"
         >
-          Back
+          返回
         </button>
         <button
           onClick={handleImport}
           disabled={importing}
           className="text-xs uppercase tracking-widest border border-foreground px-8 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40"
         >
-          {importing ? 'Importing\u2026' : 'Confirm Import'}
+          {importing ? '导入中\u2026' : '确认导入'}
         </button>
       </div>
     </div>
@@ -594,7 +594,7 @@ export default function ImportPage() {
             \u2190 Dashboard
           </Link>
           <div className="h-4 w-px bg-border" />
-          <h1 className="font-serif text-3xl tracking-tight">Import Manuscript</h1>
+          <h1 className="font-serif text-3xl tracking-tight">导入手稿</h1>
         </div>
       </header>
 

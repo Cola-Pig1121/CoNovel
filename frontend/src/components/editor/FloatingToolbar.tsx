@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 // ---------------------------------------------------------------------------
 
 const ACTIONS = [
-  { label: '润色', icon: '✦', description: 'Polish selected text' },
-  { label: '扩写', icon: '↕', description: 'Expand selected text' },
-  { label: '去AI味', icon: '↘', description: 'De-AI selected text' },
+  { label: '润色', icon: '✦', description: '润色选中文本' },
+  { label: '扩写', icon: '↕', description: '扩写选中文本' },
+  { label: '去AI味', icon: '↘', description: '去除AI痕迹' },
 ] as const
 
 // ---------------------------------------------------------------------------

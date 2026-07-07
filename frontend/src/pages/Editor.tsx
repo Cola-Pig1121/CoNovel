@@ -126,10 +126,10 @@ function ProjectPanel({ collapsed }: { collapsed: boolean }) {
 type RightTab = 'outline' | 'characters' | 'ai' | 'settings'
 
 const TABS: { key: RightTab; label: string }[] = [
-  { key: 'outline', label: 'Outline' },
-  { key: 'characters', label: 'Characters' },
-  { key: 'ai', label: 'AI Assistant' },
-  { key: 'settings', label: 'Settings' },
+  { key: 'outline', label: '大纲' },
+  { key: 'characters', label: '角色' },
+  { key: 'ai', label: 'AI 助手' },
+  { key: 'settings', label: '设置' },
 ]
 
 function RightToolbar({ collapsed }: { collapsed: boolean }) {
@@ -175,15 +175,15 @@ function OutlinePanel() {
   return (
     <div>
       <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-        Chapter Outline
+        章节大纲
       </h3>
       <textarea
-        placeholder="Write a brief outline for this chapter..."
+        placeholder="为本章写一个简要大纲..."
         rows={8}
         className="w-full border border-border bg-transparent px-3 py-2 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
       />
       <p className="text-[10px] text-muted mt-2 tracking-wide">
-        Outline helps agents stay on track during generation.
+        大纲帮助智能体在生成时保持方向。
       </p>
     </div>
   )
@@ -198,11 +198,11 @@ function CharactersPanel({
   return (
     <div>
       <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-        Characters in Scene
+        场景中的角色
       </h3>
 
       {characters.length === 0 && (
-        <p className="text-sm text-muted">No characters defined yet.</p>
+        <p className="text-sm text-muted">暂无角色定义。</p>
       )}
 
       <ul className="space-y-3">
@@ -234,13 +234,13 @@ function SettingsPanel() {
   return (
     <div>
       <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-        Editor Settings
+        编辑器设置
       </h3>
 
       <div className="space-y-5">
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Font Size
+            字体大小
           </span>
           <select
             value={`${fontSize}px`}
@@ -257,7 +257,7 @@ function SettingsPanel() {
 
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Line Height
+            行高
           </span>
           <select
             value={lineHeight}
@@ -273,7 +273,7 @@ function SettingsPanel() {
 
         <label className="flex items-center justify-between py-2">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            Auto-save
+            自动保存
           </span>
           <span className="text-xs border border-border px-2 py-0.5 rounded-none">
             ON
@@ -316,7 +316,7 @@ function StatusBar() {
   return (
     <footer className="h-8 border-t border-border flex items-center px-4 gap-6 shrink-0 bg-background">
       <span className="text-[10px] uppercase tracking-[0.2em] text-muted tabular-nums">
-        {wordCount.toLocaleString()} words
+        {wordCount.toLocaleString()} 字
       </span>
 
       <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
@@ -325,12 +325,12 @@ function StatusBar() {
 
       <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
         {isSaving
-          ? 'Saving...'
+          ? '保存中...'
           : isDirty
-            ? 'Unsaved changes'
+            ? '未保存的更改'
             : lastSavedAt
-              ? `Saved ${new Date(lastSavedAt).toLocaleTimeString()}`
-              : 'Saved'}
+              ? `已保存 ${new Date(lastSavedAt).toLocaleTimeString()}`
+              : '已保存'}
       </span>
 
       <div className="flex-1" />
@@ -345,7 +345,7 @@ function StatusBar() {
             mode === 'co-write' ? 'bg-foreground' : 'bg-border'
           }`}
         />
-        {mode === 'solo' ? 'Solo' : 'Co-Write'}
+        {mode === 'solo' ? '独立写作' : '协作写作'}
       </button>
     </footer>
   )
@@ -521,9 +521,9 @@ export default function Editor() {
         <button
           onClick={toggleLeftPanel}
           className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
-          title="Toggle project panel"
+          title="切换项目面板"
         >
-          {showLeftPanel ? '◁ Panel' : '▷ Panel'}
+          {showLeftPanel ? '◁ 面板' : '▷ 面板'}
         </button>
 
         <div className="w-px h-4 bg-border" />
@@ -536,7 +536,7 @@ export default function Editor() {
 
         {isDirty && (
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            ● unsaved
+            ● 未保存
           </span>
         )}
 
@@ -545,7 +545,7 @@ export default function Editor() {
           disabled={!isDirty}
           className="text-[10px] uppercase tracking-widest border border-border px-3 py-1 hover:border-foreground transition-colors rounded-none shadow-none disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          Save
+          保存
         </button>
 
         <div className="w-px h-4 bg-border" />
@@ -553,9 +553,9 @@ export default function Editor() {
         <button
           onClick={toggleRightPanel}
           className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
-          title="Toggle right toolbar"
+          title="切换右侧工具栏"
         >
-          {showRightPanel ? 'Toolbar ▷' : '◁ Toolbar'}
+          {showRightPanel ? '工具栏 ▷' : '◁ 工具栏'}
         </button>
       </header>
 
@@ -574,13 +574,13 @@ export default function Editor() {
           ) : bookError ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <p className="font-serif text-lg tracking-tight mb-2">Failed to load chapter</p>
+                <p className="font-serif text-lg tracking-tight mb-2">加载章节失败</p>
                 <p className="text-sm text-muted mb-4">{bookError}</p>
                 <button
                   onClick={() => bookId && fetchBook(bookId)}
                   className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
                 >
-                  Retry
+                  重试
                 </button>
               </div>
             </div>
@@ -633,7 +633,7 @@ export default function Editor() {
               <LexicalEditor
                 initialContent={content}
                 onChange={(text) => setContent(text)}
-                placeholder="Begin writing your chapter here..."
+                placeholder="在此开始创作你的章节..."
                 fontSize={Number(fontSize)}
                 lineHeight={Number(lineHeight)}
               />

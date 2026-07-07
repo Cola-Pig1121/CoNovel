@@ -21,19 +21,19 @@ import type {
 
 const TAB_GROUPS = [
   {
-    label: 'Project',
+    label: '项目',
     tabs: ['Outline', 'Chapters', 'Characters', 'Foreshadowing', 'Timeline'],
   },
   {
-    label: 'Creative',
+    label: '创作',
     tabs: ['Style', 'Constraints', 'Memory', 'Reference', 'Naming'],
   },
   {
-    label: 'Analysis',
+    label: '分析',
     tabs: ['Hooks', 'ReadingPower', 'Techniques'],
   },
   {
-    label: 'System',
+    label: '系统',
     tabs: ['GitHistory', 'Write'],
   },
 ] as const
@@ -96,20 +96,20 @@ function OutlineTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Outline</h2>
+          <h2 className="font-serif text-2xl tracking-tight">大纲</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            Volume & chapter structure
+            卷章结构
           </p>
         </div>
         <button className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
-          + Add Volume
+          + 添加卷
         </button>
       </div>
 
       <textarea
         value={outlineText}
         onChange={(e) => setOutlineText(e.target.value)}
-        placeholder="Define your story outline here..."
+        placeholder="在此定义故事大纲..."
         rows={20}
         className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none leading-relaxed"
       />
@@ -123,7 +123,7 @@ function OutlineTab() {
           disabled={saving}
           className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
         >
-          {saving ? 'Saving...' : 'Save Outline'}
+          {saving ? '保存中...' : '保存大纲'}
         </button>
       </div>
     </div>
@@ -149,7 +149,7 @@ function ChaptersTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Chapters</h2>
+          <h2 className="font-serif text-2xl tracking-tight">章节</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
             {chapterList.length} chapters · {totalWords.toLocaleString()} total 字
           </p>
@@ -197,7 +197,7 @@ function ChaptersTab() {
 
         {chapterList.length === 0 && (
           <p className="text-sm text-muted py-8 text-center">
-            No chapters yet. Start writing to create chapters.
+            暂无章节。开始写作以创建章节。
           </p>
         )}
       </div>
@@ -285,7 +285,7 @@ function CharactersTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Characters</h2>
+          <h2 className="font-serif text-2xl tracking-tight">角色</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
             {characters.length} character{characters.length !== 1 && 's'}
           </p>
@@ -294,7 +294,7 @@ function CharactersTab() {
           onClick={() => setShowAddModal(true)}
           className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
         >
-          + Add Character
+          + 添加角色
         </button>
       </div>
 
@@ -314,13 +314,13 @@ function CharactersTab() {
             <div className="space-y-2 text-xs text-muted">
               <p>
                 <span className="uppercase tracking-[0.2em] text-[10px]">
-                  Emotion:{' '}
+                  情绪:{' '}
                 </span>
                 {c.emotionalState.current} ({c.emotionalState.intensity}%)
               </p>
               <p>
                 <span className="uppercase tracking-[0.2em] text-[10px]">
-                  Trust:{' '}
+                  信任:{' '}
                 </span>
                 {Object.keys(c.relationships).length} relationship
                 {Object.keys(c.relationships).length !== 1 && 's'}
@@ -332,13 +332,13 @@ function CharactersTab() {
                 onClick={() => openEditModal(c)}
                 className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors"
               >
-                Edit
+                编辑
               </button>
               <button
                 onClick={() => handleDelete(c.id)}
                 className="text-[10px] uppercase tracking-widest border border-border px-3 py-1.5 hover:border-foreground transition-colors text-muted"
               >
-                Delete
+                删除
               </button>
             </div>
           </div>
@@ -347,7 +347,7 @@ function CharactersTab() {
 
       {characters.length === 0 && (
         <p className="text-sm text-muted py-8 text-center">
-          No characters defined yet.
+          暂未定义角色。
         </p>
       )}
 
@@ -357,25 +357,25 @@ function CharactersTab() {
           <div className="absolute inset-0 bg-foreground/10 backdrop-blur-sm" onClick={closeModal} />
           <div className="relative bg-background border border-border w-full max-w-md p-8 rounded-none shadow-none">
             <h2 className="font-serif text-2xl tracking-tight mb-1">
-              {editingChar ? 'Edit Character' : 'New Character'}
+              {editingChar ? '编辑角色' : '新建角色'}
             </h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted mb-8">
-              {editingChar ? 'Update character profile' : 'Add a character to your book'}
+              {editingChar ? '更新角色档案' : '为你的书添加一个角色'}
             </p>
 
             <label className="block mb-6">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">Name</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">名称</span>
               <input
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="Character name"
+                placeholder="角色名称"
                 className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
               />
             </label>
 
             <label className="block mb-8">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">Role</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">角色</span>
               <select
                 value={formRole}
                 onChange={(e) => setFormRole(e.target.value)}
@@ -394,14 +394,14 @@ function CharactersTab() {
                 onClick={closeModal}
                 className="flex-1 text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={editingChar ? handleEdit : handleAdd}
                 disabled={saving || !formName.trim()}
                 className="flex-1 text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {saving ? 'Saving...' : editingChar ? 'Update' : 'Add Character'}
+                {saving ? '保存中...' : editingChar ? '更新' : '添加角色'}
               </button>
             </div>
           </div>
@@ -468,16 +468,16 @@ function ForeshadowingTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Foreshadowing</h2>
+          <h2 className="font-serif text-2xl tracking-tight">伏笔</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            Track narrative threads and their resolution
+            跟踪叙事线索及其收束
           </p>
         </div>
         <button
           onClick={() => setShowAdd(!showAdd)}
           className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
         >
-          {showAdd ? 'Cancel' : '+ Add Thread'}
+          {showAdd ? '取消' : '+ 添加线索'}
         </button>
       </div>
 
@@ -487,22 +487,22 @@ function ForeshadowingTab() {
           <textarea
             value={newDesc}
             onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="Describe the foreshadowing thread..."
+            placeholder="描述伏笔线索..."
             rows={3}
             className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
           />
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted">Urgency:</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted">紧急度:</span>
               <select
                 value={newUrgency}
                 onChange={(e) => setNewUrgency(e.target.value as any)}
                 className="border border-border bg-background px-3 py-1.5 text-xs font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="low">低</option>
+                <option value="medium">中</option>
+                <option value="high">高</option>
+                <option value="critical">紧急</option>
               </select>
             </label>
             <div className="flex-1" />
@@ -511,7 +511,7 @@ function ForeshadowingTab() {
               disabled={saving || !newDesc.trim()}
               className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
             >
-              {saving ? 'Adding...' : 'Add Thread'}
+              {saving ? '添加中...' : '添加线索'}
             </button>
           </div>
         </div>
@@ -545,7 +545,7 @@ function ForeshadowingTab() {
 
       {items.length === 0 && !showAdd && (
         <p className="text-sm text-muted py-8 text-center">
-          No foreshadowing threads defined.
+          暂未定义伏笔线索。
         </p>
       )}
     </div>
@@ -601,16 +601,16 @@ function TimelineTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Timeline</h2>
+          <h2 className="font-serif text-2xl tracking-tight">时间线</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            In-world chronological events
+            世界观时间顺序事件
           </p>
         </div>
         <button
           onClick={() => setShowAdd(!showAdd)}
           className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
         >
-          {showAdd ? 'Cancel' : '+ Add Event'}
+          {showAdd ? '取消' : '+ 添加事件'}
         </button>
       </div>
 
@@ -620,7 +620,7 @@ function TimelineTab() {
           <textarea
             value={newDesc}
             onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="Describe the timeline event..."
+            placeholder="描述时间线事件..."
             rows={2}
             className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
           />
@@ -629,14 +629,14 @@ function TimelineTab() {
               type="text"
               value={newLocation}
               onChange={(e) => setNewLocation(e.target.value)}
-              placeholder="Location"
+              placeholder="地点"
               className="flex-1 border border-border bg-transparent px-3 py-2 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
             />
             <input
               type="text"
               value={newCharacters}
               onChange={(e) => setNewCharacters(e.target.value)}
-              placeholder="Characters (comma separated)"
+              placeholder="角色（逗号分隔）"
               className="flex-1 border border-border bg-transparent px-3 py-2 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
             />
           </div>
@@ -646,7 +646,7 @@ function TimelineTab() {
               disabled={saving || !newDesc.trim()}
               className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
             >
-              {saving ? 'Adding...' : 'Add Event'}
+              {saving ? '添加中...' : '添加事件'}
             </button>
           </div>
         </div>
@@ -676,7 +676,7 @@ function TimelineTab() {
 
       {events.length === 0 && !showAdd && (
         <p className="text-sm text-muted py-8 text-center">
-          No timeline events recorded.
+          暂无时间线事件。
         </p>
       )}
     </div>
@@ -718,33 +718,33 @@ function StyleTab() {
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">Style Profile</h2>
+      <h2 className="font-serif text-2xl tracking-tight mb-6">风格档案</h2>
 
       <div className="space-y-6">
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Narrative Voice
+            叙事视角
           </span>
           <select
             value={narrativeVoice}
             onChange={(e) => setNarrativeVoice(e.target.value)}
             className="w-full border border-border bg-background px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
           >
-            <option value="first">First Person</option>
-            <option value="third-limited">Third Person Limited</option>
-            <option value="third-omniscient">Third Person Omniscient</option>
-            <option value="second">Second Person</option>
+            <option value="first">第一人称</option>
+            <option value="third-limited">第三人称有限视角</option>
+            <option value="third-omniscient">第三人称全知视角</option>
+            <option value="second">第二人称</option>
           </select>
         </label>
 
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Tone
+            文风
           </span>
           <textarea
             value={tone}
             onChange={(e) => setTone(e.target.value)}
-            placeholder="Describe the desired tone (e.g., dark, literary, humorous)..."
+            placeholder="描述期望的文风（如：暗黑、文艺、幽默）..."
             rows={3}
             className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
           />
@@ -752,12 +752,12 @@ function StyleTab() {
 
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Banned Words (one per line)
+            禁用词汇（每行一个）
           </span>
           <textarea
             value={bannedWords}
             onChange={(e) => setBannedWords(e.target.value)}
-            placeholder="List words or phrases to avoid..."
+            placeholder="列出需要避免的词汇或短语..."
             rows={4}
             className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
           />
@@ -772,7 +772,7 @@ function StyleTab() {
             disabled={saving}
             className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
           >
-            {saving ? 'Saving...' : 'Save Style'}
+            {saving ? '保存中...' : '保存风格'}
           </button>
         </div>
       </div>
@@ -819,9 +819,9 @@ function ConstraintsTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Constraints</h2>
+          <h2 className="font-serif text-2xl tracking-tight">约束规则</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            Constraint file — rules the agents must follow
+            约束文件 — Agent 必须遵守的规则
           </p>
         </div>
       </div>
@@ -829,7 +829,7 @@ function ConstraintsTab() {
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="# Constraints&#10;&#10;Write your constraint rules here. These will be passed to every agent in the pipeline."
+        placeholder="# 约束规则&#10;&#10;在此编写约束规则，这些规则将传递给流水线中的每个 Agent..."
         rows={24}
         className="w-full border border-border bg-transparent px-4 py-3 text-sm font-mono rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none leading-relaxed"
       />
@@ -843,7 +843,7 @@ function ConstraintsTab() {
           disabled={saving}
           className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
         >
-          {saving ? 'Saving...' : 'Save Constraints'}
+          {saving ? '保存中...' : '保存约束'}
         </button>
       </div>
     </div>
@@ -1374,7 +1374,7 @@ function MemoryTab() {
         <div>
           <h2 className="font-serif text-2xl tracking-tight">记忆系统</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            Memory — structured facts, character states, and long-term knowledge
+            结构化事实、角色状态与长期知识
           </p>
         </div>
       </div>
@@ -1442,51 +1442,51 @@ function ReferenceTab() {
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">Reference Novel</h2>
+      <h2 className="font-serif text-2xl tracking-tight mb-6">参考小说</h2>
 
       <div className="border border-border p-8 rounded-none text-center mb-6">
         <p className="text-sm text-muted mb-4">
-          Upload a reference novel to analyze its style and structure.
+          上传参考小说以分析其风格和结构。
         </p>
         <div className="border-2 border-dashed border-border p-8 mb-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            Drag & drop .txt file or click to browse
+            拖放 .txt 文件或点击浏览
           </p>
         </div>
         <button className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none">
-          Upload Reference
+          上传参考
         </button>
       </div>
 
       {/* Analyze Style */}
       <div className="border border-border p-6 rounded-none">
         <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
-          Style Analysis
+          风格分析
         </h3>
 
         <div className="space-y-4">
           <label className="block">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-              Reference File Path
+              参考文件路径
             </span>
             <input
               type="text"
               value={filePath}
               onChange={(e) => setFilePath(e.target.value)}
-              placeholder="/absolute/path/to/reference-novel.txt"
+              placeholder="绝对路径/参考小说.txt"
               className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
             />
           </label>
 
           <label className="block">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-              Output Path (optional)
+              输出路径（可选）
             </span>
             <input
               type="text"
               value={outputPath}
               onChange={(e) => setOutputPath(e.target.value)}
-              placeholder="Auto: data/books/{bookId}/style.json"
+              placeholder="自动生成: data/books/{bookId}/style.json"
               className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted"
             />
           </label>
@@ -1497,14 +1497,14 @@ function ReferenceTab() {
               disabled={analyzing || !filePath.trim()}
               className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              {analyzing ? 'Analyzing...' : 'Analyze Style'}
+              {analyzing ? '分析中...' : '分析风格'}
             </button>
           </div>
 
           {result && (
             <div className="border border-border p-4 rounded-none mt-4">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                Result
+                结果
               </span>
               <p className="text-sm leading-relaxed">{result}</p>
             </div>
@@ -1513,7 +1513,7 @@ function ReferenceTab() {
           {error && (
             <div className="border border-border p-4 rounded-none mt-4">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-                Error
+                错误
               </span>
               <p className="text-sm text-red-500 leading-relaxed">{error}</p>
             </div>
@@ -1599,13 +1599,13 @@ function HooksTab() {
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">Hook Governance</h2>
+      <h2 className="font-serif text-2xl tracking-tight mb-6">伏笔管理</h2>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Active Hooks', value: String(active), sub: 'Threads being tracked' },
-          { label: 'Resolved', value: String(resolved), sub: 'Successfully closed' },
-          { label: 'Overdue', value: String(overdue), sub: 'Need attention' },
+          { label: '活跃伏笔', value: String(active), sub: '正在追踪的线索' },
+          { label: '已收束', value: String(resolved), sub: '已成功关闭' },
+          { label: '超期', value: String(overdue), sub: '需要关注' },
         ].map((stat) => (
           <div key={stat.label} className="border border-border p-4 rounded-none">
             <div className="font-serif text-3xl tracking-tight">{stat.value}</div>
@@ -1711,7 +1711,7 @@ function ReadingPowerTab() {
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">Reading Power Analysis</h2>
+      <h2 className="font-serif text-2xl tracking-tight mb-6">阅读力分析</h2>
 
       {chapterCount === 0 ? (
         <div className="text-center py-12">
@@ -1778,9 +1778,9 @@ function TechniquesTab() {
     <div className="border border-border p-6 rounded-none">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-serif text-2xl tracking-tight">Writing Techniques</h2>
+          <h2 className="font-serif text-2xl tracking-tight">写作技法</h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            Knowledge base of narrative techniques
+            叙事技法知识库
           </p>
         </div>
       </div>
@@ -1789,7 +1789,7 @@ function TechniquesTab() {
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search techniques..."
+        placeholder="搜索技法..."
         className="w-full border border-border bg-transparent px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors placeholder:text-muted mb-6"
       />
 
@@ -1869,7 +1869,7 @@ function GitHistoryTab() {
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">Git History</h2>
+      <h2 className="font-serif text-2xl tracking-tight mb-6">Git 历史</h2>
 
       {loading && (
         <p className="text-sm text-muted py-8 text-center">加载中…</p>
@@ -1940,12 +1940,12 @@ function WriteTab() {
 
   return (
     <div className="border border-border p-6 rounded-none">
-      <h2 className="font-serif text-2xl tracking-tight mb-6">Write Pipeline</h2>
+      <h2 className="font-serif text-2xl tracking-tight mb-6">写作流水线</h2>
 
       <div className="space-y-6">
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
-            Target Chapter
+            目标章节
           </span>
           <input
             type="number"
@@ -1962,14 +1962,14 @@ function WriteTab() {
             disabled={pipelineStatus === 'running'}
             className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-30"
           >
-            {pipelineStatus === 'running' ? 'Running...' : 'Start Pipeline'}
+            {pipelineStatus === 'running' ? '运行中...' : '启动流水线'}
           </button>
           {pipelineStatus === 'running' && (
             <button
               onClick={handleCancelPipeline}
               className="text-xs uppercase tracking-widest border border-border px-6 py-3 hover:border-foreground transition-colors rounded-none shadow-none text-muted"
             >
-              Cancel
+              取消
             </button>
           )}
         </div>
@@ -1985,23 +1985,23 @@ function WriteTab() {
 
         <div className="border border-border p-4 rounded-none">
           <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-3">
-            Pipeline Stages
+            流水线阶段
           </h3>
           <div className="space-y-2">
             {[
-              'Context Assembly',
-              'Character Reasoning',
-              'Writing',
-              'Event Recording',
-              'Fact Check',
-              'Continuity Check',
-              'Pacing Check',
-              'Character Intelligence',
-              'Review',
-              'Editing',
-              'De-AI',
-              'Reflector',
-              'State Sync',
+              '上下文组装',
+              '角色推理',
+              '写作',
+              '事件记录',
+              '事实核查',
+              '连续性检查',
+              '节奏检查',
+              '角色智能',
+              '审阅',
+              '编辑',
+              '去AI化',
+              '反思',
+              '状态同步',
             ].map((stage, i) => (
               <div
                 key={stage}
@@ -2098,7 +2098,7 @@ export default function BookDetail() {
           to="/"
           className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors"
         >
-          ← Back to Dashboard
+          ← 返回仪表盘
         </Link>
 
         <div className="flex items-end justify-between mt-4">
@@ -2123,7 +2123,7 @@ export default function BookDetail() {
                 to={`/editor/${bookId}`}
                 className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
               >
-                Open Editor →
+                打开编辑器 →
               </Link>
             </div>
           )}

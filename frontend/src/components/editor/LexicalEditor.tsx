@@ -115,7 +115,7 @@ const INITIAL_CONFIG = {
 export default function LexicalEditor({
   initialContent = '',
   onChange,
-  placeholder = 'Begin writing your chapter here...\n\nThe agents will assist you in crafting compelling prose, maintaining character consistency, and tracking narrative threads.',
+  placeholder = '在此开始创作你的章节...\n\n智能体将协助你打磨文字、保持角色一致性，并追踪叙事线索。',
   fontSize = 16,
   lineHeight = 1.8,
   readOnly = false,
@@ -138,7 +138,7 @@ export default function LexicalEditor({
             <ContentEditable
               readOnly={readOnly}
               className="outline-none min-h-[60vh] w-full font-sans text-foreground caret-foreground"
-              aria-label="Editor"
+              aria-label="编辑器"
               // Chinese IME support — no composing guard needed for Lexical
             />
           }
