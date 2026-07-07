@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEditorStore } from '@/stores/editorStore'
 import { useBookStore } from '@/stores/bookStore'
 import FloatingToolbar from '@/components/editor/FloatingToolbar'
@@ -518,6 +518,16 @@ export default function Editor() {
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {/* ---- Top bar ---- */}
       <header className="h-11 border-b border-border flex items-center px-4 gap-3 shrink-0">
+        <Link
+          to="/"
+          className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
+          title="返回首页"
+        >
+          ← 首页
+        </Link>
+
+        <div className="w-px h-4 bg-border" />
+
         <button
           onClick={toggleLeftPanel}
           className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"

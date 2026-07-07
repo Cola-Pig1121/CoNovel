@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useProviderStore } from '@/stores/providerStore'
 import { useAgentConfigStore, TIER_AGENT_MAP, TIER_LABELS } from '@/stores/agentConfigStore'
 import type { TierLevel } from '@/stores/agentConfigStore'
@@ -19,6 +20,9 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border px-8 py-6">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors">
+          ← 首页
+        </Link>
         <h1 className="font-serif text-3xl">设置</h1>
         <p className="text-muted text-sm mt-1">
           配置 LLM Provider 和 Agent 模型分配（数据存储在浏览器本地）

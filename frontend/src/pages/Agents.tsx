@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAgentConfigStore } from '@/stores/agentConfigStore'
 
 type AgentCategory = 'core' | 'quality' | 'auxiliary'
@@ -34,6 +35,9 @@ export default function Agents() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors">
+          ← 首页
+        </Link>
         <h1 className="font-serif text-3xl">智能体矩阵</h1>
         <p className="text-muted text-sm mt-1">
           监控和配置所有写作智能体

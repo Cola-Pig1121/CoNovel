@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { storeApi } from '@/lib/api'
 
 interface Template {
@@ -118,6 +118,9 @@ export default function Store() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors">
+          ← 首页
+        </Link>
         <h1 className="font-serif text-3xl">模板商店</h1>
         <p className="text-muted text-sm mt-1">
           项目预设和社区模板

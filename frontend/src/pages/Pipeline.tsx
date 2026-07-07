@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAgentStore } from '@/stores/agentStore'
 
 // Pipeline stages matching the TypeScript PipelineStage type exactly
@@ -99,6 +99,9 @@ export default function Pipeline() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors">
+          ← 首页
+        </Link>
         <div className="flex items-center gap-3">
           <h1 className="font-serif text-3xl">流水线监控</h1>
           {polling && (

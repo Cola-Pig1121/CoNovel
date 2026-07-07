@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import type {
   WorkflowSpec,
   WorkflowRun,
@@ -228,6 +229,9 @@ export default function Workflow() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header className="border-b border-border px-8 py-6 shrink-0">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors">
+          ← 首页
+        </Link>
         <h1 className="font-serif text-3xl">工作流面板</h1>
         <p className="text-muted text-sm mt-1">
           可视化工作流编排与监控

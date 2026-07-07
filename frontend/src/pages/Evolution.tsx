@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useBookStore } from '@/stores/bookStore'
 import { pipelineApi, memoryApi } from '@/lib/api'
 import type { PipelineState } from '@/lib/types'
@@ -61,6 +62,9 @@ export default function Evolution() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border px-8 py-6">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors">
+          ← 首页
+        </Link>
         <h1 className="font-serif text-3xl">演化追踪</h1>
         <p className="text-muted text-sm mt-1">
           追踪性能、风格漂移和学习进展
