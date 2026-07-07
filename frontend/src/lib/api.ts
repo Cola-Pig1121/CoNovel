@@ -10,19 +10,13 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  // Ensure trailing slash for FastAPI route matching (avoids SPA catch-all 307 redirect)
-  let apiPath = path
-  if (!path.includes('?') && !path.endsWith('/') && !path.includes('127.0.0.1')) {
-    apiPath = path + '/'
-  }
-
   const opts: RequestInit = {
     method,
     headers: { 'Content-Type': 'application/json' },
   }
   if (body) opts.body = JSON.stringify(body)
 
-  const url = path.startsWith('http') ? path : `${BASE_URL}${apiPath}`
+  const url = path.startsWith('http') ? path : `${BASE_URL}${path}`
   const res = await fetch(url, opts)
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
