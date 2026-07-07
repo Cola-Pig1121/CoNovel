@@ -29,7 +29,7 @@ async function request<T>(
 export const booksApi = {
   list: () => request<import('./types').BookMeta[]>('GET', '/books'),
   get: (id: string) => request<import('./types').BookState>('GET', `/books/${id}`),
-  create: (data: { title: string; genre: string; premise: string }) =>
+  create: (data: { title: string; genres: string[]; premise: string }) =>
     request<import('./types').BookMeta>('POST', '/books', data),
   update: (id: string, data: Partial<import('./types').BookMeta>) =>
     request<import('./types').BookMeta>('PUT', `/books/${id}`, data),

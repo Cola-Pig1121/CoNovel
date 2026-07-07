@@ -52,6 +52,7 @@ def create_book(req: CreateBookRequest):
         id=book_id,
         title=req.title,
         genre=req.genre,
+        genres=req.genres,
         premise=req.premise,
         status="planning",
         createdAt=now,

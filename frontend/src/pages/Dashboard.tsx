@@ -88,23 +88,23 @@ function CreateBookModal() {
   const navigate = useNavigate()
 
   const [title, setTitle] = useState('')
-  const [genre, setGenre] = useState('fantasy')
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [premise, setPremise] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   if (activeModal !== 'createBook') return null
 
   const genres = [
-    'fantasy',
-    'sci-fi',
-    'mystery',
-    'thriller',
-    'romance',
-    'literary',
-    'historical',
-    'horror',
-    'adventure',
-    'other',
+    { value: 'xuanhuan', label: '玄幻' },
+    { value: 'xianxia', label: '仙侠' },
+    { value: 'wuxia', label: '武侠' },
+    { value: 'dushi', label: '都市' },
+    { value: 'xuanyi', label: '悬疑' },
+    { value: 'kehuan', label: '科幻' },
+    { value: 'yanqing', label: '言情' },
+    { value: 'lishi', label: '历史' },
+    { value: 'youxi', label: '游戏' },
+    { value: 'qita', label: '其他' },
   ]
 
   async function handleSubmit(e: React.FormEvent) {
@@ -113,7 +113,7 @@ function CreateBookModal() {
 
     setSubmitting(true)
     try {
-      const book = await createBook({ title: title.trim(), genre, premise: premise.trim() })
+      const book = await createBook({ title: title.trim(), genres: selectedGenres, premise: premise.trim() })
       closeModal()
       navigate(`/editor/${book.id}`)
     } catch (err) {
@@ -156,22 +156,51 @@ function CreateBookModal() {
           />
         </label>
 
-        {/* Genre */}
+        {/* Genres (multi-select) */}
         <label className="block mb-6">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-2">
             类型
           </span>
-          <select
-            value={genre}
-            onChange={(e) => setGenre(e.target.value)}
-            className="w-full border border-border bg-background px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
-          >
-            {genres.map((g) => (
-              <option key={g} value={g}>
-                {g.charAt(0).toUpperCase() + g.slice(1)}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap gap-2">
+            {genres.map((g) => {
+              const checked = selectedGenres.includes(g.value)
+              return (
+                <label
+                  key={g.value}
+                  className={`inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-sans cursor-pointer transition-colors select-none ${
+                    checked
+                      ? 'border-foreground bg-foreground/5'
+                      : 'border-border hover:border-foreground/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={checked}
+                    onChange={() => {
+                      setSelectedGenres((prev) =>
+                        prev.includes(g.value)
+                          ? prev.filter((v) => v !== g.value)
+                          : [...prev, g.value],
+                      )
+                    }}
+                  />
+                  <span
+                    className={`inline-block w-3 h-3 border flex-shrink-0 flex items-center justify-center ${
+                      checked ? 'border-foreground bg-foreground' : 'border-border'
+                    }`}
+                  >
+                    {checked && (
+                      <svg className="w-2 h-2 text-background" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M2 6l3 3 5-5" />
+                      </svg>
+                    )}
+                  </span>
+                  {g.label}
+                </label>
+              )
+            })}
+          </div>
         </label>
 
         {/* Premise */}

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 import httpx
@@ -186,8 +186,13 @@ if FRONTEND_DIR.exists():
     @app.get("/{full_path:path}")
     async def serve_spa(request: Request, full_path: str):
         """SPA fallback: serve index.html for any non-API, non-asset route."""
-        # API routes are handled by routers above, so we only reach here for non-API
+        # API routes are handled by routers above, so we only reach here for non-API.
+        # If an API path arrives here without a trailing slash, redirect to the
+        # trailing-slash version so the router can match it (FastAPI registers
+        # routes with trailing slashes by default).
         if full_path.startswith("api/"):
+            if not full_path.endswith("/"):
+                return RedirectResponse(url=f"/{full_path}/", status_code=307)
             return JSONResponse({"error": "Not found"}, status_code=404)
 
         # Try to serve the exact file first

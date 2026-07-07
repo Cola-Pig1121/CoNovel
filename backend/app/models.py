@@ -276,6 +276,7 @@ class ToastMessage(BaseModel):
 class CreateBookRequest(BaseModel):
     title: str
     genre: str = ""
+    genres: list[str] = Field(default_factory=list)
     premise: str = ""
 
 

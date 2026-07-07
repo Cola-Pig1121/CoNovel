@@ -14,7 +14,7 @@ interface BookStore {
   // Actions
   fetchBooks: () => Promise<void>
   fetchBook: (id: string) => Promise<void>
-  createBook: (data: { title: string; genre: string; premise: string }) => Promise<BookMeta>
+  createBook: (data: { title: string; genres: string[]; premise: string }) => Promise<BookMeta>
   updateBook: (id: string, data: Partial<BookMeta>) => Promise<void>
   deleteBook: (id: string) => Promise<void>
   fetchChapters: (bookId: string) => Promise<void>
