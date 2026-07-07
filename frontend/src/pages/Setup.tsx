@@ -38,8 +38,8 @@ export default function Setup() {
         .then((data: ModelStatus) => {
           setStatus(data)
           if (data.modelReady) {
-            // Brief pause then redirect
-            setTimeout(() => navigate('/'), 800)
+            // Model ready — App.tsx will handle the redirect via polling
+            // Just update local state to show "ready" message
           }
         })
         .catch(() => {

@@ -35,10 +35,22 @@ export default function App() {
   const [modelReady, setModelReady] = useState<boolean | null>(null)
 
   useEffect(() => {
-    fetch('/api/model/status')
-      .then((r) => r.json())
-      .then((d) => setModelReady(d.modelReady))
-      .catch(() => setModelReady(true)) // If backend not running, assume ready
+    const check = () => {
+      fetch('/api/model/status')
+        .then((r) => r.json())
+        .then((d) => setModelReady(d.modelReady))
+        .catch(() => setModelReady(true))
+    }
+    check()
+    // Poll every 3 seconds until model is ready
+    const interval = setInterval(() => {
+      setModelReady((prev) => {
+        if (prev === true) return prev // Already ready, stop polling
+        check()
+        return prev
+      })
+    }, 3000)
+    return () => clearInterval(interval)
   }, [])
 
   // Still checking
