@@ -147,16 +147,16 @@ def _check_conovel_format(dir_path: Path) -> dict:
 
 
 def _check_plain_text(dir_path: Path) -> dict:
-    """Check for plain text novel files."""
-    txt_files = sorted(dir_path.glob("*.txt"))
+    """Check for plain text novel files (recursively)."""
+    txt_files = sorted(dir_path.rglob("*.txt"))
     if not txt_files:
         return {"score": 0, "files": [], "chapters": 0}
 
     # Check if filenames suggest chapters
-    chapter_pattern = re.compile(r"(?:\u7b2c|chapter|ch|\u7b2c).*(?:\u7ae0|\u8282|\u56de)", re.IGNORECASE)
+    chapter_pattern = re.compile(r"(?:第|chapter|ch|第).*(?:章|节|回)", re.IGNORECASE)
     chapter_files = [f for f in txt_files if chapter_pattern.search(f.stem)]
 
-    files = [f.name for f in txt_files[:10]]  # Show first 10
+    files = [str(f.relative_to(dir_path)) for f in txt_files[:10]]  # Show first 10
     chapters = len(chapter_files) if chapter_files else len(txt_files)
 
     # Score based on file count and naming
@@ -168,12 +168,12 @@ def _check_plain_text(dir_path: Path) -> dict:
 
 
 def _check_markdown(dir_path: Path) -> dict:
-    """Check for Markdown novel files."""
-    md_files = sorted(dir_path.glob("*.md"))
+    """Check for Markdown novel files (recursively)."""
+    md_files = sorted(dir_path.rglob("*.md"))
     if not md_files:
         return {"score": 0, "files": [], "chapters": 0}
 
-    files = [f.name for f in md_files[:10]]
+    files = [str(f.relative_to(dir_path)) for f in md_files[:10]]
     chapters = len(md_files)
     score = min(0.3 + len(md_files) * 0.05, 0.9)
 
@@ -221,8 +221,11 @@ def _import_conovel(dir_path: Path, req: ImportRequest) -> dict:
     book_id = fm.generate_id()
     book_dir = fm.get_book_dir(book_id)
 
-    # Copy entire directory to books dir
-    shutil.copytree(str(dir_path), str(book_dir), dirs_exist_ok=True)
+    # Copy entire directory to books dir, skipping .git and other hidden dirs
+    shutil.copytree(
+        str(dir_path), str(book_dir),
+        ignore=shutil.ignore_patterns('.git', '__pycache__', 'node_modules', '.DS_Store'),
+    )
 
     # Update state.json with new ID and title if provided
     state_path = book_dir / "state.json"
@@ -238,18 +241,42 @@ def _import_conovel(dir_path: Path, req: ImportRequest) -> dict:
     else:
         state = {}
 
+    # Recalculate actual chapter count from files on disk
+    chapters_dir = book_dir / "chapters"
+    if chapters_dir.exists():
+        actual_chapters = len(list(chapters_dir.glob("chapter_*.json")))
+    else:
+        actual_chapters = 0
+
+    # Recalculate word count from actual chapter content
+    total_words = 0
+    if chapters_dir.exists():
+        for cf in chapters_dir.glob("chapter_*.json"):
+            try:
+                ch_data = json.loads(cf.read_text("utf-8"))
+                total_words += ch_data.get("wordCount", 0)
+            except Exception:
+                pass
+
+    # Update state.json with recalculated counts
+    state["currentChapter"] = actual_chapters
+    state["totalChapters"] = actual_chapters
+    state["currentWordCount"] = total_words
+    state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), "utf-8")
+
     # Update book index
     index = fm.read_book_index()
     meta = {
         "id": book_id,
         "title": state.get("title", req.title or dir_path.name),
         "genre": state.get("genre", req.genre),
+        "genres": state.get("genres", []),
         "premise": state.get("premise", req.premise),
         "status": state.get("status", "planning"),
-        "targetWordCount": state.get("targetWordCount", state.get("target_word_count", 0)),
-        "currentWordCount": state.get("currentWordCount", state.get("total_word_count", 0)),
-        "currentChapter": state.get("currentChapter", state.get("current_chapter", 0)),
-        "totalChapters": state.get("totalChapters", 0),
+        "targetWordCount": state.get("targetWordCount", state.get("target_word_count", total_words * 3)),
+        "currentWordCount": total_words,
+        "currentChapter": actual_chapters,
+        "totalChapters": actual_chapters,
         "createdAt": state.get("createdAt", state.get("created_at", datetime.now().isoformat())),
         "updatedAt": datetime.now().isoformat(),
     }
@@ -265,50 +292,85 @@ def _import_conovel(dir_path: Path, req: ImportRequest) -> dict:
         "bookId": book_id,
         "title": meta["title"],
         "format": "conovel",
-        "chapters": meta.get("currentChapter", 0),
+        "chapters": actual_chapters,
+        "totalWords": total_words,
     }
 
 
 def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
-    """Import and convert from plain text or markdown."""
+    """Import and convert from plain text or markdown, handling full directory structure."""
     book_id = fm.generate_id()
     book_dir = fm.get_book_dir(book_id)
     book_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create .eve template
+    # 1. Copy the ENTIRE source directory structure first
+    #    This preserves any custom organization the user had
+    for item in dir_path.iterdir():
+        if item.name.startswith('.'):
+            continue  # Skip hidden files/dirs
+        if item.name in ('__pycache__', 'node_modules', '.DS_Store'):
+            continue
+        if item.is_dir():
+            dest = book_dir / item.name
+            shutil.copytree(
+                str(item), str(dest),
+                ignore=shutil.ignore_patterns('.git', '.eve', '__pycache__', 'node_modules', '.DS_Store'),
+            )
+        elif item.is_file():
+            shutil.copy2(str(item), str(book_dir / item.name))
+
+    # 2. Create .eve template
     fm.create_book_eve_template(str(book_dir))
 
-    # Detect chapter files
+    # 3. Find ALL text/markdown files recursively
     if fmt == "markdown":
-        chapter_files = sorted(dir_path.glob("*.md"))
+        chapter_files = sorted(dir_path.rglob("*.md"))
     else:
-        chapter_files = sorted(dir_path.glob("*.txt"))
+        chapter_files = sorted(dir_path.rglob("*.txt"))
 
-    content = ""
+    # Filter out files inside hidden directories
+    chapter_files = [
+        f for f in chapter_files
+        if not any(part.startswith('.') for part in f.relative_to(dir_path).parts[:-1])
+    ]
+
+    # Also try to handle single combined file case
     if not chapter_files:
-        # Single file — treat entire content as one chapter
-        content = _read_all_text(dir_path)
+        # Try reading all text files in root only
+        all_text = []
+        for f in sorted(dir_path.glob("*")):
+            if f.is_file() and f.suffix in ('.txt', '.md'):
+                all_text.append(f.read_text("utf-8", errors="replace"))
+        if all_text:
+            # Treat the directory root as a single chapter
+            content = "\n\n".join(all_text)
+            chapter_files = [dir_path]  # Placeholder — handled below
 
-    # Create chapters
+    # 4. Create chapters from source files
     chapters_dir = book_dir / "chapters"
     chapters_dir.mkdir(exist_ok=True)
 
     total_words = 0
     imported_count = 0
 
-    if chapter_files:
+    if chapter_files and chapter_files[0] != dir_path:
+        # Multiple chapter files found recursively
         for i, f in enumerate(chapter_files):
-            chapter_content = f.read_text("utf-8", errors="replace")
-            word_count = len([c for c in chapter_content if c.strip()])
+            if f.is_dir():
+                continue
+            content = f.read_text("utf-8", errors="replace")
+            if not content.strip():
+                continue
+
+            word_count = len(content.split())
             total_words += word_count
 
-            # Try to extract chapter title from filename or first line
-            title = _extract_chapter_title(f, chapter_content)
+            title = _extract_chapter_title(f, content)
 
             chapter_data = {
                 "chapterNumber": i + 1,
                 "title": title,
-                "content": chapter_content,
+                "content": content,
                 "wordCount": word_count,
                 "status": "draft",
                 "outline": "",
@@ -321,14 +383,14 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
             (chapters_dir / f"{padded}.json").write_text(
                 json.dumps(chapter_data, ensure_ascii=False, indent=2), "utf-8"
             )
-        imported_count = len(chapter_files)
-    elif content:
-        # Handle single-file case
-        word_count = len([c for c in content if c.strip()])
+            imported_count += 1
+    elif chapter_files and chapter_files[0] == dir_path:
+        # Single combined content from root-level text files
+        word_count = len(content.split())
         total_words = word_count
         chapter_data = {
             "chapterNumber": 1,
-            "title": req.title or dir_path.name,
+            "title": _guess_title(dir_path),
             "content": content,
             "wordCount": word_count,
             "status": "draft",
@@ -342,17 +404,18 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
         )
         imported_count = 1
 
-    # Create state.json
+    # 5. Create state.json with real data
     state = {
         "id": book_id,
-        "title": req.title or dir_path.name,
+        "title": req.title or _guess_title(dir_path),
         "genre": req.genre,
+        "genres": [req.genre] if req.genre != "unknown" else [],
         "premise": req.premise,
-        "targetWordCount": total_words * 3,  # Estimate target as 3x current
+        "targetWordCount": max(total_words * 3, 100000),
         "currentWordCount": total_words,
         "currentChapter": imported_count,
         "totalChapters": imported_count,
-        "status": "writing",
+        "status": "writing" if total_words > 0 else "planning",
         "createdAt": datetime.now().isoformat(),
         "updatedAt": datetime.now().isoformat(),
     }
@@ -360,19 +423,20 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
         json.dumps(state, ensure_ascii=False, indent=2), "utf-8"
     )
 
-    # Create empty characters, foreshadowing, timeline
-    (book_dir / "characters.json").write_text("[]", "utf-8")
-    (book_dir / "foreshadowing.json").write_text("[]", "utf-8")
-    (book_dir / "timeline.json").write_text("[]", "utf-8")
+    # 6. Create empty supporting files (if not already present from copy)
+    for fname in ["characters.json", "foreshadowing.json", "timeline.json"]:
+        if not (book_dir / fname).exists():
+            (book_dir / fname).write_text("[]", "utf-8")
 
-    # Update book index
+    # 7. Update book index
     index = fm.read_book_index()
     meta = {
         "id": book_id,
         "title": state["title"],
         "genre": state["genre"],
+        "genres": state.get("genres", []),
         "premise": state["premise"],
-        "status": "writing",
+        "status": state["status"],
         "targetWordCount": state["targetWordCount"],
         "currentWordCount": total_words,
         "currentChapter": imported_count,
@@ -383,7 +447,7 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
     index.append(meta)
     fm.write_book_index(index)
 
-    # Init git
+    # 8. Init git
     init_book_repo(book_dir)
 
     return {
@@ -398,10 +462,22 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
 
 # ── Utility Helpers ────────────────────────────────────────────────────────
 
+def _guess_title(dir_path: Path) -> str:
+    """Guess book title from directory name."""
+    name = dir_path.name
+    # Remove common prefixes like "novel_", "book_", numbers
+    name = re.sub(r'^(?:novel|book|txt|text)[_\-\s]*', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'^\d+[\s._\-]*', '', name)
+    return name.strip() or "未命名手稿"
+
+
 def _read_all_text(dir_path: Path) -> str:
-    """Read all text from a directory (concatenate files or single file)."""
+    """Read all text from a directory (concatenate files recursively)."""
     texts: list[str] = []
-    for f in sorted(dir_path.glob("*.txt")) + sorted(dir_path.glob("*.md")):
+    for f in sorted(dir_path.rglob("*.txt")) + sorted(dir_path.rglob("*.md")):
+        # Skip hidden directories
+        if any(part.startswith('.') for part in f.relative_to(dir_path).parts[:-1]):
+            continue
         texts.append(f.read_text("utf-8", errors="replace"))
     return "\n\n".join(texts)
 
