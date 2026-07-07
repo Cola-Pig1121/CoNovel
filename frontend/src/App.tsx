@@ -10,6 +10,7 @@ import Settings from './pages/Settings'
 import Evolution from './pages/Evolution'
 import Workflow from './pages/Workflow'
 import Setup from './pages/Setup'
+import ImportPage from './pages/ImportPage'
 
 // ---------------------------------------------------------------------------
 // Loading screen — shown while checking model status
@@ -57,6 +58,7 @@ export default function App() {
       <Route path="/workflow" element={<Workflow />} />
       <Route path="/store" element={<Store />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/import" element={<ImportPage />} />
       <Route path="/evolution" element={<Evolution />} />
     </Routes>
   )

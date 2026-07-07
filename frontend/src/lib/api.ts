@@ -153,6 +153,33 @@ export const memoryApi = {
     request<any>('POST', `/memory/consolidate`, { book_id: bookId }),
 }
 
+// --- Import API ---
+
+export interface DetectResult {
+  format: string
+  confidence: number
+  description: string
+  files: string[]
+  estimatedChapters: number
+  hasMetadata: boolean
+  hasGit: boolean
+}
+
+export interface ImportResult {
+  imported: boolean
+  bookId: string
+  title: string
+  format: string
+  chapters: number
+  totalWords?: number
+}
+
+export const importApi = {
+  detect: (path: string) => request<DetectResult>('POST', '/import/detect', { path }),
+  execute: (path: string, title?: string, genre?: string, premise?: string) =>
+    request<ImportResult>('POST', '/import/execute', { path, title, genre, premise }),
+}
+
 // --- Style ---
 
 export const styleApi = {

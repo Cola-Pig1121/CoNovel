@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useBookStore } from '@/stores/bookStore'
 import { useUIStore } from '@/stores/uiStore'
 import { storeApi } from '@/lib/api'
@@ -272,12 +272,20 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <button
-            onClick={() => openModal('createBook')}
-            className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
-          >
-            Create Book
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/import"
+              className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors"
+            >
+              Import Book
+            </Link>
+            <button
+              onClick={() => openModal('createBook')}
+              className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none"
+            >
+              Create Book
+            </button>
+          </div>
         </div>
       </header>
 
