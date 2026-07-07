@@ -43,14 +43,17 @@ def main():
     print("\n[3/4] Running PyInstaller...")
     hidden_imports = [
         "app", "app.main", "app.config", "app.models", "app.file_manager",
-        "app.git_manager", "app.agent_lifecycle",
+        "app.git_manager", "app.agent_lifecycle", "app.model_manager",
         "app.routers", "app.routers.books", "app.routers.chapters",
         "app.routers.agents", "app.routers.pipeline", "app.routers.settings",
         "app.routers.store", "app.routers.questions", "app.routers.goals",
-        "app.routers.memory",
+        "app.routers.memory", "app.routers.import_book",
         "uvicorn", "uvicorn.logging", "uvicorn.config",
         "fastapi", "pydantic", "httpx",
     ]
+    
+    # Icon path
+    icon_path = ROOT / "frontend" / "public" / "favicon.ico"
     hi_args = []
     for hi in hidden_imports:
         hi_args.extend(["--hidden-import", hi])
@@ -60,6 +63,7 @@ def main():
         "--onefile",
         "--console",
         "--name", "CoNovel",
+        "--icon", str(icon_path),
         "--distpath", str(build_dir / "dist"),
         "--workpath", str(build_dir / "build"),
         "--specpath", str(build_dir),

@@ -21,6 +21,29 @@ FRONTEND_DIR = BASE_DIR / "frontend" / "dist"
 ENGINE_BINARY = EXE_DIR / "conovel-agent-engine"
 ENGINE_SCRIPT = BASE_DIR / "agent-engine" / "src" / "agent-server.ts"
 
+# Find frontend/dist by checking multiple locations
+def find_frontend_dir() -> Path:
+    candidates = [
+        BASE_DIR / "frontend" / "dist",           # PyInstaller bundled
+        Path.cwd() / "frontend" / "dist",          # Working directory
+        EXE_DIR / "frontend" / "dist",             # Next to exe
+        Path(__file__).parent / "frontend" / "dist", # Next to this file
+        Path(__file__).parent.parent / "frontend" / "dist", # One level up
+    ]
+    for p in candidates:
+        if p.exists() and (p / "index.html").exists():
+            return p
+    return BASE_DIR / "frontend" / "dist"  # Fallback
+
+FRONTEND_DIR = find_frontend_dir()
+print(f"[CoNovel] Frontend dir: {FRONTEND_DIR} (exists: {FRONTEND_DIR.exists()})", flush=True)
+
+# Force-set the env var AND patch config module before import
+os.environ["CONOVEL_FRONTEND_DIR"] = str(FRONTEND_DIR)
+# Pre-import config to patch it
+import app.config as _cfg
+_cfg.FRONTEND_DIR = FRONTEND_DIR
+
 # Processes to clean up
 processes = []
 
