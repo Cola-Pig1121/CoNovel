@@ -40,13 +40,18 @@ async def lifespan(app: FastAPI):
     ensure_data_dirs()
     logger.info("Data directory: %s", file_manager.DATA_DIR)
 
-    # Try to start the agent engine (non-fatal if bun is not installed)
-    result = agent_lifecycle.start_engine()
-    if result.get("status") == "started":
-        logger.info("Agent engine started (PID: %s)", result.get("pid"))
+    # Try to start the agent engine if not already running (non-fatal)
+    if not agent_lifecycle.is_running():
+        result = agent_lifecycle.start_engine()
+        if result.get("status") == "started":
+            logger.info("Agent engine started (PID: %s)", result.get("pid"))
+        elif result.get("status") == "already_running":
+            logger.info("Agent engine already running")
+        else:
+            logger.warning("Agent engine not started: %s", result.get("message", "unknown reason"))
+            logger.info("Pipeline features will be unavailable without the agent engine")
     else:
-        logger.warning("Agent engine not started: %s", result.get("message", "unknown reason"))
-        logger.info("Pipeline features will be unavailable without the agent engine")
+        logger.info("Agent engine already running")
 
     # Start silent model download in background
     if not is_model_ready():

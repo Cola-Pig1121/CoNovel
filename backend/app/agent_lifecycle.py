@@ -46,12 +46,18 @@ def _find_bun_binary() -> str | None:
 
 def _find_engine_script() -> Path | None:
     """Locate the agent engine entry point."""
-    # Check relative to this file's project
-    project_root = Path(__file__).resolve().parent.parent.parent
+    import os
+
+    # In PyInstaller, use sys._MEIPASS
+    if getattr(sys, 'frozen', False):
+        base = Path(sys._MEIPASS)
+    else:
+        base = Path(__file__).resolve().parent.parent.parent
+
     candidates = [
-        project_root / "agent-engine" / "src" / "index.ts",
-        project_root / "agent-engine" / "index.ts",
-        project_root / "packages" / "agent-engine" / "src" / "index.ts",
+        base / "agent-engine" / "src" / "agent-server.ts",
+        base / "agent-engine" / "src" / "index.ts",
+        Path(os.environ.get("CONOVEL_DATA_DIR", "")) / "agent-engine" / "src" / "agent-server.ts",
     ]
 
     for candidate in candidates:

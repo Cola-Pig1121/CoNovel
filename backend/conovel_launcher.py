@@ -85,36 +85,58 @@ def start_agent_engine():
     """Start the Bun/Node agent engine."""
     engine_port = find_free_port(3583)
 
-    if ENGINE_BINARY.exists():
-        print(f"[CoNovel] Starting agent engine from binary on port {engine_port}...")
-        p = subprocess.Popen(
-            [str(ENGINE_BINARY)],
-            env={**os.environ, "PORT": str(engine_port)},
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    elif ENGINE_SCRIPT.exists():
-        print(f"[CoNovel] Starting agent engine from source on port {engine_port}...")
-        # Try bun first, then node
-        for cmd in [["bun", "run"], ["npx", "bun"], ["node"]]:
+    # Check multiple paths for the engine
+    engine_paths = [
+        ENGINE_BINARY,                                                    # Pre-compiled binary
+        EXE_DIR / "conovel-agent-engine.exe",                           # Next to exe
+        BASE_DIR / "agent-engine" / "src" / "agent-server.ts",           # Bundled source
+        Path.cwd() / "agent-engine" / "src" / "agent-server.ts",        # Working directory
+    ]
+
+    # Try binary first
+    for ep in engine_paths:
+        if ep.exists() and ep.suffix in ('', '.exe'):
+            print(f"[CoNovel] Starting agent engine from {ep.name} on port {engine_port}...", flush=True)
             try:
                 p = subprocess.Popen(
-                    cmd + [str(ENGINE_SCRIPT)],
+                    [str(ep)],
                     env={**os.environ, "PORT": str(engine_port)},
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
                 processes.append(p)
                 return engine_port
-            except FileNotFoundError:
-                continue
-        print("[CoNovel] WARNING: Could not start agent engine (bun/node not found)")
-        return engine_port
-    else:
-        print("[CoNovel] WARNING: Agent engine binary/script not found")
-        return engine_port
+            except Exception as e:
+                print(f"[CoNovel] Failed to start engine: {e}", flush=True)
 
-    processes.append(p)
+    # Try bun/node with source script
+    script_path = BASE_DIR / "agent-engine" / "src" / "agent-server.ts"
+    if script_path.exists():
+        for cmd_name, cmd in [("bun", ["bun", "run"]), ("node", ["node"])]:
+            try:
+                print(f"[CoNovel] Starting agent engine via {cmd_name} on port {engine_port}...", flush=True)
+                print(f"[CoNovel] Script path: {script_path} (exists: {script_path.exists()})", flush=True)
+                p = subprocess.Popen(
+                    cmd + [str(script_path)],
+                    env={**os.environ, "PORT": str(engine_port)},
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                processes.append(p)
+                # Wait briefly to check if it started
+                import time
+                time.sleep(2)
+                if p.poll() is not None:
+                    stderr_out = p.stderr.read().decode(errors="replace") if p.stderr else ""
+                    print(f"[CoNovel] Agent engine exited with code {p.returncode}: {stderr_out[:200]}", flush=True)
+                else:
+                    return engine_port
+            except FileNotFoundError as e:
+                print(f"[CoNovel] {cmd_name} not found: {e}", flush=True)
+                continue
+
+    print(f"[CoNovel] Agent Engine 未启动 (需要安装 bun: https://bun.sh)", flush=True)
+    print(f"[CoNovel] Pipeline/写作功能需要 Agent Engine，其他功能正常使用", flush=True)
     return engine_port
 
 
