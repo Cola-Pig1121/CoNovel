@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,9 +47,48 @@ def ensure_dir(path: Path) -> None:
 
 
 def remove_dir(path: Path) -> None:
-    """Remove a directory tree if it exists."""
+    """Remove a directory tree if it exists. Handles Windows .git locking."""
+    if not path.exists():
+        return
+
+    def _onerror(func, p, exc_info):
+        """Handle Windows PermissionError on .git files by retrying."""
+        import time
+        if exc_info[0] is PermissionError:
+            time.sleep(0.1)
+            try:
+                os.chmod(p, 0o777)
+                func(p)
+            except Exception:
+                pass  # Skip locked files
+
+    # First try: normal rmtree with error handler
+    try:
+        shutil.rmtree(path, onerror=_onerror)
+    except Exception:
+        pass
+
+    # Second try: if still exists, force remove with git
     if path.exists():
-        shutil.rmtree(path)
+        try:
+            import subprocess
+            subprocess.run(
+                ["git", "clean", "-fd", "-x"],
+                cwd=str(path), capture_output=True, timeout=10
+            )
+            subprocess.run(
+                ["rm", "-rf", str(path)],
+                cwd=str(path.parent), capture_output=True, timeout=10
+            )
+        except Exception:
+            pass
+
+    # Final attempt: direct removal
+    if path.exists():
+        try:
+            shutil.rmtree(path, onerror=_onerror)
+        except Exception:
+            pass  # Best effort
 
 
 # ── Book Index ─────────────────────────────────────────────────────────────
