@@ -103,6 +103,8 @@ def start_agent_engine():
                     env={**os.environ, "PORT": str(engine_port)},
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
+                    encoding="utf-8",
+                    errors="replace",
                 )
                 processes.append(p)
                 return engine_port
@@ -121,13 +123,15 @@ def start_agent_engine():
                     env={**os.environ, "PORT": str(engine_port)},
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
+                    encoding="utf-8",
+                    errors="replace",
                 )
                 processes.append(p)
                 # Wait briefly to check if it started
                 import time
                 time.sleep(2)
                 if p.poll() is not None:
-                    stderr_out = p.stderr.read().decode(errors="replace") if p.stderr else ""
+                    stderr_out = p.stderr.read() if p.stderr else ""
                     print(f"[CoNovel] Agent engine exited with code {p.returncode}: {stderr_out[:200]}", flush=True)
                 else:
                     return engine_port

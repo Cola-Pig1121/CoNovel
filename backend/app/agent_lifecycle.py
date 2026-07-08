@@ -89,6 +89,8 @@ def start_engine() -> dict:
             env={**dict(__import__("os").environ), "PORT": str(AGENT_ENGINE_PORT)},
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            encoding="utf-8",
+            errors="replace",
         )
         logger.info("Agent engine started with PID %d", _engine_process.pid)
         return {"status": "started", "pid": _engine_process.pid}

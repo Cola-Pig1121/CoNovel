@@ -8,6 +8,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -183,7 +184,7 @@ def _check_markdown(dir_path: Path) -> dict:
 # ── Import Execution ───────────────────────────────────────────────────────
 
 @router.post("/execute")
-def execute_import(req: ImportRequest):
+async def execute_import(req: ImportRequest):
     """Import a directory as a CoNovel book."""
     dir_path = Path(req.path)
     if not dir_path.exists():
@@ -195,9 +196,10 @@ def execute_import(req: ImportRequest):
     if detection["format"] == "conovel":
         return _import_conovel(dir_path, req)
     elif detection["format"] in ("plain_text", "markdown"):
-        return _import_converted(dir_path, req, detection["format"])
+        return await _import_converted(dir_path, req, detection["format"])
     else:
-        raise HTTPException(400, f"\u65e0\u6cd5\u8bc6\u522b\u7684\u683c\u5f0f: {detection['format']}")
+        # Unknown format — try to import anyway using LLM
+        return await _import_converted(dir_path, req, "unknown")
 
 
 def _detect_and_return(dir_path: Path) -> dict:
@@ -297,8 +299,8 @@ def _import_conovel(dir_path: Path, req: ImportRequest) -> dict:
     }
 
 
-def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
-    """Import and convert from plain text or markdown, handling full directory structure."""
+async def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
+    """Import and convert from any format using LLM, handling full directory structure."""
     book_id = fm.generate_id()
     book_dir = fm.get_book_dir(book_id)
     book_dir.mkdir(parents=True, exist_ok=True)
@@ -322,92 +324,68 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
     # 2. Create .eve template
     fm.create_book_eve_template(str(book_dir))
 
-    # 3. Find ALL text/markdown files recursively
-    if fmt == "markdown":
-        chapter_files = sorted(dir_path.rglob("*.md"))
-    else:
-        chapter_files = sorted(dir_path.rglob("*.txt"))
+    # 3. Find ALL supported files recursively (any text-based file)
+    all_files = _find_all_supported_files(dir_path)
+    book_title = req.title or _guess_title(dir_path)
 
-    # Filter out files inside hidden directories
-    chapter_files = [
-        f for f in chapter_files
-        if not any(part.startswith('.') for part in f.relative_to(dir_path).parts[:-1])
-    ]
-
-    # Also try to handle single combined file case
-    if not chapter_files:
-        # Try reading all text files in root only
-        all_text = []
-        for f in sorted(dir_path.glob("*")):
-            if f.is_file() and f.suffix in ('.txt', '.md'):
-                all_text.append(f.read_text("utf-8", errors="replace"))
-        if all_text:
-            # Treat the directory root as a single chapter
-            content = "\n\n".join(all_text)
-            chapter_files = [dir_path]  # Placeholder — handled below
-
-    # 4. Create chapters from source files
+    # 4. Process files with LLM conversion
     chapters_dir = book_dir / "chapters"
     chapters_dir.mkdir(exist_ok=True)
 
     total_words = 0
     imported_count = 0
+    chapter_index = 0
 
-    if chapter_files and chapter_files[0] != dir_path:
-        # Multiple chapter files found recursively
-        for i, f in enumerate(chapter_files):
-            if f.is_dir():
-                continue
-            content = f.read_text("utf-8", errors="replace")
+    if all_files:
+        for f in all_files:
+            content = _extract_text_from_file(f)
             if not content.strip():
                 continue
 
-            word_count = len(content.split())
-            total_words += word_count
+            # Use LLM to analyze and convert content
+            converted = await _convert_with_llm(content, f.name, book_title)
+            chapters = converted.get("chapters", [])
 
-            title = _extract_chapter_title(f, content)
+            if not chapters:
+                # Fallback: treat entire file as one chapter
+                chapters = [{"title": _extract_chapter_title(f, content), "content": content}]
 
-            chapter_data = {
-                "chapterNumber": i + 1,
-                "title": title,
-                "content": content,
-                "wordCount": word_count,
-                "status": "draft",
-                "outline": "",
-                "qualityGate": "L1",
-                "createdAt": datetime.now().isoformat(),
-                "updatedAt": datetime.now().isoformat(),
-            }
+            for ch in chapters:
+                chapter_index += 1
+                ch_content = ch.get("content", "").strip()
+                if not ch_content:
+                    continue
 
-            padded = f"chapter_{i + 1:04d}"
-            (chapters_dir / f"{padded}.json").write_text(
-                json.dumps(chapter_data, ensure_ascii=False, indent=2), "utf-8"
-            )
-            imported_count += 1
-    elif chapter_files and chapter_files[0] == dir_path:
-        # Single combined content from root-level text files
-        word_count = len(content.split())
-        total_words = word_count
-        chapter_data = {
-            "chapterNumber": 1,
-            "title": _guess_title(dir_path),
-            "content": content,
-            "wordCount": word_count,
-            "status": "draft",
-            "outline": "",
-            "qualityGate": "L1",
-            "createdAt": datetime.now().isoformat(),
-            "updatedAt": datetime.now().isoformat(),
-        }
-        (chapters_dir / "chapter_0001.json").write_text(
-            json.dumps(chapter_data, ensure_ascii=False, indent=2), "utf-8"
-        )
-        imported_count = 1
+                word_count = len(ch_content.split())
+                total_words += word_count
+
+                title = ch.get("title", f"第{chapter_index}章")
+
+                chapter_data = {
+                    "chapterNumber": chapter_index,
+                    "title": title,
+                    "content": ch_content,
+                    "wordCount": word_count,
+                    "status": "draft",
+                    "outline": "",
+                    "qualityGate": "L1",
+                    "createdAt": datetime.now().isoformat(),
+                    "updatedAt": datetime.now().isoformat(),
+                }
+
+                padded = f"chapter_{chapter_index:04d}"
+                (chapters_dir / f"{padded}.json").write_text(
+                    json.dumps(chapter_data, ensure_ascii=False, indent=2), "utf-8"
+                )
+                imported_count += 1
+    else:
+        # No files found — create an empty book
+        pass
 
     # 5. Create state.json with real data
     state = {
         "id": book_id,
-        "title": req.title or _guess_title(dir_path),
+        "title": book_title,
         "genre": req.genre,
         "genres": [req.genre] if req.genre != "unknown" else [],
         "premise": req.premise,
@@ -458,6 +436,215 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
         "chapters": imported_count,
         "totalWords": total_words,
     }
+
+
+# ── LLM Conversion Helpers ────────────────────────────────────────────────
+
+# Supported file extensions for import
+_TEXT_EXTENSIONS = {'.txt', '.md', '.markdown', '.rst', '.text'}
+_HTML_EXTENSIONS = {'.html', '.htm'}
+_DOCX_EXTENSIONS = {'.docx'}
+_PDF_EXTENSIONS = {'.pdf'}
+_ALL_SUPPORTED = _TEXT_EXTENSIONS | _HTML_EXTENSIONS | _DOCX_EXTENSIONS | _PDF_EXTENSIONS
+
+
+def _find_all_supported_files(dir_path: Path) -> list[Path]:
+    """Find all supported files recursively, excluding hidden directories."""
+    files: list[Path] = []
+    for ext_group in [_TEXT_EXTENSIONS, _HTML_EXTENSIONS, _DOCX_EXTENSIONS, _PDF_EXTENSIONS]:
+        for ext in ext_group:
+            for f in sorted(dir_path.rglob(f"*{ext}")):
+                # Skip hidden directories
+                if any(part.startswith('.') for part in f.relative_to(dir_path).parts[:-1]):
+                    continue
+                files.append(f)
+    return files
+
+
+def _extract_text_from_file(file_path: Path) -> str:
+    """Extract text content from any supported file type."""
+    suffix = file_path.suffix.lower()
+
+    if suffix in _TEXT_EXTENSIONS:
+        return file_path.read_text("utf-8", errors="replace")
+
+    if suffix in _HTML_EXTENSIONS:
+        return _extract_text_from_html(file_path)
+
+    if suffix in _DOCX_EXTENSIONS:
+        return _extract_text_from_docx(file_path)
+
+    if suffix in _PDF_EXTENSIONS:
+        return _extract_text_from_pdf(file_path)
+
+    # Unknown extension — try reading as text
+    try:
+        return file_path.read_text("utf-8", errors="replace")
+    except Exception:
+        return ""
+
+
+def _extract_text_from_html(file_path: Path) -> str:
+    """Extract readable text from HTML files."""
+    try:
+        import html.parser
+
+        class TextExtractor(html.parser.HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self._text: list[str] = []
+                self._skip = False
+
+            def handle_starttag(self, tag, attrs):
+                if tag in ('script', 'style', 'noscript'):
+                    self._skip = True
+
+            def handle_endtag(self, tag):
+                if tag in ('script', 'style', 'noscript'):
+                    self._skip = False
+
+            def handle_data(self, data):
+                if not self._skip:
+                    self._text.append(data)
+
+            def get_text(self) -> str:
+                return ' '.join(self._text)
+
+        raw = file_path.read_text("utf-8", errors="replace")
+        extractor = TextExtractor()
+        extractor.feed(raw)
+        return extractor.get_text()
+    except Exception:
+        return file_path.read_text("utf-8", errors="replace")
+
+
+def _extract_text_from_docx(file_path: Path) -> str:
+    """Extract text from .docx files using python-docx."""
+    try:
+        from docx import Document
+        doc = Document(str(file_path))
+        return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    except ImportError:
+        return "[需要安装 python-docx 来读取 .docx 文件]"
+    except Exception as e:
+        return f"[读取 .docx 文件失败: {e}]"
+
+
+def _extract_text_from_pdf(file_path: Path) -> str:
+    """Extract text from PDF files."""
+    try:
+        # Try PyMuPDF (fitz) first
+        import fitz
+        doc = fitz.open(str(file_path))
+        texts = [page.get_text() for page in doc]
+        doc.close()
+        return "\n\n".join(texts)
+    except ImportError:
+        pass
+
+    try:
+        # Fallback to pdfminer
+        from pdfminer.high_level import extract_text
+        return extract_text(str(file_path))
+    except ImportError:
+        return "[需要安装 PyMuPDF 或 pdfminer 来读取 .pdf 文件]"
+    except Exception as e:
+        return f"[读取 .pdf 文件失败: {e}]"
+
+
+async def _convert_with_llm(content: str, filename: str, book_title: str) -> dict:
+    """Use LLM to analyze and convert content to CoNovel format."""
+    # Get provider config
+    providers = fm.read_providers()
+    if not providers:
+        return _simple_convert(content, filename)
+
+    # Use the first enabled provider
+    provider = next((p for p in providers if p.get("enabled", True)), None)
+    if not provider:
+        return _simple_convert(content, filename)
+
+    # Call LLM
+    api_url = provider.get("baseUrl", "https://api.openai.com/v1") + "/chat/completions"
+    api_key = provider.get("apiKey", "")
+    model = "gpt-4o-mini"
+    if provider.get("models"):
+        model = provider["models"][0].get("id", "gpt-4o-mini")
+
+    prompt = f"""你是一个专业的网文编辑。请分析以下文本内容，将其转换为小说章节格式。
+
+文件名: {filename}
+书名: {book_title}
+
+请完成以下任务：
+1. 识别这是一个完整的章节还是多个章节
+2. 如果是多个章节，按章节分割
+3. 为每个章节提取标题
+4. 返回 JSON 格式: {{"chapters": [{{"title": "章节标题", "content": "章节内容"}}]}}
+
+注意：
+- 只返回 JSON，不要包含其他文字
+- 每个章节的 content 应该包含完整的章节文本
+- 如果原文没有明显的章节分割，请根据内容的自然段落进行分割
+
+原始内容（前2000字）:
+{content[:2000]}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                api_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.3,
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            llm_content = result["choices"][0]["message"]["content"]
+
+            # Parse JSON from LLM response (handle markdown code blocks)
+            json_match = re.search(r'\{.*\}', llm_content, re.DOTALL)
+            if json_match:
+                parsed = json.loads(json_match.group())
+                if "chapters" in parsed and isinstance(parsed["chapters"], list):
+                    return parsed
+    except Exception as e:
+        print(f"LLM conversion failed: {e}")
+
+    return _simple_convert(content, filename)
+
+
+def _simple_convert(content: str, filename: str) -> dict:
+    """Simple fallback: split by paragraphs when LLM is unavailable."""
+    # Split by double newlines (paragraphs)
+    paragraphs = [p.strip() for p in re.split(r'\n\s*\n', content) if p.strip()]
+
+    if not paragraphs:
+        return {"chapters": []}
+
+    # Group paragraphs into reasonable chunks (~2000 chars each)
+    chapters: list[dict] = []
+    current_text = ""
+    chapter_title = filename.rsplit('.', 1)[0]  # Remove extension
+
+    for para in paragraphs:
+        if len(current_text) + len(para) > 2000 and current_text:
+            chapters.append({"title": chapter_title, "content": current_text})
+            chapter_title = f"第{len(chapters) + 1}章"
+            current_text = para
+        else:
+            current_text = current_text + "\n\n" + para if current_text else para
+
+    if current_text:
+        chapters.append({"title": chapter_title, "content": current_text})
+
+    return {"chapters": chapters}
 
 
 # ── Utility Helpers ────────────────────────────────────────────────────────
