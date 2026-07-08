@@ -147,16 +147,16 @@ function StepDirectory({
 
 function GenreSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const genres = [
-    'fantasy',
-    'sci-fi',
-    'mystery',
-    'thriller',
-    'romance',
-    'literary',
-    'historical',
-    'horror',
-    'adventure',
-    'other',
+    { value: 'xuanhuan', label: '玄幻' },
+    { value: 'xianxia', label: '仙侠' },
+    { value: 'wuxia', label: '武侠' },
+    { value: 'dushi', label: '都市' },
+    { value: 'xuanyi', label: '悬疑' },
+    { value: 'kehuan', label: '科幻' },
+    { value: 'yanqing', label: '言情' },
+    { value: 'lishi', label: '历史' },
+    { value: 'youxi', label: '游戏' },
+    { value: 'qita', label: '其他' },
   ]
 
   return (
@@ -166,8 +166,8 @@ function GenreSelect({ value, onChange }: { value: string; onChange: (v: string)
       className="w-full border border-border bg-background px-4 py-3 text-sm font-sans rounded-none shadow-none outline-none focus:border-foreground transition-colors appearance-none cursor-pointer"
     >
       {genres.map((g) => (
-        <option key={g} value={g}>
-          {g.charAt(0).toUpperCase() + g.slice(1)}
+        <option key={g.value} value={g.value}>
+          {g.label}
         </option>
       ))}
     </select>
@@ -579,7 +579,7 @@ export default function ImportPage() {
   const [detectResult, setDetectResult] = useState<DetectResult | null>(null)
   const [importPath, setImportPath] = useState('')
   const [title, setTitle] = useState('')
-  const [genre, setGenre] = useState('fantasy')
+  const [genre, setGenre] = useState('xuanhuan')
   const [premise, setPremise] = useState('')
 
   return (
