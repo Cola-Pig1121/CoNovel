@@ -203,6 +203,89 @@ def complete_milestone(book_id: str, goal_id: str, milestone_id: str):
     return goal
 
 
+@router.post("/auto-update")
+def auto_update_goals(book_id: str):
+    """Auto-update active goal progress based on current book state.
+
+    Reads the book's chapter count and updates all active goals accordingly.
+    Auto-completes milestones whose descriptions match chapter thresholds.
+    Auto-completes goals when all milestones are done.
+    """
+    import re
+    from datetime import datetime, timezone
+    from app import file_manager as fm
+
+    goals_dir = _goals_dir(book_id)
+    goals = []
+    for f in sorted(goals_dir.glob("*.json")):
+        try:
+            goals.append(_read_goal(f))
+        except Exception:
+            continue
+
+    active_goals = [g for g in goals if g.get("status") == "active"]
+    if not active_goals:
+        return {"updated": 0}
+
+    # Read current book state
+    state = fm.read_book_state(book_id)
+    if not state:
+        return {"updated": 0}
+
+    current_chapters = state.get("currentChapter", 0)
+    total_chapters = state.get("totalChapters", 1)
+
+    # Calculate progress
+    progress = min(100, int(current_chapters / max(total_chapters, 1) * 100))
+
+    for goal in active_goals:
+        now = datetime.now(timezone.utc).isoformat()
+
+        # Update progress based on book state
+        if goal.get("progress", 0) < progress:
+            goal["progress"] = progress
+            goal["updatedAt"] = now
+            goal.setdefault("history", []).append({
+                "timestamp": now,
+                "type": "progress",
+                "message": f"进度自动更新: {current_chapters}/{total_chapters} 章 ({progress}%)",
+            })
+
+        # Check milestones — auto-complete based on chapter count
+        for milestone in goal.get("milestones", []):
+            if milestone.get("completed"):
+                continue
+            desc = milestone.get("description", "")
+            # Match patterns like "完成第5章", "写完10章", "5章", etc.
+            m = re.search(r'(\d+)\s*章', desc)
+            if m and current_chapters >= int(m.group(1)):
+                milestone["completed"] = True
+                milestone["completedAt"] = now
+                goal.setdefault("history", []).append({
+                    "timestamp": now,
+                    "type": "milestone",
+                    "message": f"里程碑自动完成: {desc}",
+                })
+
+        # Auto-complete goal if all milestones done
+        milestones = goal.get("milestones", [])
+        if milestones and all(m.get("completed") for m in milestones):
+            goal["status"] = "complete"
+            goal["progress"] = 100
+            goal["completedAt"] = now
+            goal.setdefault("history", []).append({
+                "timestamp": now,
+                "type": "completed",
+                "message": "所有里程碑已完成，目标自动完成",
+            })
+
+        # Save updated goal
+        goal_path = goals_dir / f"{goal['id']}.json"
+        _write_goal(goal_path, goal)
+
+    return {"updated": len(active_goals)}
+
+
 @router.delete("/{goal_id}")
 def delete_goal(book_id: str, goal_id: str):
     """Delete a goal."""

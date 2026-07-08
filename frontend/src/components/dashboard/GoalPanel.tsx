@@ -21,6 +21,7 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
   const [newObjective, setNewObjective] = useState('')
   const [newMilestones, setNewMilestones] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   const activeGoal = goals.find((g) => g.status === 'active' || g.status === 'paused' || g.status === 'blocked')
 
@@ -109,6 +110,20 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
       setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
     } catch (err) {
       console.error('Failed to complete milestone:', err)
+    }
+  }
+
+  async function handleSyncProgress() {
+    setSyncing(true)
+    try {
+      await goalApi.autoUpdate(bookId)
+      // Refresh goals to get updated data
+      const data = await goalApi.list(bookId)
+      setGoals(data)
+    } catch (err) {
+      console.error('Failed to sync goal progress:', err)
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -317,6 +332,13 @@ export default function GoalPanel({ bookId }: GoalPanelProps) {
 
           {/* Actions */}
           <div className="flex gap-2 pt-2 border-t border-border">
+            <button
+              onClick={handleSyncProgress}
+              disabled={syncing}
+              className="text-xs uppercase tracking-widest border border-foreground px-4 py-2 hover:bg-foreground hover:text-background transition-colors rounded-none shadow-none disabled:opacity-40"
+            >
+              {syncing ? '同步中...' : '同步进度'}
+            </button>
             <button
               onClick={handlePauseResume}
               className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors rounded-none shadow-none text-muted"

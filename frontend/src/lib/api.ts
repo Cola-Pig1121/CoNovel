@@ -227,6 +227,7 @@ export const goalApi = {
   updateProgress: (bookId: string, goalId: string, progress: number) => request<Goal>('PUT', `/books/${bookId}/goals/${goalId}/progress`, { progress }),
   completeMilestone: (bookId: string, goalId: string, milestoneId: string) => request<Goal>('POST', `/books/${bookId}/goals/${goalId}/milestones/${milestoneId}/complete`),
   delete: (bookId: string, goalId: string) => request<{ ok: boolean }>('DELETE', `/books/${bookId}/goals/${goalId}`),
+  autoUpdate: (bookId: string) => request<{ updated: number }>('POST', `/books/${bookId}/goals/auto-update`),
 }
 
 // --- Streaming helper ---

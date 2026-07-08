@@ -18,7 +18,7 @@ from app import agent_lifecycle, file_manager
 from app.config import AGENT_ENGINE_URL, FRONTEND_DIR, SERVER_HOST, SERVER_PORT, ensure_data_dirs
 from app.model_manager import get_download_progress, is_model_ready, start_background_download
 from app.models import DeAIRequest, StyleAnalyzeRequest
-from app.routers import agents, books, chapters, goals, import_book, memory, pipeline, questions, settings, store
+from app.routers import agents, books, chapters, goals, import_book, memory, pipeline, questions, settings, store, workflows
 
 # ── Logging ────────────────────────────────────────────────────────────────
 
@@ -99,6 +99,7 @@ app.include_router(questions.router)
 app.include_router(goals.router)
 app.include_router(memory.router)
 app.include_router(import_book.router)
+app.include_router(workflows.router)
 
 
 # ── System Endpoints ──────────────────────────────────────────────────────

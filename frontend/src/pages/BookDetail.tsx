@@ -4,6 +4,7 @@ import { useBookStore } from '@/stores/bookStore'
 import {
   charactersApi,
   constraintsApi,
+  goalApi,
   memoryApi,
   pipelineApi,
   styleApi,
@@ -1922,6 +1923,12 @@ function WriteTab() {
       setPipelineStatus('starting')
       await pipelineApi.start(bookId, activeChapter)
       setPipelineStatus('running')
+      // Auto-update goal progress after pipeline completes
+      try {
+        await goalApi.autoUpdate(bookId)
+      } catch {
+        // non-fatal — goal auto-update is best-effort
+      }
     } catch (err) {
       setPipelineStatus('error')
       console.error('Pipeline start failed:', err)

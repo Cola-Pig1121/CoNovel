@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 
 import httpx
@@ -10,7 +11,7 @@ from fastapi.responses import StreamingResponse
 
 from app import file_manager as fm
 from app.agent_lifecycle import proxy_request
-from app.config import AGENT_ENGINE_URL, get_book_dir
+from app.config import AGENT_ENGINE_URL, SERVER_PORT, get_book_dir
 from app.models import CancelPipelineRequest, StartPipelineRequest
 
 router = APIRouter(prefix="/api/pipeline", tags=["pipeline"])
@@ -97,6 +98,9 @@ async def start_pipeline(req: StartPipelineRequest):
         fm.write_pipeline_state(req.bookId, pipeline_state)
         raise HTTPException(status_code=result.get("status_code", 500), detail=result["error"])
 
+    # Trigger goal auto-update in background after pipeline completes
+    asyncio.ensure_future(_auto_update_goals_async(req.bookId))
+
     return result.get("data", result)
 
 
@@ -166,8 +170,36 @@ async def stream_pipeline(book_id: str, chapter_number: int = 1):
 
         yield "data: [DONE]\n\n"
 
+        # Trigger goal auto-update after streaming completes
+        asyncio.ensure_future(_auto_update_goals_async(book_id))
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+async def _auto_update_goals_async(book_id: str):
+    """Auto-update goals after pipeline completes.
+
+    Waits briefly for the pipeline state to settle, then calls the
+    goals auto-update endpoint.
+    """
+    import asyncio as _asyncio
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        await _asyncio.sleep(3)  # Wait for pipeline state to settle
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"http://127.0.0.1:{SERVER_PORT}/api/books/{book_id}/goals/auto-update",
+            )
+            if resp.status_code == 200:
+                logger.info(f"Goal auto-update triggered for book {book_id}: {resp.json()}")
+            else:
+                logger.warning(f"Goal auto-update returned {resp.status_code} for book {book_id}")
+    except Exception as e:
+        logger.debug(f"Goal auto-update background call failed (non-fatal): {e}")
