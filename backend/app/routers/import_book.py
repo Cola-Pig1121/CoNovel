@@ -420,7 +420,25 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
         # No files found — create an empty book
         pass
 
-    # 5. Create state.json with real data
+    # 5. Use LLM to extract metadata (title, genre, characters, outline)
+    all_content = ""
+    for f in all_files[:5]:  # Sample first 5 files for metadata
+        content = _extract_text_from_file(f)
+        all_content += content[:3000] + "\n\n"
+
+    metadata = await _extract_metadata_with_llm(all_content, book_title)
+    if metadata:
+        # Update title if LLM found a better one
+        if metadata.get("title") and len(metadata["title"]) > len(book_title):
+            book_title = metadata["title"]
+        # Use LLM-detected genre if user didn't specify
+        if req.genre == "unknown" and metadata.get("genre"):
+            req.genre = metadata["genre"]
+        # Use LLM-detected premise if user didn't specify
+        if not req.premise and metadata.get("premise"):
+            req.premise = metadata["premise"]
+
+    # 6. Create state.json with real data
     state = {
         "id": book_id,
         "title": book_title,
@@ -439,8 +457,44 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
         json.dumps(state, ensure_ascii=False, indent=2), "utf-8"
     )
 
-    # 6. Create empty supporting files (if not already present from copy)
-    for fname in ["characters.json", "foreshadowing.json", "timeline.json"]:
+    # 7. Create characters.json from LLM-extracted data
+    if metadata.get("characters"):
+        characters = []
+        for i, ch in enumerate(metadata["characters"]):
+            characters.append({
+                "id": f"char_{i+1}",
+                "name": ch.get("name", f"角色{i+1}"),
+                "role": ch.get("role", "supporting"),
+                "personality": {"openness": 5, "conscientiousness": 5, "extraversion": 5, "agreeableness": 5, "neuroticism": 5},
+                "voice": {"vocabulary": [], "sentencePattern": "mixed", "speechQuirks": [], "formality": "mixed"},
+                "motivations": {"current": "", "longTerm": "", "fear": "", "desire": ""},
+                "knowledgeBoundary": {"knows": [], "doesntKnow": [], "suspects": []},
+                "relationships": {},
+                "emotionalState": {"current": "平静", "intensity": 50, "triggers": []},
+                "createdAt": datetime.now().isoformat(),
+                "updatedAt": datetime.now().isoformat(),
+            })
+        (book_dir / "characters.json").write_text(
+            json.dumps(characters, ensure_ascii=False, indent=2), "utf-8"
+        )
+    else:
+        (book_dir / "characters.json").write_text("[]", "utf-8")
+
+    # 8. Create outline.json from LLM-extracted data
+    if metadata.get("outline"):
+        outline = {
+            "act_outlines": [],
+            "chapter_outlines": [
+                {"chapter_number": i+1, "title": ch.get("title", f"第{i+1}章"), "summary": "", "pov_character": "", "key_events": [], "characters_present": [], "foreshadowing_planted": [], "foreshadowing_resolved": []}
+                for i, ch in enumerate([{"title": f"第{i+1}章"} for i in range(imported_count)])
+            ],
+        }
+        (book_dir / "outline.json").write_text(
+            json.dumps(outline, ensure_ascii=False, indent=2), "utf-8"
+        )
+
+    # 9. Create empty supporting files
+    for fname in ["foreshadowing.json", "timeline.json"]:
         if not (book_dir / fname).exists():
             (book_dir / fname).write_text("[]", "utf-8")
 
@@ -658,18 +712,66 @@ async def _convert_with_llm(content: str, filename: str, book_title: str) -> dic
     return _simple_convert(content, filename)
 
 
+async def _extract_metadata_with_llm(all_content: str, book_title: str) -> dict:
+    """Use LLM to extract metadata: title, genre, characters, outline from content."""
+    providers = fm.read_providers()
+    provider = next((p for p in (providers or []) if p.get("enabled", True)), None)
+    if not provider:
+        return {}
+
+    api_url = provider.get("baseUrl", "https://api.openai.com/v1") + "/chat/completions"
+    api_key = provider.get("apiKey", "")
+    model = provider.get("models", [{}])[0].get("id", "gpt-4o-mini") if provider.get("models") else "gpt-4o-mini"
+
+    prompt = f"""你是一个专业的网文编辑。请分析以下小说内容，提取元数据。
+
+当前书名: {book_title}
+
+请返回 JSON 格式（只返回 JSON，不要其他文字）:
+{{
+  "title": "更准确的书名（如果能判断的话）",
+  "genre": "题材（xuanhuan/xianxia/wuxia/dushi/xuanyi/kehuan/yanqing/lishi/youxi）",
+  "premise": "一句话故事前提",
+  "characters": [
+    {{"name": "角色名", "role": "protagonist/antagonist/supporting", "description": "简短描述"}}
+  ],
+  "outline": {{
+    "summary": "整体故事线概述",
+    "keyEvents": ["关键事件1", "关键事件2"]
+  }}
+}}
+
+原始内容（前3000字）:
+{all_content[:3000]}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                api_url,
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.3},
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            llm_content = result["choices"][0]["message"]["content"]
+            json_match = re.search(r'\{.*\}', llm_content, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+    except Exception as e:
+        print(f"[Import] Metadata extraction failed: {e}")
+    return {}
+
+
 def _simple_convert(content: str, filename: str) -> dict:
     """Simple fallback: split by paragraphs when LLM is unavailable."""
-    # Split by double newlines (paragraphs)
     paragraphs = [p.strip() for p in re.split(r'\n\s*\n', content) if p.strip()]
 
     if not paragraphs:
         return {"chapters": []}
 
-    # Group paragraphs into reasonable chunks (~2000 chars each)
     chapters: list[dict] = []
     current_text = ""
-    chapter_title = filename.rsplit('.', 1)[0]  # Remove extension
+    chapter_title = filename.rsplit('.', 1)[0]
 
     for para in paragraphs:
         if len(current_text) + len(para) > 2000 and current_text:
