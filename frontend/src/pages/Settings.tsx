@@ -5,7 +5,7 @@ import { useAgentConfigStore, TIER_AGENT_MAP, TIER_LABELS } from '@/stores/agent
 import type { TierLevel } from '@/stores/agentConfigStore'
 import type { Provider, ModelEntry } from '@/lib/types'
 
-type SettingsTab = 'providers' | 'agentConfig'
+type SettingsTab = 'providers' | 'agentConfig' | 'skills'
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('providers')
@@ -34,6 +34,7 @@ export default function Settings() {
           {([
             { key: 'providers', label: 'Providers' },
             { key: 'agentConfig', label: 'Agent Model Config' },
+            { key: 'skills', label: '技能' },
           ] as const).map((tab) => (
             <button
               key={tab.key}
@@ -53,6 +54,7 @@ export default function Settings() {
       <main className="px-8 py-8">
         {activeTab === 'providers' && <ProvidersPanel />}
         {activeTab === 'agentConfig' && <AgentConfigPanel />}
+        {activeTab === 'skills' && <SkillsPanel />}
       </main>
     </div>
   )
@@ -364,8 +366,8 @@ function EditProviderForm({
             <div key={m.id} className="flex items-center justify-between border border-border px-3 py-2">
               <div className="flex items-center gap-4 text-xs">
                 <span className="font-mono">{m.name}</span>
-                <span className="text-muted">{(m.contextWindow / 1000).toFixed(0)}K ctx</span>
-                <span className="text-muted">{(m.maxOutput / 1000).toFixed(0)}K out</span>
+                <span className="text-muted">{m.contextWindow ? `${(m.contextWindow / 1000).toFixed(0)}K` : '—'} ctx</span>
+                <span className="text-muted">{m.maxOutput ? `${(m.maxOutput / 1000).toFixed(0)}K` : '—'} out</span>
               </div>
               <button
                 onClick={() => deleteModel(provider.id, m.id)}
@@ -641,6 +643,192 @@ function AgentConfigPanel() {
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// Skills Panel
+// =============================================================================
+
+interface SkillEntry {
+  name: string
+  source: 'builtin' | 'custom'
+  description: string
+  filePath?: string
+}
+
+const BUILTIN_SKILLS: SkillEntry[] = [
+  { name: 'polish', source: 'builtin', description: '文本润色 — 提升文笔质量和表现力' },
+  { name: 'de-ai', source: 'builtin', description: '去 AI 味 — 移除 AI 典型写作痕迹' },
+  { name: 'fact-check', source: 'builtin', description: '事实核查 — 验证情节一致性' },
+  { name: 'character-intelligence', source: 'builtin', description: '角色智能 — 分析角色行为一致性' },
+  { name: 'pacing', source: 'builtin', description: '节奏分析 — 检测叙事节奏问题' },
+]
+
+function SkillsPanel() {
+  const [skills, setSkills] = useState<SkillEntry[]>(BUILTIN_SKILLS)
+  const [importMode, setImportMode] = useState(false)
+  const [importName, setImportName] = useState('')
+  const [importContent, setImportContent] = useState('')
+  const [importSource, setImportSource] = useState('')
+  const [importDesc, setImportDesc] = useState('')
+  const [importMessage, setImportMessage] = useState<string | null>(null)
+
+  function handleImport() {
+    if (!importName.trim() || !importContent.trim()) {
+      setImportMessage('请填写技能名称和内容')
+      return
+    }
+    // Add as custom skill (stored in state; in production would persist to backend)
+    setSkills((prev) => [
+      ...prev,
+      {
+        name: importName.trim(),
+        source: 'custom',
+        description: importDesc.trim() || `自定义技能: ${importName.trim()}`,
+        filePath: importSource.trim() || undefined,
+      },
+    ])
+    setImportMessage(`技能 "${importName.trim()}" 已导入`)
+    setImportName('')
+    setImportContent('')
+    setImportSource('')
+    setImportDesc('')
+    setTimeout(() => setImportMessage(null), 3000)
+  }
+
+  function handleRemoveSkill(name: string) {
+    setSkills((prev) => prev.filter((s) => s.name !== name))
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="font-serif text-xl">技能管理</h2>
+          <p className="text-muted text-sm mt-1">
+            管理 Agent 使用的技能（.md 格式 prompt 模板）
+          </p>
+        </div>
+        <button
+          onClick={() => setImportMode(!importMode)}
+          className="text-xs uppercase tracking-widest border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors"
+        >
+          {importMode ? '收起' : '+ 导入技能'}
+        </button>
+      </div>
+
+      {/* Import form */}
+      {importMode && (
+        <div className="border border-border p-6 space-y-4">
+          <h3 className="font-serif text-lg">导入自定义技能</h3>
+          <p className="text-xs text-muted">
+            支持从本地 .md 文件导入技能 prompt 模板。粘贴文件内容或提供文件路径。
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
+                技能名称
+              </span>
+              <input
+                value={importName}
+                onChange={(e) => setImportName(e.target.value)}
+                placeholder="my-skill"
+                className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
+                文件路径（可选）
+              </span>
+              <input
+                value={importSource}
+                onChange={(e) => setImportSource(e.target.value)}
+                placeholder="/path/to/skill.md"
+                className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors"
+              />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
+              描述
+            </span>
+            <input
+              value={importDesc}
+              onChange={(e) => setImportDesc(e.target.value)}
+              placeholder="技能描述..."
+              className="w-full border border-border bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted block mb-1">
+              技能内容（.md 格式）
+            </span>
+            <textarea
+              value={importContent}
+              onChange={(e) => setImportContent(e.target.value)}
+              placeholder="# Skill Name&#10;&#10;Your skill prompt template here..."
+              rows={8}
+              className="w-full border border-border bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground transition-colors placeholder:text-muted resize-none"
+            />
+          </label>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => setImportMode(false)}
+              className="text-xs uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleImport}
+              className="text-xs uppercase tracking-widest border border-foreground px-6 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
+            >
+              导入
+            </button>
+          </div>
+          {importMessage && (
+            <p className="text-xs text-foreground mt-2">{importMessage}</p>
+          )}
+        </div>
+      )}
+
+      {/* Skill list */}
+      <div className="space-y-2">
+        {skills.map((skill) => (
+          <div
+            key={skill.name}
+            className="border border-border p-4 flex items-center justify-between hover:border-foreground transition-colors"
+          >
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm">{skill.name}</span>
+                <span
+                  className={`text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 border ${
+                    skill.source === 'builtin'
+                      ? 'border-border text-muted'
+                      : 'border-foreground text-foreground'
+                  }`}
+                >
+                  {skill.source === 'builtin' ? '内置' : '自定义'}
+                </span>
+              </div>
+              <p className="text-xs text-muted mt-1">{skill.description}</p>
+              {skill.filePath && (
+                <p className="text-[10px] text-muted font-mono mt-1">{skill.filePath}</p>
+              )}
+            </div>
+            {skill.source === 'custom' && (
+              <button
+                onClick={() => handleRemoveSkill(skill.name)}
+                className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors px-2 py-1"
+              >
+                删除
+              </button>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   )

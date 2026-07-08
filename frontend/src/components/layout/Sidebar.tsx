@@ -27,31 +27,22 @@ export default function Sidebar() {
   return (
     <aside
       className={`shrink-0 border-r border-border flex flex-col bg-background transition-all duration-200 ${
-        sidebarExpanded ? 'w-56' : 'w-12'
+        sidebarExpanded ? 'w-56' : 'w-14'
       }`}
     >
-      {/* Toggle button */}
-      <div className="h-11 border-b border-border flex items-center justify-center">
-        <button
-          onClick={toggleSidebar}
-          className="text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors w-full h-full"
-          title={sidebarExpanded ? '收起侧边栏' : '展开侧边栏'}
-        >
-          {sidebarExpanded ? '◁' : '▷'}
-        </button>
-      </div>
-
-      {/* Brand */}
-      {sidebarExpanded && (
-        <div className="px-4 py-4 border-b border-border">
-          <Link to="/" className="font-serif text-lg tracking-tight leading-none">
-            CoNovel
-          </Link>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
-            v0.1.0
-          </p>
+      {/* Brand + Toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="border-b border-border flex items-center gap-3 hover:bg-foreground/[0.02] transition-colors cursor-pointer"
+        title={sidebarExpanded ? '收起侧边栏' : '展开侧边栏'}
+      >
+        <div className={`py-4 flex items-center gap-3 ${sidebarExpanded ? 'px-4 w-full' : 'w-full justify-center'}`}>
+          <img src="/favicon.svg" alt="CoNovel" className="w-6 h-6 shrink-0" />
+          {sidebarExpanded && (
+            <span className="font-serif text-lg tracking-tight">CoNovel</span>
+          )}
         </div>
-      )}
+      </button>
 
       {/* Navigation */}
       <nav className="flex-1 py-2">

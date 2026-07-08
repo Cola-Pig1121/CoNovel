@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEditorStore } from '@/stores/editorStore'
 import { useBookStore } from '@/stores/bookStore'
+import { useAgentStore } from '@/stores/agentStore'
 import FloatingToolbar from '@/components/editor/FloatingToolbar'
 import LexicalEditor from '@/components/editor/LexicalEditor'
 import DiffView from '@/components/editor/DiffView'
 import Skeleton from '@/components/ui/Skeleton'
-import { chaptersApi, toolsApi } from '@/lib/api'
-import type { Volume } from '@/lib/types'
+import { chaptersApi, toolsApi, workflowApi } from '@/lib/api'
+import type { Volume, WorkflowSpec, WorkflowRun } from '@/lib/types'
 import ChatPanel from '@/components/ai/ChatPanel'
 
 // ---------------------------------------------------------------------------
@@ -123,11 +124,13 @@ function ProjectPanel({ collapsed }: { collapsed: boolean }) {
 // RightToolbar (Right)
 // ---------------------------------------------------------------------------
 
-type RightTab = 'outline' | 'characters' | 'ai' | 'settings'
+type RightTab = 'outline' | 'characters' | 'pipeline' | 'workflow' | 'ai' | 'settings'
 
 const TABS: { key: RightTab; label: string }[] = [
   { key: 'outline', label: '大纲' },
   { key: 'characters', label: '角色' },
+  { key: 'pipeline', label: '流水线' },
+  { key: 'workflow', label: '工作流' },
   { key: 'ai', label: 'AI 助手' },
   { key: 'settings', label: '设置' },
 ]
@@ -163,6 +166,8 @@ function RightToolbar({ collapsed }: { collapsed: boolean }) {
         {rightPanelTab === 'characters' && (
           <CharactersPanel characters={characters} />
         )}
+        {rightPanelTab === 'pipeline' && <PipelinePanel />}
+        {rightPanelTab === 'workflow' && <WorkflowPanel />}
         {rightPanelTab === 'ai' && <AIAssistantPanel />}
         {rightPanelTab === 'settings' && <SettingsPanel />}
       </div>
@@ -225,6 +230,221 @@ function CharactersPanel({
 /* ---- AI Assistant ---- */
 function AIAssistantPanel() {
   return <ChatPanel />
+}
+
+/* ---- Pipeline ---- */
+function PipelinePanel() {
+  const { bookId } = useEditorStore()
+  const { pipelineState, startPipeline, fetchPipelineStatus, cancelPipeline } =
+    useAgentStore()
+  const { chapterNumber } = useEditorStore()
+
+  useEffect(() => {
+    if (bookId) fetchPipelineStatus(bookId)
+  }, [bookId, fetchPipelineStatus])
+
+  const stages = pipelineState?.stages ?? []
+  const hasRunningStage = pipelineState?.activeStage !== null && pipelineState?.activeStage !== undefined
+
+  return (
+    <div>
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
+        流水线状态
+      </h3>
+
+      {!bookId ? (
+        <p className="text-sm text-muted">请先选择一本书。</p>
+      ) : (
+        <div className="space-y-4">
+          {/* Status */}
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                hasRunningStage ? 'bg-foreground animate-pulse' : 'bg-muted/30'
+              }`}
+            />
+            <span className="text-xs">
+              {hasRunningStage ? '运行中' : '空闲'}
+            </span>
+          </div>
+
+          {/* Active stage */}
+          {pipelineState?.activeStage && (
+            <div className="border border-border p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-1">
+                当前阶段
+              </div>
+              <div className="text-xs font-mono">{pipelineState.activeStage}</div>
+            </div>
+          )}
+
+          {/* Stages overview */}
+          {stages.length > 0 && (
+            <div className="space-y-1">
+              {stages.map((s) => (
+                <div key={s.stage} className="flex items-center gap-2 text-xs">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      s.status === 'completed'
+                        ? 'bg-foreground'
+                        : s.status === 'running'
+                        ? 'bg-foreground animate-pulse'
+                        : s.status === 'failed'
+                        ? 'bg-foreground'
+                        : 'bg-muted/20'
+                    }`}
+                  />
+                  <span className="truncate flex-1">{s.stage}</span>
+                  <span className="text-muted text-[10px]">{s.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            {!hasRunningStage && (
+              <button
+                onClick={() => bookId && startPipeline(bookId, chapterNumber ?? 1)}
+                className="text-[10px] uppercase tracking-widest border border-foreground px-4 py-2 bg-foreground text-background hover:bg-transparent hover:text-foreground transition-colors"
+              >
+                启动流水线
+              </button>
+            )}
+            {hasRunningStage && (
+              <button
+                onClick={() => bookId && cancelPipeline(bookId)}
+                className="text-[10px] uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+              >
+                取消
+              </button>
+            )}
+            <button
+              onClick={() => bookId && fetchPipelineStatus(bookId)}
+              className="text-[10px] uppercase tracking-widest border border-border px-4 py-2 hover:border-foreground transition-colors"
+            >
+              刷新
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ---- Workflow ---- */
+function WorkflowPanel() {
+  const { bookId } = useEditorStore()
+  const [workflows, setWorkflows] = useState<WorkflowSpec[]>([])
+  const [currentRun, setCurrentRun] = useState<WorkflowRun | null>(null)
+
+  useEffect(() => {
+    workflowApi.listWorkflows().then(setWorkflows).catch(() => {})
+  }, [])
+
+  // Poll running workflow
+  useEffect(() => {
+    if (!currentRun || (currentRun.status !== 'running' && currentRun.status !== 'paused')) return
+    const interval = setInterval(() => {
+      workflowApi.getRunStatus(currentRun.id).then((updated) => {
+        setCurrentRun(updated)
+        if (updated.status !== 'running' && updated.status !== 'paused') {
+          clearInterval(interval)
+        }
+      }).catch(() => {})
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [currentRun?.id, currentRun?.status])
+
+  const handleRun = async (name: string) => {
+    if (!bookId) return
+    try {
+      const run = await workflowApi.startWorkflow(name, bookId)
+      setCurrentRun(run)
+    } catch {
+      // silent
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!currentRun) return
+    try {
+      await workflowApi.cancelRun(currentRun.id)
+      setCurrentRun({ ...currentRun, status: 'failed' })
+    } catch {
+      // silent
+    }
+  }
+
+  return (
+    <div>
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted mb-4">
+        工作流
+      </h3>
+
+      {!bookId ? (
+        <p className="text-sm text-muted">请先选择一本书。</p>
+      ) : (
+        <div className="space-y-4">
+          {/* Current run status */}
+          {currentRun && (
+            <div className="border border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono">{currentRun.workflowName}</span>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    currentRun.status === 'running'
+                      ? 'bg-foreground animate-pulse'
+                      : currentRun.status === 'completed'
+                      ? 'bg-foreground'
+                      : 'bg-muted/30'
+                  }`}
+                />
+              </div>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+                {currentRun.status}
+              </span>
+              {(currentRun.status === 'running' || currentRun.status === 'paused') && (
+                <button
+                  onClick={handleCancel}
+                  className="text-[10px] uppercase tracking-widest border border-border px-3 py-1 hover:border-foreground transition-colors w-full"
+                >
+                  取消
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Available workflows */}
+          <div className="space-y-2">
+            {workflows.map((wf) => (
+              <div
+                key={wf.name}
+                className="border border-border p-3 hover:border-foreground/30 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-mono">{wf.name}</span>
+                  <span className="text-[10px] text-muted">
+                    {wf.artifactGraph.stages.length} 阶段
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted mb-2 line-clamp-2">
+                  {wf.description}
+                </p>
+                <button
+                  onClick={() => handleRun(wf.name)}
+                  disabled={currentRun?.status === 'running' || currentRun?.status === 'paused'}
+                  className="text-[10px] uppercase tracking-widest border border-border px-3 py-1 hover:border-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed w-full"
+                >
+                  运行
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 /* ---- Settings ---- */

@@ -13,7 +13,7 @@ interface EditorStore {
   mode: 'solo' | 'co-write'
   showLeftPanel: boolean
   showRightPanel: boolean
-  rightPanelTab: 'outline' | 'characters' | 'ai' | 'settings'
+  rightPanelTab: 'outline' | 'characters' | 'pipeline' | 'workflow' | 'ai' | 'settings'
 
   // Editor display settings (persisted to localStorage)
   fontSize: string
