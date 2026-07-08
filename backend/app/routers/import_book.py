@@ -498,6 +498,9 @@ def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
         if not (book_dir / fname).exists():
             (book_dir / fname).write_text("[]", "utf-8")
 
+    # 10. Generate user-editable constraints from LLM
+    await _generate_constraints(book_dir, book_title, req.genre, metadata)
+
     # 7. Update book index
     index = fm.read_book_index()
     meta = {
@@ -710,6 +713,53 @@ async def _convert_with_llm(content: str, filename: str, book_title: str) -> dic
         print(f"LLM conversion failed: {e}")
 
     return _simple_convert(content, filename)
+
+
+async def _generate_constraints(book_dir: Path, title: str, genre: str, metadata: dict) -> None:
+    """Generate user-editable constraint files based on genre and content."""
+    constraints_dir = book_dir / "constraints"
+    constraints_dir.mkdir(exist_ok=True)
+
+    # Genre-specific default constraints
+    genre_constraints = {
+        "xuanhuan": {
+            "style": "# 玄幻文风约束\n\n- 场景描写需宏大壮阔，注重气势渲染\n- 战斗描写需有画面感，力量层次递进\n- 升级节奏：每10-15章一个小境界突破\n- 禁止：纯招式罗列，每个战斗回合不超过200字",
+            "plot": "# 玄幻剧情约束\n\n- 副本结构：每30-50章一个独立副本\n- 爽点间隔：每3-5章一个小爽点\n- 金手指需要限制条件\n- 禁止：无代价突破，无脑碾压",
+            "character": "# 玄幻角色约束\n\n- 主角需要明确弱点\n- 反派需要合理动机\n- 配角不能只是工具人\n- 每个角色需要独特的说话方式",
+            "writing": "# 玄幻写作指南\n\n- 战斗三拍法：环境破坏→身体反应→内心独白\n- 对话四层：表面意思→潜台词→情感暗流→权力博弈\n- 禁止：head-hopping（同段切换视角）",
+            "banned": "# 禁用词\n\n然而\n总而言之\n值得一提的是\n不可否认的是\n仿佛在诉说着\n刹那间\n让我为你\n随着时间的推移",
+        },
+        "xianxia": {
+            "style": "# 仙侠文风约束\n\n- 仙气飘飘，意境深远\n- 修炼描写需有仪式感\n- 法术战斗需有策略性\n- 禁止：纯粹的力量碾压",
+            "plot": "# 仙侠剧情约束\n\n- 境界体系清晰\n- 每卷有独立小高潮\n- 宗门政治可作为支线\n- 禁止：无脑打脸",
+            "character": "# 仙侠角色约束\n\n- 修仙者需有道心\n- 师徒关系需有层次\n- 禁止：圣母/圣父人设",
+            "writing": "# 仙侠写作指南\n\n- 意境描写重于招式描写\n- 修炼过程需要仪式感\n- 禁止：现代词汇混入",
+            "banned": "# 禁用词\n\n然而\n总而言之\n值得一提的是\n仿佛在诉说着",
+        },
+        "dushi": {
+            "style": "# 都市文风约束\n\n- 现代都市背景\n- 对话自然生活化\n- 禁止：过度中二\n- 细节要接地气",
+            "plot": "# 都市剧情约束\n- 事业线+感情线双线并行\n- 金手指需要合理限制\n- 禁止：无脑装逼打脸",
+            "character": "# 都市角色约束\n- 角色需要有现代人的思维\n- 对话要符合身份\n- 禁止：古代人说话方式",
+            "writing": "# 都市写作指南\n- 场景描写要有现代感\n- 对话占比可以高\n- 禁止：修仙词汇混入",
+            "banned": "# 禁用词\n\n然而\n总而言之\n值得一提的是\n仿佛在诉说着",
+        },
+    }
+
+    # Get genre-specific constraints or use generic ones
+    gc = genre_constraints.get(genre, {
+        "style": f"# 文风约束\n\n- 根据{genre}题材调整文风\n- 保持一致性",
+        "plot": f"# 剧情约束\n\n- {genre}题材的典型剧情结构\n- 节奏张弛有度",
+        "character": "# 角色约束\n\n- 角色需要立体\n- 不能是工具人",
+        "writing": "# 写作指南\n\n- 五感描写\n- 对话自然",
+        "banned": "# 禁用词\n\n然而\n总而言之\n值得一提的是\n仿佛在诉说着",
+    })
+
+    # Write constraint files
+    (constraints_dir / "style-constraints.md").write_text(gc["style"], "utf-8")
+    (constraints_dir / "plot-constraints.md").write_text(gc["plot"], "utf-8")
+    (constraints_dir / "character-rules.md").write_text(gc["character"], "utf-8")
+    (constraints_dir / "writing-guide.md").write_text(gc["writing"], "utf-8")
+    (constraints_dir / "banned-words.md").write_text(gc["banned"], "utf-8")
 
 
 async def _extract_metadata_with_llm(all_content: str, book_title: str) -> dict:
