@@ -223,11 +223,26 @@ def _import_conovel(dir_path: Path, req: ImportRequest) -> dict:
     book_id = fm.generate_id()
     book_dir = fm.get_book_dir(book_id)
 
-    # Copy entire directory to books dir, skipping .git and other hidden dirs
-    shutil.copytree(
-        str(dir_path), str(book_dir),
-        ignore=shutil.ignore_patterns('.git', '__pycache__', 'node_modules', '.DS_Store'),
-    )
+    # Create standard directory structure first
+    _create_standard_dirs(book_dir)
+
+    # Copy only CoNovel-relevant files (state.json, chapters/, .eve/, etc.)
+    for item in dir_path.iterdir():
+        if item.name.startswith('.') or item.name in ('__pycache__', 'node_modules', '.DS_Store'):
+            continue
+        # Only copy known CoNovel directories/files
+        if item.name in ('chapters', 'memory', 'knowledge', 'references', 'events',
+                         'constraints', 'characters', 'outline'):
+            if item.is_dir():
+                shutil.copytree(str(item), str(book_dir / item.name),
+                              dirs_exist_ok=True,
+                              ignore=shutil.ignore_patterns('.git', '__pycache__'))
+            elif item.is_file():
+                shutil.copy2(str(item), str(book_dir / item.name))
+        elif item.name.endswith('.json') and item.name in ('state.json', 'characters.json',
+                                                             'foreshadowing.json', 'timeline.json',
+                                                             'outline.json'):
+            shutil.copy2(str(item), str(book_dir / item.name))
 
     # Update state.json with new ID and title if provided
     state_path = book_dir / "state.json"
@@ -299,27 +314,50 @@ def _import_conovel(dir_path: Path, req: ImportRequest) -> dict:
     }
 
 
-async def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
-    """Import and convert from any format using LLM, handling full directory structure."""
+STANDARD_DIRS = [
+    "chapters",
+    "memory/facts",
+    "memory/summaries",
+    "memory/character_states",
+    "memory/long_term",
+    "knowledge",
+    "references",
+    "events",
+    "constraints",
+]
+
+
+def _create_standard_dirs(book_dir: Path) -> None:
+    """Create the standard CoNovel book directory structure."""
+    for d in STANDARD_DIRS:
+        (book_dir / d).mkdir(parents=True, exist_ok=True)
+
+
+def _import_converted(dir_path: Path, req: ImportRequest, fmt: str) -> dict:
+    """Import and convert from any format using LLM, creating standardized CoNovel structure."""
     book_id = fm.generate_id()
     book_dir = fm.get_book_dir(book_id)
     book_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Copy the ENTIRE source directory structure first
-    #    This preserves any custom organization the user had
+    # 1. Create standard CoNovel directory structure
+    _create_standard_dirs(book_dir)
+
+    # 2. Create .eve template
+    fm.create_book_eve_template(str(book_dir))
+
+    # 3. Copy source files to references/ (not scattered in root)
+    refs_dir = book_dir / "references"
+    refs_dir.mkdir(exist_ok=True)
     for item in dir_path.iterdir():
-        if item.name.startswith('.'):
-            continue  # Skip hidden files/dirs
-        if item.name in ('__pycache__', 'node_modules', '.DS_Store'):
+        if item.name.startswith('.') or item.name in ('__pycache__', 'node_modules', '.DS_Store'):
             continue
         if item.is_dir():
-            dest = book_dir / item.name
             shutil.copytree(
-                str(item), str(dest),
-                ignore=shutil.ignore_patterns('.git', '.eve', '__pycache__', 'node_modules', '.DS_Store'),
+                str(item), str(refs_dir / item.name),
+                ignore=shutil.ignore_patterns('.git', '.eve', '__pycache__', 'node_modules'),
             )
         elif item.is_file():
-            shutil.copy2(str(item), str(book_dir / item.name))
+            shutil.copy2(str(item), str(refs_dir / item.name))
 
     # 2. Create .eve template
     fm.create_book_eve_template(str(book_dir))
